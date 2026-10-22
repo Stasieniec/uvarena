@@ -130,13 +130,13 @@
 }
 .rq-crack-top {
   clip-path: polygon(0 0, 100% 0, 100% 46%, 78% 58%, 55% 44%, 32% 60%, 12% 47%, 0 55%);
-  animation: rq-crack-top 0.75s ease-in 0.2s both;
+  animation: rq-crack-top 0.55s ease-in 0.2s both;
 }
 .rq-crack-bottom {
   clip-path: polygon(0 55%, 12% 47%, 32% 60%, 55% 44%, 78% 58%, 100% 46%, 100% 100%, 0 100%);
-  animation: rq-crack-bottom 0.75s ease-in 0.2s both;
+  animation: rq-crack-bottom 0.55s ease-in 0.2s both;
 }
-.rq-crack-line { animation: rq-crack-line 0.75s linear 0.2s both; }
+.rq-crack-line { animation: rq-crack-line 0.55s linear 0.2s both; }
 .rq-after-crack { animation: rq-slam 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.55s both; }
 
 /* ---------- power-up buttons ---------- */

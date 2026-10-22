@@ -46,7 +46,18 @@ function ZeusLine({ small }: { small: boolean }) {
   );
 }
 
-function Line({ item, small, className = "rq-slam" }: { item: BannerItem; small: boolean; className?: string }) {
+function Line({
+  item,
+  small,
+  className = "rq-slam",
+  withSub = true,
+}: {
+  item: BannerItem;
+  small: boolean;
+  className?: string;
+  /** The italic sub-line; off for a cracked line, whose falling half would land on the next line. */
+  withSub?: boolean;
+}) {
   if (item.powerup === "zeus" && item.outcome === "active") return <ZeusLine small={small} />;
   const text = bannerLine(item.powerup, item.outcome);
   const sub = bannerSub(item.powerup, item.outcome);
@@ -66,7 +77,7 @@ function Line({ item, small, className = "rq-slam" }: { item: BannerItem; small:
       >
         {item.powerup === "zeus" && item.outcome !== "active" ? LINES.zeus : text}
       </div>
-      {sub && <div className="mt-2 text-sm text-text/80 italic">{sub}</div>}
+      {withSub && sub && <div className="mt-2 text-sm text-text/80 italic">{sub}</div>}
     </div>
   );
 }
@@ -78,7 +89,7 @@ function Cracked({ item, small, caption }: { item: BannerItem; small: boolean; c
   const inner = (
     <>
       {caption}
-      <Line item={shown} small={small} className="" />
+      <Line item={shown} small={small} className="" withSub={false} />
     </>
   );
   return (

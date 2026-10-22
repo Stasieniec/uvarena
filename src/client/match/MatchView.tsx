@@ -418,6 +418,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
             clock={clock}
             endsAt={state.phase === "arming" ? state.phaseEndsAt : null}
             totalMs={phaseTotal(state, state.settings?.powerups === false ? TIMING.armingMsNoPowerups : TIMING.armingMs)}
+            covered={state.phase === "banner" && state.banner !== null}
           />
         )}
       </div>

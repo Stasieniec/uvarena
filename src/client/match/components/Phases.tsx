@@ -73,6 +73,7 @@ export function ArmingCard({
   clock,
   endsAt,
   totalMs,
+  covered = false,
 }: {
   round: number;
   multiplier: number;
@@ -82,9 +83,14 @@ export function ArmingCard({
   clock: MatchClock;
   endsAt: number | null;
   totalMs: number;
+  /** A power-up banner is on top: the round title would show through it, so it fades out. */
+  covered?: boolean;
 }) {
   return (
-    <section className="relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface/70 px-5 py-6 text-center">
+    <section
+      className={`relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface/70 px-5 py-6 text-center transition-opacity duration-150 ${covered ? "opacity-0" : ""}`}
+      aria-hidden={covered || undefined}
+    >
       <div key={round} className="rq-slam rq-display text-[min(15vw,64px)] leading-none font-black tracking-wider text-text">
         {suddenDeath ? "SUDDEN DEATH" : `ROUND ${round}`}
       </div>
