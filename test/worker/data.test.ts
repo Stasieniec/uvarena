@@ -129,6 +129,23 @@ describe("GET /matches/:id", () => {
     expect(body.rounds[0]!.b).toMatchObject({ answer: null, correct: false, damageTaken: 900 });
   });
 
+  it("gives round detail (and so the keys) only to the two players", async () => {
+    await seed();
+    const a = await signUp("keyowner");
+    const b = await signUp("keyother");
+    const stranger = await signUp("harvester");
+    await insertMatch({ id: "match_keys0001", player_a: a.userId, player_b: b.userId, rounds_played: 1 });
+    await roundRow("match_keys0001", 1, "agai-rrxcbz");
+    const seen = MatchDetailResponseSchema.parse(await json(await call("/api/matches/match_keys0001", { cookie: stranger })));
+    expect(seen.rounds).toEqual([]);
+    expect(seen.roundsHidden).toBe(true);
+    expect(seen.roundsPlayed).toBe(1);
+    expect(seen.players[0].user?.username).toBe("keyowner");
+    const own = MatchDetailResponseSchema.parse(await json(await call("/api/matches/match_keys0001", { cookie: a })));
+    expect(own.rounds).toHaveLength(1);
+    expect(own.roundsHidden).toBeUndefined();
+  });
+
   it("shows bot matches with the bot on side b", async () => {
     const a = await signUp("botplayer");
     await insertMatch({ id: "match_botgame1", mode: "bot", rated: 0, player_a: a.userId, bot_level: 3, bot_rating: 1350, bot_rating_before: 1500, bot_rating_after: 1531, rating_a_before: null, rating_a_after: null, rating_b_before: null, rating_b_after: null });
