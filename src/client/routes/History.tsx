@@ -154,7 +154,7 @@ function RoundCard({ round, mine, theirs, myName, theirName }: { round: Round; m
           <QuestionText question={q} fill={q.type === "cloze" ? (rows.find((r) => keyIds.includes(r.id))?.text ?? null) : null} />
           <OptionList
             question={q}
-            marks={markOptions(rows, keyIds, myIds)}
+            marks={markOptions(rows, keyIds, myIds, q.type === "multi")}
             pickedLabel={myIds}
             otherPicks={answerIds(theirs.answer)}
             otherLabel={`${theirName}'s answer`}

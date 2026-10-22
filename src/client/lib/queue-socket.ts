@@ -80,14 +80,14 @@ export function openQueueSocket(courseId: string, handlers: QueueSocketHandlers)
         if (socket.readyState === 1) socket.send(PING);
       }, NET.pingIntervalMs);
     };
-    socket.onmessage = (ev: MessageEvent) => {
+    socket.onmessage = (ev: { data: unknown }) => {
       if (ws !== socket || done || typeof ev.data !== "string" || ev.data === PONG) return;
       const msg = parseQueueServerMessage(ev.data);
       if (!msg) return;
       handlers.onMessage(msg);
       if (msg.type === "matched" || msg.type === "error") finish(CLOSE_CODES.normal);
     };
-    socket.onclose = (ev: CloseEvent) => {
+    socket.onclose = (ev: { code: number }) => {
       if (ws !== socket || done) return;
       if (pingTimer !== undefined) clearInterval(pingTimer);
       pingTimer = undefined;

@@ -70,12 +70,12 @@ export function optionRows(question: Pick<QuestionPublic, "type" | "options">): 
  * Marks for the answer view. Correct options are green; a wrong pick is red.
  * A correct option the player did not pick (multi) is green with a dashed edge.
  */
-export function markOptions(rows: OptionRow[], keyIds: string[], pickedIds: string[]): Record<string, OptionMark> {
+export function markOptions(rows: OptionRow[], keyIds: string[], pickedIds: string[], multi = false): Record<string, OptionMark> {
   const out: Record<string, OptionMark> = {};
   for (const r of rows) {
     const isKey = keyIds.includes(r.id);
     const picked = pickedIds.includes(r.id);
-    out[r.id] = isKey ? (picked || pickedIds.length === 0 ? "correct" : "correct-unpicked") : picked ? "wrong" : "none";
+    out[r.id] = isKey ? (multi && !picked && pickedIds.length > 0 ? "correct-unpicked" : "correct") : picked ? "wrong" : "none";
   }
   return out;
 }

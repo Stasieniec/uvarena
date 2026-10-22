@@ -21,7 +21,7 @@ const PROFILE_RECENT = 5;
 function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
   return (
     <div className="rounded-xl bg-bg/50 px-3 py-2">
-      <p className={cx("text-xl font-bold tabular-nums", tone)}>{value}</p>
+      <p className={cx("truncate text-xl font-bold tabular-nums", tone)}>{value}</p>
       <p className="text-[11px] tracking-wide text-muted uppercase">{label}</p>
     </div>
   );

@@ -3,7 +3,6 @@
 import { useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { PersonNameSchema, UsernameSchema } from "@shared/api-schemas";
 import { APP_NAME } from "@shared/brand";
 import { LIMITS } from "@shared/game/config";
 import { authClient, authErrorMessage } from "../lib/auth-client";
@@ -11,6 +10,7 @@ import { qk, useConfig } from "../lib/queries";
 import { BackIcon } from "../components/icons";
 import { Button, FormError, TextField } from "../components/ui";
 import { safeNext, withNext } from "./guards";
+import { validateSignUp, type SignUpErrors } from "../lib/validate";
 
 function AuthLayout({ title, children, footer }: { title: string; children: ReactNode; footer: ReactNode }) {
   return (
@@ -51,7 +51,7 @@ function GoogleButton({ next }: { next: string }) {
   };
   return (
     <>
-      <Button variant="secondary" className="w-full bg-white text-[#1f1f1f] hover:bg-white/90" onClick={go} loading={busy}>
+      <Button variant="google" className="w-full" onClick={go} loading={busy}>
         <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
           <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
@@ -78,25 +78,6 @@ function useFinishAuth(next: string) {
     await qc.fetchQuery({ queryKey: qk.me }).catch(() => undefined);
     navigate(next, { replace: true });
   };
-}
-
-interface SignUpErrors {
-  email?: string;
-  password?: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-export function validateSignUp(v: { email: string; password: string; username: string; firstName: string; lastName: string }): SignUpErrors {
-  const e: SignUpErrors = {};
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) e.email = "Enter an email address.";
-  if (v.password.length < LIMITS.passwordMin) e.password = `At least ${LIMITS.passwordMin} characters.`;
-  const u = UsernameSchema.safeParse(v.username);
-  if (!u.success) e.username = `${LIMITS.usernameMin} to ${LIMITS.usernameMax} characters: letters, digits, underscore and dot.`;
-  if (!PersonNameSchema.safeParse(v.firstName).success) e.firstName = "Enter your first name.";
-  if (!PersonNameSchema.safeParse(v.lastName).success) e.lastName = "Enter your surname.";
-  return e;
 }
 
 export function SignUp() {
@@ -142,7 +123,7 @@ export function SignUp() {
       footer={
         <>
           Have an account?{" "}
-          <Link to={withNext("/login", next)} className="font-semibold text-you">
+          <Link to={withNext("/login", next)} className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
             Log in
           </Link>
         </>
@@ -218,7 +199,7 @@ export function LogIn() {
       footer={
         <>
           New here?{" "}
-          <Link to={withNext("/signup", next)} className="font-semibold text-you">
+          <Link to={withNext("/signup", next)} className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
             Sign up
           </Link>
         </>
@@ -251,7 +232,7 @@ export function ResetPassword() {
   const [error, setError] = useState<string | null>(params.get("error") ? "This link is invalid or has expired." : null);
 
   const footer = (
-    <Link to="/login" className="font-semibold text-you">
+    <Link to="/login" className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
       Back to log in
     </Link>
   );

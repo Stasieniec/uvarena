@@ -126,7 +126,16 @@ export function MissedFlow({
   const [reportOpen, setReportOpen] = useState(false);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const answerView = useRef<HTMLDivElement>(null);
+
   useEffect(() => () => clearTimeout(undoTimer.current), []);
+
+  // Bring the answer view into sight once it opens; the options above stay marked.
+  useEffect(() => {
+    if (!revealed) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    answerView.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [revealed]);
 
   const showUndo = (previous: MissedStatus) => {
     clearTimeout(undoTimer.current);
@@ -190,7 +199,7 @@ export function MissedFlow({
   if (revealed) {
     const keyIds = answerIds(revealed.result.key);
     pickedIds = revealed.mode === "retry" ? answerIds(revealed.picked) : answerIds(revealed.result.lastAnswer);
-    marks = markOptions(rows, keyIds, pickedIds);
+    marks = markOptions(rows, keyIds, pickedIds, q.type === "multi");
     if (q.type === "cloze") fill = rows.find((r) => keyIds.includes(r.id))?.text ?? null;
   } else if (stage === "retry") {
     for (const id of picked) marks[id] = "picked";
@@ -247,7 +256,7 @@ export function MissedFlow({
       <FormError message={error ? errorMessage(error) : null} />
 
       {revealed ? (
-        <div className="pop-in flex flex-col gap-4">
+        <div ref={answerView} className="pop-in flex scroll-mt-16 flex-col gap-4">
           {revealed.mode === "retry" ? (
             <p className={cx("font-display text-2xl font-bold", revealed.result.correct ? "text-correct" : "text-wrong")}>
               {revealed.result.correct ? "Right." : "Still wrong."}

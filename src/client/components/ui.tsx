@@ -8,7 +8,7 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-export type ButtonVariant = "primary" | "ranked" | "bot" | "secondary" | "ghost" | "danger" | "gold";
+export type ButtonVariant = "primary" | "ranked" | "bot" | "secondary" | "ghost" | "danger" | "gold" | "google";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-you text-bg hover:brightness-110 active:brightness-95 font-semibold",
@@ -17,11 +17,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
   gold: "bg-zeus text-bg font-semibold hover:brightness-110",
   secondary: "bg-surface-2 text-text border border-border hover:border-muted/60",
   ghost: "bg-transparent text-text hover:bg-surface-2",
+  google: "bg-white text-[#1f1f1f] font-medium hover:bg-white/90",
   danger: "bg-transparent text-wrong border border-wrong/50 hover:bg-wrong/10",
 };
 
 export const buttonBase =
-  "inline-flex min-h-tap items-center justify-center gap-2 rounded-xl px-5 text-base transition select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-tap items-center justify-center gap-2 rounded-xl px-5 text-center text-base leading-tight transition select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed disabled:opacity-50";
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string): string {
   return cx(buttonBase, VARIANTS[variant], extra);

@@ -3,16 +3,9 @@ import { Navigate, Outlet, useLocation, useSearchParams } from "react-router";
 import { isUnauthorised } from "../lib/api";
 import { useMe } from "../lib/queries";
 import { ErrorState, FullScreenLoader } from "../components/ui";
+import { safeNext, withNext } from "../lib/next";
 
-/** Only same-site paths are followed after sign-in. */
-export function safeNext(next: string | null | undefined, fallback = "/"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
-}
-
-export function withNext(path: string, next: string): string {
-  return next === "/" ? path : `${path}?next=${encodeURIComponent(next)}`;
-}
+export { safeNext, withNext };
 
 function FullScreenError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   return (

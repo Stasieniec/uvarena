@@ -15,15 +15,7 @@ import { CopyIcon, ShareIcon } from "../components/icons";
 import { LectureMultiChip } from "../components/LectureFilter";
 import { Button, ErrorState, FormError, FullScreenLoader, PageHeader, Pills, Switch, buttonClass, cx } from "../components/ui";
 import { withNext } from "./guards";
-
-export function joinUrl(code: string, origin: string): string {
-  return `${origin}/join/${code}`;
-}
-
-/** Rated only with standard settings (design.md, private matches). */
-export function effectiveRated(wantRated: boolean, lectures: string[] | null, powerups: boolean): boolean {
-  return wantRated && lectures === null && powerups;
-}
+import { effectiveRated, joinUrl } from "../lib/lobby";
 
 function AlreadyInMatch({ error }: { error: unknown }) {
   const navigate = useNavigate();
@@ -47,7 +39,7 @@ function CodeDisplay({ code }: { code: string }) {
       {code.split("").map((ch, i) => (
         <span
           key={i}
-          className="font-display flex h-16 w-12 items-center justify-center rounded-xl border border-ranked-gold/40 bg-surface-2 text-4xl font-black text-ranked-gold shadow-inner"
+          className="font-display flex h-16 w-12 items-center justify-center overflow-hidden rounded-xl border border-ranked-gold/40 bg-surface-2 text-[2rem] leading-none font-black text-ranked-gold shadow-inner"
         >
           {ch}
         </span>
