@@ -1,0 +1,2045 @@
+{
+  "version": 1,
+  "generatedAt": 1792800000000,
+  "vaultCommit": null,
+  "lectures": [
+    {
+      "id": "AGAI-fixture-games",
+      "courseId": "agai",
+      "title": "Fixture: games",
+      "sort": 1,
+      "noteUrl": null
+    },
+    {
+      "id": "AGAI-fixture-agents",
+      "courseId": "agai",
+      "title": "Fixture: agents",
+      "sort": 2,
+      "noteUrl": null
+    },
+    {
+      "id": "EPRM-fixture-w01",
+      "courseId": "eprm",
+      "title": "Fixture: week 1",
+      "sort": 1,
+      "noteUrl": null
+    }
+  ],
+  "questions": [
+    {
+      "id": "agai-rrxcbz",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Nash Equilibrium"
+      ],
+      "prompt": "In a Nash equilibrium, what is true of each player's strategy?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It is a best response to the other players' strategies."
+        },
+        {
+          "id": "b",
+          "text": "It maximises the sum of all players' payoffs."
+        },
+        {
+          "id": "c",
+          "text": "It is a dominant strategy."
+        },
+        {
+          "id": "d",
+          "text": "It guarantees the player's highest possible payoff."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "In a Nash equilibrium no player gains by changing strategy alone. Each strategy is a best response to the others.",
+      "whyShort": "In a Nash equilibrium no player gains by changing strategy alone.",
+      "optionWhy": {
+        "b": "That describes a social optimum. An equilibrium only rules out profitable solo deviations.",
+        "c": "Equilibrium strategies need not be dominant; they only need to be best responses to each other.",
+        "d": "An equilibrium can leave every player worse off than some other outcome."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 41,
+      "chance": 0.25,
+      "startRating": 1300,
+      "fingerprint": "c185ad285af0fe3be071aab979701dab437cf0cbaba578cd77c50ea2cf21928a",
+      "contentHash": "d09b8345042b3e2a177cacc492d633d5c38f69b5f93f36552d38591fb3fd1b8d",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-sykt58",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "understand",
+      "topics": [
+        "Prisoner's Dilemma"
+      ],
+      "prompt": "Which outcome is the Nash equilibrium of the one-shot prisoner's dilemma?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Both players defect"
+        },
+        {
+          "id": "b",
+          "text": "Both players cooperate"
+        },
+        {
+          "id": "c",
+          "text": "One player cooperates and the other defects"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Defecting pays more whatever the other player does. So both defect, even though both prefer mutual cooperation.",
+      "whyShort": "Defecting pays more whatever the other player does.",
+      "optionWhy": {
+        "b": "Either player gains by switching to defect, so it is not stable.",
+        "c": "The cooperating player gains by switching to defect."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 24,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "ae12bbb97f4bd505206c94674e7540a101fac2bac675c0f963abf1d0d21640f2",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-sj9fwf",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Dominant Strategy"
+      ],
+      "prompt": "What makes a strategy strictly dominant?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It pays strictly more than every other strategy, whatever the others do."
+        },
+        {
+          "id": "b",
+          "text": "It pays more than the other strategies against the most likely opponent move."
+        },
+        {
+          "id": "c",
+          "text": "It is the strategy most players choose."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "A strictly dominant strategy beats every alternative against every possible profile of the other players.",
+      "whyShort": "A strictly dominant strategy beats every alternative against every possible profile of the other players.",
+      "optionWhy": {
+        "b": "Dominance must hold against every possible choice of the others.",
+        "c": "How popular a strategy is has nothing to do with dominance."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 38,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "13daf9dc6831dc4aa4d446b787897e6220a830cf73614499853f3f969d71abe0",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-ac7hrq",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Pareto Optimality"
+      ],
+      "prompt": "When is an outcome Pareto optimal?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "No other outcome makes someone better off without making someone worse off."
+        },
+        {
+          "id": "b",
+          "text": "It maximises the total payoff."
+        },
+        {
+          "id": "c",
+          "text": "Every player plays a best response."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Pareto optimality means no improvement is possible for anyone without a loss for someone else.",
+      "whyShort": "Pareto optimality means no improvement is possible for anyone without a loss for someone else.",
+      "optionWhy": {
+        "b": "A Pareto optimal outcome need not maximise the sum of payoffs.",
+        "c": "That is the definition of a Nash equilibrium."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 29,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "3351fdd2a98fd65037f85a7d23dfebcbba04771dadec8e6fa4bbfb767fb5beb4",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-8yer4f",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Mixed Strategy"
+      ],
+      "prompt": "What does a mixed strategy assign?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A probability to each pure strategy"
+        },
+        {
+          "id": "b",
+          "text": "A payoff to each outcome"
+        },
+        {
+          "id": "c",
+          "text": "A different player to each move"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "A mixed strategy is a probability distribution over a player's pure strategies.",
+      "whyShort": "A mixed strategy is a probability distribution over a player's pure strategies.",
+      "optionWhy": {
+        "b": "Payoffs come from the game itself, not from a strategy.",
+        "c": "A strategy belongs to a single player."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 23,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "e38be751fef755daafe776ebd6304d622c9bceb920602e239a1ad7988e7b9105",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-sftncp",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Zero-Sum Game"
+      ],
+      "prompt": "In a zero-sum game, what holds for every outcome?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The players' payoffs add up to zero."
+        },
+        {
+          "id": "b",
+          "text": "Every player gets a payoff of zero."
+        },
+        {
+          "id": "c",
+          "text": "No player can gain by deviating."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "In a zero-sum game one player's gain is exactly the other's loss, so payoffs always sum to zero.",
+      "whyShort": "In a zero-sum game one player's gain is exactly the other's loss, so payoffs always sum to zero.",
+      "optionWhy": {
+        "b": "Payoffs can be non-zero as long as they cancel out.",
+        "c": "That describes an equilibrium, not a zero-sum game."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 29,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "3fd820a7905db440cd45ac78219dc30e67f735915e4d211c95328070d1c63b04",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-32f6dp",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Tit-for-Tat"
+      ],
+      "prompt": "Which strategy starts by cooperating and then copies the opponent's previous move?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Tit-for-tat"
+        },
+        {
+          "id": "b",
+          "text": "Grim trigger"
+        },
+        {
+          "id": "c",
+          "text": "Always defect"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Tit-for-tat opens with cooperation and then mirrors whatever the opponent did in the previous round.",
+      "whyShort": "Tit-for-tat opens with cooperation and then mirrors whatever the opponent did in the previous round.",
+      "optionWhy": {
+        "b": "Grim trigger defects forever after a single defection.",
+        "c": "Always defect never cooperates."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 17,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "b1277bcd8b1c0557da28a0bbfcb90ef851d6c4092e62dcfb0a02c5e4fcfc426a",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-ewq3cj",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "single",
+      "difficulty": "hard",
+      "level": "understand",
+      "topics": [
+        "Folk Theorem"
+      ],
+      "prompt": "What does the folk theorem say about infinitely repeated games?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Many payoff profiles can be sustained as equilibria when players are patient enough."
+        },
+        {
+          "id": "b",
+          "text": "Defection in every round is the only equilibrium."
+        },
+        {
+          "id": "c",
+          "text": "Cooperation is always the unique equilibrium."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "With enough patience, the threat of future punishment can sustain many outcomes, cooperation included, as equilibria.",
+      "whyShort": "With enough patience, the threat of future punishment can sustain many outcomes, cooperation included, as equilibria.",
+      "optionWhy": {
+        "b": "That holds for a finitely repeated prisoner's dilemma with a known last round.",
+        "c": "Many equilibria exist, including permanent defection."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 37,
+      "chance": 0.333333,
+      "startRating": 1700,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "b758ba83990d500838042731b0302009613a059e27891c676cd9ded4167ef382",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-qu8w9s",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "multi",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Prisoner's Dilemma"
+      ],
+      "prompt": "Which statements about the one-shot prisoner's dilemma are true?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Defecting is a dominant strategy."
+        },
+        {
+          "id": "b",
+          "text": "Mutual cooperation is better for both than mutual defection."
+        },
+        {
+          "id": "c",
+          "text": "Mutual cooperation is a Nash equilibrium."
+        },
+        {
+          "id": "d",
+          "text": "Cooperating is a dominant strategy."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a",
+          "b"
+        ]
+      },
+      "shuffle": true,
+      "why": "Defection dominates, so the equilibrium is mutual defection, yet both players would prefer mutual cooperation.",
+      "whyShort": "Defection dominates, so the equilibrium is mutual defection, yet both players would prefer mutual cooperation.",
+      "optionWhy": {
+        "c": "Either player gains by switching to defect.",
+        "d": "Defecting pays more whatever the other player does."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 34,
+      "chance": 0.066667,
+      "startRating": 1500,
+      "fingerprint": "51de0c9351b4492156c01ec0213255a92ddde9013c629f852f18c3ddf2b3ca90",
+      "contentHash": "969bf5f03f97d3d5ba5a19fe5ea82087e48f27f0972fe657f2264829ca480177",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-3vtrrq",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "multi",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Normal-Form Game"
+      ],
+      "prompt": "Which are part of a normal-form game?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A set of players"
+        },
+        {
+          "id": "b",
+          "text": "A set of actions for each player"
+        },
+        {
+          "id": "c",
+          "text": "A payoff for each player at each action profile"
+        },
+        {
+          "id": "d",
+          "text": "A fixed order in which the players move"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "shuffle": true,
+      "why": "A normal-form game lists the players, their actions and the payoffs for every combination of actions.",
+      "whyShort": "A normal-form game lists the players, their actions and the payoffs for every combination of actions.",
+      "optionWhy": {
+        "d": "The normal form models simultaneous choices; move order belongs to the extensive form."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 35,
+      "chance": 0.066667,
+      "startRating": 1300,
+      "fingerprint": "89e78d97fd26c32e78c253b80a841556cc7f5b88b437b6aaa8905281536c3326",
+      "contentHash": "f490793a8772406a69c1bdb88dc91e9210079c5e7bc79933da95246bd93341c2",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-ymyte5",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Nash Equilibrium",
+        "Mixed Strategy"
+      ],
+      "prompt": null,
+      "statement": "Every finite game has at least one Nash equilibrium in mixed strategies.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "Nash proved that every finite game has an equilibrium once mixed strategies are allowed.",
+      "whyShort": "Nash proved that every finite game has an equilibrium once mixed strategies are allowed.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 12,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "44e9cc02242d409731f944331834ae8a413f9a9a125513503289a986d02df929",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-gk4rzq",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "easy",
+      "level": "understand",
+      "topics": [
+        "Nash Equilibrium"
+      ],
+      "prompt": null,
+      "statement": "A Nash equilibrium always maximises the sum of the players' payoffs.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "The prisoner's dilemma equilibrium gives both players less than mutual cooperation would.",
+      "whyShort": "The prisoner's dilemma equilibrium gives both players less than mutual cooperation would.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 11,
+      "chance": 0.5,
+      "startRating": 1300,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "b6b7efb35325c013d7d825fe1342b5f7d8ea52d0431a0d9f2029680753a497ea",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-kdmvma",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Dominant Strategy"
+      ],
+      "prompt": null,
+      "statement": "If every player has a strictly dominant strategy, playing them is a Nash equilibrium.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "A strictly dominant strategy is a best response to everything, so nobody gains by deviating.",
+      "whyShort": "A strictly dominant strategy is a best response to everything, so nobody gains by deviating.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 14,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "a6bd082eb7f142a2325a7fe53bd605ee557831c34066a99cb037ef9fd6abea3a",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-3ecyuu",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Tit-for-Tat"
+      ],
+      "prompt": null,
+      "statement": "Tit-for-tat defects in the first round.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "Tit-for-tat opens with cooperation and then mirrors the opponent.",
+      "whyShort": "Tit-for-tat opens with cooperation and then mirrors the opponent.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 6,
+      "chance": 0.5,
+      "startRating": 1300,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "d2dbf85afeb31514093fc269777c0cbb1b1c568984b0701747aaaeab92a023b8",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-gu6avs",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "cloze",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Dominant Strategy"
+      ],
+      "prompt": "A strategy that pays at least as much as every alternative, whatever the others do, is ___ strategy.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "a weakly dominant"
+        },
+        {
+          "id": "b",
+          "text": "a mixed"
+        },
+        {
+          "id": "c",
+          "text": "a minimax"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Weak dominance means never worse than any alternative, against every choice of the others.",
+      "whyShort": "Weak dominance means never worse than any alternative, against every choice of the others.",
+      "optionWhy": {
+        "b": "A mixed strategy randomises over pure strategies; it says nothing about dominance.",
+        "c": "Minimax limits the worst case; it need not do as well as every alternative."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 25,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "1091b51e767c3cd91c208d2bd572aad13cc510e57d1496a20c89df2f35559685",
+      "contentHash": "8fc8306f349ff8c105f3d0df6730ca455f1095621278ad21bb93c4eec33d3cde",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-gw6veu",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "cloze",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Nash Equilibrium"
+      ],
+      "prompt": "A profile where no player gains by changing strategy alone is ___.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "a Nash equilibrium"
+        },
+        {
+          "id": "b",
+          "text": "a Pareto optimum"
+        },
+        {
+          "id": "c",
+          "text": "a social optimum"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "That is the definition of a Nash equilibrium: no profitable unilateral deviation.",
+      "whyShort": "That is the definition of a Nash equilibrium: no profitable unilateral deviation.",
+      "optionWhy": {
+        "b": "Pareto optimality compares outcomes, not unilateral deviations.",
+        "c": "A social optimum maximises the total payoff."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 21,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "1091b51e767c3cd91c208d2bd572aad13cc510e57d1496a20c89df2f35559685",
+      "contentHash": "a16d61fadf327e78cb6091ff257c3cdf84641e5db579a849f644e27d58f384d8",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-4kex8y",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "order",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Dominant Strategy"
+      ],
+      "prompt": "Put the steps of iterated elimination of strictly dominated strategies in order.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Find a strictly dominated strategy for some player."
+        },
+        {
+          "id": "b",
+          "text": "Remove it from the game."
+        },
+        {
+          "id": "c",
+          "text": "Check the smaller game for newly dominated strategies."
+        },
+        {
+          "id": "d",
+          "text": "Stop when no strictly dominated strategy is left."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "order",
+        "ids": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "shuffle": true,
+      "why": "Removing one dominated strategy can make others dominated, so the check repeats until nothing changes.",
+      "whyShort": "Removing one dominated strategy can make others dominated, so the check repeats until nothing changes.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 41,
+      "chance": 0.041667,
+      "startRating": 1500,
+      "fingerprint": "c483c342c2a20367b5e615e079acc740b34ebfbec420d0b58d2ec9c755afd7d2",
+      "contentHash": "7354c9a1b76a349dcfb2b142c4fbeaebc20d15590d55240d36c3c3bec0b9473e",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-yjv2nn",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "match",
+      "difficulty": "easy",
+      "level": "understand",
+      "topics": [
+        "Repeated Games"
+      ],
+      "prompt": "Match each strategy to how it opens a repeated prisoner's dilemma.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Tit-for-tat"
+        },
+        {
+          "id": "b",
+          "text": "Grim trigger"
+        },
+        {
+          "id": "c",
+          "text": "Always defect"
+        }
+      ],
+      "targets": [
+        {
+          "id": "t1",
+          "text": "Cooperates first"
+        },
+        {
+          "id": "t2",
+          "text": "Defects first"
+        }
+      ],
+      "key": {
+        "kind": "match",
+        "map": {
+          "a": "t1",
+          "b": "t1",
+          "c": "t2"
+        }
+      },
+      "shuffle": true,
+      "why": "Tit-for-tat and grim trigger both start nice and only punish defection. Always defect never cooperates.",
+      "whyShort": "Tit-for-tat and grim trigger both start nice and only punish defection.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 20,
+      "chance": 0.125,
+      "startRating": 1300,
+      "fingerprint": "a49359ce7ae5ef49636c570d90d620faab89c1ecac4ab90969ec72d0b141d35f",
+      "contentHash": "94eb33d705324ed8de4c2dcafde9fe1313fcc45049d5400611fae355c5237123",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-9y45ua",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "understand",
+      "topics": [
+        "Rational Agent"
+      ],
+      "prompt": "What does a rational agent choose?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The action that maximises its expected performance measure"
+        },
+        {
+          "id": "b",
+          "text": "The action that always turns out best"
+        },
+        {
+          "id": "c",
+          "text": "The action a human expert would take"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "A rational agent picks the action with the best expected performance, given what it has perceived so far.",
+      "whyShort": "A rational agent picks the action with the best expected performance, given what it has perceived so far.",
+      "optionWhy": {
+        "b": "Rationality maximises the expected outcome; it cannot guarantee the actual one.",
+        "c": "Rationality is judged by the performance measure, not by imitation."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 28,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "45b0e6a57905c42734277f90ac357848a8ccc8b8a7efdf3fa91564ef4c1f0c4a",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-b4794r",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Environment Properties"
+      ],
+      "prompt": "Which property means the agent's sensors give it the complete state of the environment at each point?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Fully observable"
+        },
+        {
+          "id": "b",
+          "text": "Deterministic"
+        },
+        {
+          "id": "c",
+          "text": "Static"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "In a fully observable environment the sensors capture everything relevant to choosing an action.",
+      "whyShort": "In a fully observable environment the sensors capture everything relevant to choosing an action.",
+      "optionWhy": {
+        "b": "Deterministic is about whether actions have a single predictable result.",
+        "c": "Static means the world does not change while the agent deliberates."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 21,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "d166f038b1d205d6cebc3f591453272a878fa2c968208a2ba6d677273ddd6ccb",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-pgfn8v",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "single",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "ReAct"
+      ],
+      "prompt": "In a ReAct loop, what follows each action?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "An observation of the action's result"
+        },
+        {
+          "id": "b",
+          "text": "A new message from the user"
+        },
+        {
+          "id": "c",
+          "text": "A gradient update of the model"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "ReAct alternates thought, action and observation, so each action's result feeds the next thought.",
+      "whyShort": "ReAct alternates thought, action and observation, so each action's result feeds the next thought.",
+      "optionWhy": {
+        "b": "The loop continues without the user until the task is done.",
+        "c": "ReAct works by prompting; nothing is trained."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 26,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "d6dca63ff3931b4a2cd9eee43cb1eb170a1d98b37789a143787fefd912e9e984",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-8etv5b",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "single",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Bounded Rationality"
+      ],
+      "prompt": "What is bounded rationality?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Making good decisions within limits of time, information and computation"
+        },
+        {
+          "id": "b",
+          "text": "Refusing to act without complete information"
+        },
+        {
+          "id": "c",
+          "text": "Acting at random when a problem is hard"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Real agents have limited time and computation, so they settle for decisions that are good enough within those limits.",
+      "whyShort": "Real agents have limited time and computation, so they settle for decisions that are good enough within those limits.",
+      "optionWhy": {
+        "b": "A bounded agent still acts under uncertainty.",
+        "c": "Bounded rationality still aims for good choices."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 28,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "60c5f4dcf52692a050bd190b5403b29890d197706052f5e5a57ad0ca4ebe2a4d",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-a2esg8",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "multi",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "ReAct"
+      ],
+      "prompt": "Which step types appear in a ReAct trace?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Thought"
+        },
+        {
+          "id": "b",
+          "text": "Action"
+        },
+        {
+          "id": "c",
+          "text": "Observation"
+        },
+        {
+          "id": "d",
+          "text": "Reward"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "shuffle": true,
+      "why": "A ReAct trace interleaves thoughts, actions and the observations those actions return.",
+      "whyShort": "A ReAct trace interleaves thoughts, actions and the observations those actions return.",
+      "optionWhy": {
+        "d": "ReAct traces have no reward signal; the model is prompted, not trained."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 12,
+      "chance": 0.066667,
+      "startRating": 1300,
+      "fingerprint": "89e78d97fd26c32e78c253b80a841556cc7f5b88b437b6aaa8905281536c3326",
+      "contentHash": "c5828694a167779d0bb4c557cb1e250a62dadb7a3a6f999c06ca0dcd8cad7892",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-jkgm92",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "multi",
+      "difficulty": "hard",
+      "level": "understand",
+      "topics": [
+        "Multi-Agent Reinforcement Learning"
+      ],
+      "prompt": "Which problems come from several agents learning at the same time?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The environment looks non-stationary to each agent."
+        },
+        {
+          "id": "b",
+          "text": "Credit for a shared reward is hard to assign."
+        },
+        {
+          "id": "c",
+          "text": "Every agent must have a different reward function."
+        },
+        {
+          "id": "d",
+          "text": "Agents can no longer observe anything."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a",
+          "b"
+        ]
+      },
+      "shuffle": true,
+      "why": "Other learners keep changing their behaviour, and a shared reward does not say which agent earned it.",
+      "whyShort": "Other learners keep changing their behaviour, and a shared reward does not say which agent earned it.",
+      "optionWhy": {
+        "c": "Agents can share a single reward, as in cooperative tasks.",
+        "d": "Agents still observe the environment, often partially."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 41,
+      "chance": 0.066667,
+      "startRating": 1700,
+      "fingerprint": "51de0c9351b4492156c01ec0213255a92ddde9013c629f852f18c3ddf2b3ca90",
+      "contentHash": "5e93f97b5770e3d0a2c418259d04dcc39131d50a825ab232da5e140579f1948c",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-6jne4z",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Centralised Training with Decentralised Execution"
+      ],
+      "prompt": null,
+      "statement": "In centralised training with decentralised execution, agents need the central information when they act.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "The central information is used only during training. At execution time each agent acts on its own observations.",
+      "whyShort": "The central information is used only during training.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 14,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "13dc4daf7bdc15a60f9a4c4868735ddb8ce9c151ec605f38ecf190b79a0baeb4",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-ewhhny",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "truefalse",
+      "difficulty": "easy",
+      "level": "apply",
+      "topics": [
+        "Environment Properties"
+      ],
+      "prompt": null,
+      "statement": "Chess is a deterministic environment.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "Each move leads to exactly one next position, with no chance involved.",
+      "whyShort": "Each move leads to exactly one next position, with no chance involved.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 5,
+      "chance": 0.5,
+      "startRating": 1300,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "2d2ca9b0f4a165846df3dcb8938a54cd737b0915710ecbee4870b41770bdd349",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-a97m58",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "cloze",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Tool Use"
+      ],
+      "prompt": "In tool calling, the model replies with a tool name and ___ instead of an answer.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "its arguments"
+        },
+        {
+          "id": "b",
+          "text": "a reward"
+        },
+        {
+          "id": "c",
+          "text": "a gradient"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "The model proposes a call as a name plus arguments. The application runs it and returns the result.",
+      "whyShort": "The model proposes a call as a name plus arguments.",
+      "optionWhy": {
+        "b": "There is no reward anywhere in a tool call.",
+        "c": "Tool calling involves no training."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 22,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "1091b51e767c3cd91c208d2bd572aad13cc510e57d1496a20c89df2f35559685",
+      "contentHash": "7d5740cdce6e198d8bbbce86cd8254b325cd08fba0592e6153327a4177055f68",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-3869d4",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "cloze",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Model-Based Agent"
+      ],
+      "prompt": "An agent that tracks the parts of the world it cannot currently see keeps ___.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "an internal state"
+        },
+        {
+          "id": "b",
+          "text": "a table from percepts to actions"
+        },
+        {
+          "id": "c",
+          "text": "a random exploration policy"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "A model-based agent updates an internal state from its percepts and its model of how the world changes.",
+      "whyShort": "A model-based agent updates an internal state from its percepts and its model of how the world changes.",
+      "optionWhy": {
+        "b": "A percept table reacts to the current percept and tracks nothing hidden.",
+        "c": "Exploration gathers information but does not track the state."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 28,
+      "chance": 0.333333,
+      "startRating": 1500,
+      "fingerprint": "1091b51e767c3cd91c208d2bd572aad13cc510e57d1496a20c89df2f35559685",
+      "contentHash": "bd5ad8bf03bcf263d64337abcae53943d4e8d3d98d77f117bb9c99e440f55d55",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-wk9fj8",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "order",
+      "difficulty": "medium",
+      "level": "understand",
+      "topics": [
+        "Tool Use"
+      ],
+      "prompt": "Put one tool-calling round trip in order.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The application sends the message and the tool schemas to the model."
+        },
+        {
+          "id": "b",
+          "text": "The model replies with a tool name and arguments."
+        },
+        {
+          "id": "c",
+          "text": "The application runs the tool and sends the result back."
+        },
+        {
+          "id": "d",
+          "text": "The model writes the final answer using that result."
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "order",
+        "ids": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "shuffle": true,
+      "why": "The model never runs anything itself. It proposes a call, the application executes it, and the result goes back to the model.",
+      "whyShort": "The model never runs anything itself.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 47,
+      "chance": 0.041667,
+      "startRating": 1500,
+      "fingerprint": "c483c342c2a20367b5e615e079acc740b34ebfbec420d0b58d2ec9c755afd7d2",
+      "contentHash": "e88d534301b9efde66bda1dccbc338cc624d5198bcd54594c2eeec112d11b08a",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-mxvz88",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "match",
+      "difficulty": "easy",
+      "level": "apply",
+      "topics": [
+        "Environment Properties"
+      ],
+      "prompt": "Match each environment to its observability.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Chess"
+        },
+        {
+          "id": "b",
+          "text": "Poker"
+        },
+        {
+          "id": "c",
+          "text": "Driving in fog"
+        }
+      ],
+      "targets": [
+        {
+          "id": "t1",
+          "text": "Fully observable"
+        },
+        {
+          "id": "t2",
+          "text": "Partially observable"
+        }
+      ],
+      "key": {
+        "kind": "match",
+        "map": {
+          "a": "t1",
+          "b": "t2",
+          "c": "t2"
+        }
+      },
+      "shuffle": true,
+      "why": "In chess the whole board is visible. Poker hides the other hands, and fog hides the road.",
+      "whyShort": "In chess the whole board is visible.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 15,
+      "chance": 0.125,
+      "startRating": 1300,
+      "fingerprint": "3bdc94205f9fb88ecf35310199590349759a3eef4248de923ab0ef2a21958409",
+      "contentHash": "b562356bd6582a7924ed345ff5046fbeed7475f0beaa18e243a3fa47de5b6596",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-5h38z2",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Repeated Games"
+      ],
+      "prompt": null,
+      "statement": "Grim trigger forgives a defection after one round of punishment.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "Grim trigger punishes forever after the first defection.",
+      "whyShort": "Grim trigger punishes forever after the first defection.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 10,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "f0d98ccfc21e7d4c2018345308ea319dbb23f0eb2346de94a8e726454cd3fd9c",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-tfefb4",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Repeated Games"
+      ],
+      "prompt": null,
+      "statement": "A pure strategy is a special case of a mixed strategy.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "A pure strategy is a mixed strategy that puts probability 1 on one action.",
+      "whyShort": "A pure strategy is a mixed strategy that puts probability 1 on one action.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 11,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "a2c6c5c64894dc2fd4078f77d93285f9ca440b14b9bdab24eb42c595dc447035",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-fhcqkq",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-games",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Repeated Games"
+      ],
+      "prompt": null,
+      "statement": "A dominant strategy equilibrium is always Pareto optimal.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "The prisoner's dilemma has a dominant strategy equilibrium that both players would leave together.",
+      "whyShort": "The prisoner's dilemma has a dominant strategy equilibrium that both players would leave together.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 8,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "779cf0566138e501e29f79cc1b896334997cf751f97d0c4560cdf027f324924e",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-r9ptfr",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Multi-Agent Reinforcement Learning"
+      ],
+      "prompt": null,
+      "statement": "Self-play trains an agent against copies of itself.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "In self-play the agent's opponents are current or past versions of itself.",
+      "whyShort": "In self-play the agent's opponents are current or past versions of itself.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 8,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "79c6f053d3e105d6f17e23f80baccb3c43017d0384c4607a26037b61ad10a59d",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-4v8ez8",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Multi-Agent Reinforcement Learning"
+      ],
+      "prompt": null,
+      "statement": "Independent learners treat the other agents as part of the environment.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": true
+      },
+      "shuffle": true,
+      "why": "Each independent learner ignores that the others learn, which makes its environment non-stationary.",
+      "whyShort": "Each independent learner ignores that the others learn, which makes its environment non-stationary.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 11,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "0718fe01b895e580835190950bec47bf2301e44f523bb371e485341e63bbaa75",
+      "contentHash": "a44e9df154ecb1ba4d404ab76d40c04a1942cc19cc3e0c9f170c56387eee8e6f",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "agai-3msasm",
+      "rev": 1,
+      "status": "active",
+      "courseId": "agai",
+      "lectureId": "AGAI-fixture-agents",
+      "type": "truefalse",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Multi-Agent Reinforcement Learning"
+      ],
+      "prompt": null,
+      "statement": "A stochastic game has a single state.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "A stochastic game has many states, with transitions that depend on the joint action.",
+      "whyShort": "A stochastic game has many states, with transitions that depend on the joint action.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 7,
+      "chance": 0.5,
+      "startRating": 1500,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "8233982e88647e6b7f11e027d4cabe7ae0442bda305e21c05e2fed4efe44c038",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-ttz55f",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "apply",
+      "topics": [
+        "Prometheus"
+      ],
+      "prompt": "Which Prometheus metric type fits the memory a service is using right now?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Gauge"
+        },
+        {
+          "id": "b",
+          "text": "Counter"
+        },
+        {
+          "id": "c",
+          "text": "Histogram"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "A gauge is a value that can go up and down, such as current memory use.",
+      "whyShort": "A gauge is a value that can go up and down, such as current memory use.",
+      "optionWhy": {
+        "b": "A counter only goes up, and memory use goes up and down.",
+        "c": "A histogram bins many observations to show their distribution."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 16,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "fe7d3c7807943b1d532fce5e50380ce29e1caae7f9c503796264c6ebcb855bb9",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-m4893m",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "single",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "HTTP"
+      ],
+      "prompt": "Which response means the requested resource does not exist?",
+      "statement": null,
+      "codeLang": "python",
+      "options": [
+        {
+          "id": "a",
+          "text": "return Response(status=404)"
+        },
+        {
+          "id": "b",
+          "text": "return Response(status=500)"
+        },
+        {
+          "id": "c",
+          "text": "return Response(status=401)"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "404 Not Found says the server has no resource at that address.",
+      "whyShort": "404 Not Found says the server has no resource at that address.",
+      "optionWhy": {
+        "b": "500 is a server error.",
+        "c": "401 means the request is not authenticated."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 15,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "9b0098e57ea15010f51658b88c99e31ed1b3a6d66f93d46df9ad8e18f11e2807",
+      "contentHash": "56cedab9a0aa5531e07f3d95fbf061059cbcdd899761fb7c46e02b18a6a7a8be",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-a38az7",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "multi",
+      "difficulty": "medium",
+      "level": "remember",
+      "topics": [
+        "Unit Testing"
+      ],
+      "prompt": "Which of these are among the FIRST properties of good unit tests?",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Fast"
+        },
+        {
+          "id": "b",
+          "text": "Isolated"
+        },
+        {
+          "id": "c",
+          "text": "Repeatable"
+        },
+        {
+          "id": "d",
+          "text": "Exhaustive"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "shuffle": true,
+      "why": "Good unit tests are fast, isolated, repeatable, self-validating and timely.",
+      "whyShort": "Good unit tests are fast, isolated, repeatable, self-validating and timely.",
+      "optionWhy": {
+        "d": "FIRST stands for fast, isolated, repeatable, self-validating and timely."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 16,
+      "chance": 0.066667,
+      "startRating": 1500,
+      "fingerprint": "89e78d97fd26c32e78c253b80a841556cc7f5b88b437b6aaa8905281536c3326",
+      "contentHash": "7e1b3eab1ab10674794b3a6fe2ad9a03d3e5d58594be50b8381be6bd6c472792",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-k9va32",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "truefalse",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Apache Spark",
+        "Lazy Evaluation"
+      ],
+      "prompt": null,
+      "statement": "Spark runs a transformation as soon as it is defined.",
+      "codeLang": null,
+      "options": [],
+      "targets": null,
+      "key": {
+        "kind": "bool",
+        "value": false
+      },
+      "shuffle": true,
+      "why": "Spark evaluates lazily and runs transformations only when an action needs a result.",
+      "whyShort": "Spark evaluates lazily and runs transformations only when an action needs a result.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 10,
+      "chance": 0.5,
+      "startRating": 1300,
+      "fingerprint": "62c5edb4224f603a1d7230cce593fe77afb13fbdc5476a676b52eca5efcf72b7",
+      "contentHash": "86d32c6e85229a931b1d1d3c350bc0d4e29b5b0bb516a1fba1960da75fa7b635",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-gx3q92",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "cloze",
+      "difficulty": "easy",
+      "level": "remember",
+      "topics": [
+        "Apache Spark",
+        "Lazy Evaluation"
+      ],
+      "prompt": "Spark records transformations without running them, and starts computing only when ___ asks for a result.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "an action"
+        },
+        {
+          "id": "b",
+          "text": "a transformation"
+        },
+        {
+          "id": "c",
+          "text": "a repartition"
+        }
+      ],
+      "targets": null,
+      "key": {
+        "kind": "options",
+        "ids": [
+          "a"
+        ]
+      },
+      "shuffle": true,
+      "why": "Waiting for an action lets Spark see the whole job and optimise it before running anything.",
+      "whyShort": "Waiting for an action lets Spark see the whole job and optimise it before running anything.",
+      "optionWhy": {
+        "b": "Transformations are exactly what Spark postpones.",
+        "c": "Repartitioning is itself a transformation and is postponed too."
+      },
+      "noteUrl": null,
+      "timeS": null,
+      "words": 22,
+      "chance": 0.333333,
+      "startRating": 1300,
+      "fingerprint": "1091b51e767c3cd91c208d2bd572aad13cc510e57d1496a20c89df2f35559685",
+      "contentHash": "d66a80cb47c9241081118b901065a892fd1a359726c0bd4718c34c6b1918e7ed",
+      "sourcePath": "test/fixtures/questions.json"
+    },
+    {
+      "id": "eprm-edw7mw",
+      "rev": 1,
+      "status": "active",
+      "courseId": "eprm",
+      "lectureId": "EPRM-fixture-w01",
+      "type": "match",
+      "difficulty": "medium",
+      "level": "apply",
+      "topics": [
+        "Prometheus"
+      ],
+      "prompt": "Pick the Prometheus metric type for each measurement.",
+      "statement": null,
+      "codeLang": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Requests served since the service started"
+        },
+        {
+          "id": "b",
+          "text": "Memory in use right now"
+        },
+        {
+          "id": "c",
+          "text": "Jobs waiting in the queue right now"
+        }
+      ],
+      "targets": [
+        {
+          "id": "t1",
+          "text": "Counter"
+        },
+        {
+          "id": "t2",
+          "text": "Gauge"
+        }
+      ],
+      "key": {
+        "kind": "match",
+        "map": {
+          "a": "t1",
+          "b": "t2",
+          "c": "t2"
+        }
+      },
+      "shuffle": true,
+      "why": "Counters only increase. Gauges move both ways.",
+      "whyShort": "Counters only increase.",
+      "optionWhy": {},
+      "noteUrl": null,
+      "timeS": null,
+      "words": 28,
+      "chance": 0.125,
+      "startRating": 1500,
+      "fingerprint": "3bdc94205f9fb88ecf35310199590349759a3eef4248de923ab0ef2a21958409",
+      "contentHash": "b730dd21579cf4c963d48f2fc7ec8ae6278609e27084df2e4bd1606afb13e2db",
+      "sourcePath": "test/fixtures/questions.json"
+    }
+  ]
+}
