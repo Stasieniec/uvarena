@@ -70,7 +70,7 @@ describe("blind power-ups through the arming window", () => {
     d.answer(0, d.wrong(0), d.q.shownAt + 100);
     expect(d.lastMsg(0, "reveal")).toMatchObject({ damageToYou: 1000, damageToOpponent: 0, zeus: "you" });
     expect(d.state.players[0].used).toEqual(["zeus"]);
-    expect(d.state.players[1].used).toEqual([]);
+    expect(d.state.players[1]!.used).toEqual([]);
     d.toPhase("arming", 2);
     expect(d.lastMsg(0, "arming").armable).toEqual(["aegis"]);
     d.arm(0, "zeus");
@@ -90,7 +90,7 @@ describe("blind power-ups through the arming window", () => {
     expect(d.lastMsg(1, "reveal").damageToYou).toBe(1000);
     expect(d.lastMsg(1, "reveal").zeus).toBeNull();
     expect(d.state.players[0].used).toEqual(["zeus"]);
-    expect(d.state.players[1].used).toEqual(["nemesis"]);
+    expect(d.state.players[1]!.used).toEqual(["nemesis"]);
     expect(d.state.rounds[0]!.sides[0]).toMatchObject({ armed: "zeus", effective: null, nemesisAgainst: true });
   });
 
@@ -114,7 +114,7 @@ describe("blind power-ups through the arming window", () => {
     const r = d.lastMsg(1, "reveal");
     expect(r.hp.you).toBe(1);
     expect(r.phoenix).toBe("you");
-    expect(d.state.players[1].used).toEqual(["nemesis", "phoenix"]);
+    expect(d.state.players[1]!.used).toEqual(["nemesis", "phoenix"]);
     expect(d.state.players[0].used).toEqual(["nemesis"]);
   });
 
@@ -127,7 +127,7 @@ describe("blind power-ups through the arming window", () => {
     aliceHits(d);
     expect(d.lastMsg(1, "reveal").hp.you).toBe(0);
     expect(d.lastMsg(1, "reveal").phoenix).toBeNull();
-    expect(d.state.players[1].phoenixUsed).toBe(false);
+    expect(d.state.players[1]!.phoenixUsed).toBe(false);
     d.tick(d.state.phaseEndsAt!);
     expect(d.state.phase).toBe("finished");
     expect(d.state.result).toMatchObject({ winner: 0, reason: "hp" });
@@ -183,11 +183,11 @@ describe("Phoenix", () => {
     const r = d.lastMsg(1, "reveal");
     expect(r).toMatchObject({ damageToYou: 1000, phoenix: "you", hp: { you: 1, opponent: 6000 } });
     expect(d.lastMsg(0, "reveal").phoenix).toBe("opponent");
-    expect(d.state.players[1]).toMatchObject({ phoenixUsed: true, hp: 1 });
+    expect(d.state.players[1]!).toMatchObject({ phoenixUsed: true, hp: 1 });
     expect(d.state.rounds[0]!.sides[1].phoenix).toBe(true);
     d.toPhase("arming", 2);
     aliceHits(d);
-    expect(d.state.players[1].hp).toBe(0);
+    expect(d.state.players[1]!.hp).toBe(0);
     d.tick(d.state.phaseEndsAt!);
     expect(d.state.result).toMatchObject({ winner: 0, reason: "hp" });
   });

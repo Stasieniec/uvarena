@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { AnswerKey } from "@shared/game/types";
 import { computeDamage, isCorrect, multiplier, roundScore, timerMs, type DamageInput } from "@shared/game/scoring";
 
 describe("roundScore", () => {
@@ -61,7 +62,7 @@ describe("timerMs", () => {
 
 describe("isCorrect", () => {
   it("options: exact set equality, order irrelevant", () => {
-    const key = { kind: "options", ids: ["a", "b"] } as const;
+    const key: AnswerKey = { kind: "options", ids: ["a", "b"] };
     expect(isCorrect(key, { kind: "options", ids: ["b", "a"] })).toBe(true);
     expect(isCorrect(key, { kind: "options", ids: ["a"] })).toBe(false);
     expect(isCorrect(key, { kind: "options", ids: ["a", "b", "c"] })).toBe(false);
@@ -74,7 +75,7 @@ describe("isCorrect", () => {
     expect(isCorrect({ kind: "bool", value: false }, { kind: "bool", value: true })).toBe(false);
     expect(isCorrect({ kind: "order", ids: ["a", "b", "c"] }, { kind: "order", ids: ["a", "b", "c"] })).toBe(true);
     expect(isCorrect({ kind: "order", ids: ["a", "b", "c"] }, { kind: "order", ids: ["a", "c", "b"] })).toBe(false);
-    const map = { kind: "match", map: { a: "t1", b: "t2" } } as const;
+    const map: AnswerKey = { kind: "match", map: { a: "t1", b: "t2" } };
     expect(isCorrect(map, { kind: "match", map: { b: "t2", a: "t1" } })).toBe(true);
     expect(isCorrect(map, { kind: "match", map: { a: "t1" } })).toBe(false);
     expect(isCorrect(map, { kind: "match", map: { a: "t1", b: "t1" } })).toBe(false);

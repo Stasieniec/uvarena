@@ -277,7 +277,15 @@ function deadlines(s: MatchState): Deadline[] {
   return list;
 }
 
-/** Earliest pending deadline, or null when nothing is pending. The MatchRoom sets its alarm to this. */
+/**
+ * Earliest pending deadline, or null when nothing is pending. The MatchRoom
+ * sets its alarm to this.
+ *
+ * Invariant: a `tick` at this time processes it, and the next deadline is
+ * strictly later (or null). The one exception is `cleanupAt` of a finished or
+ * cancelled match, which the engine never clears: at that time the MatchRoom
+ * deletes its storage (and the alarm) instead of ticking.
+ */
 export function nextDeadline(state: MatchState): number | null {
   let min: number | null = null;
   for (const d of deadlines(state)) if (min === null || d.at < min) min = d.at;
@@ -297,7 +305,7 @@ export function nextDeadline(state: MatchState): number | null {
  * order.
  */
 export function step(state: MatchState, event: EngineEvent, now: number): StepResult {
-  const ctx: Ctx = { s: structuredClone(state), out: [], effects: [], rng: createRng(state.rng), now };
+  const ctx: Ctx = { s: cloneState(state), out: [], effects: [], rng: createRng(state.rng), now };
   if (event.type === "tick") {
     processDue(ctx, true);
   } else {
@@ -309,6 +317,22 @@ export function step(state: MatchState, event: EngineEvent, now: number): StepRe
   ctx.s.rng = ctx.rng.state();
   const out = ctx.out.filter((o) => ctx.s.players[o.to]?.kind === "human");
   return { state: ctx.s, out, effects: ctx.effects };
+}
+
+/**
+ * Deep copy of the state, except the question objects, which the engine never
+ * mutates and which are by far the largest part of it; they are shared.
+ */
+function cloneState(state: MatchState): MatchState {
+  const { questions, q, ...rest } = state;
+  const copy = structuredClone({ ...rest, q: q ? { ...q, question: null } : null }) as Omit<MatchState, "questions" | "q"> & {
+    q: (Omit<CurrentQuestion, "question"> & { question: CurrentQuestion["question"] | null }) | null;
+  };
+  return {
+    ...copy,
+    questions,
+    q: copy.q && q ? { ...copy.q, question: q.question } : null,
+  };
 }
 
 function send(ctx: Ctx, to: Side, msg: ServerMessage): void {
