@@ -300,4 +300,17 @@ describe("duel with the real engine", () => {
     expect((await matchRow(matchId))?.status).toBe("finished");
     c.close();
   });
+  it("sends the snapshot first on connect, before the intro the connect started", async () => {
+    const { a, b, stub } = await rankedMatch();
+    const ca = await openSocket(stub, a);
+    await ca.waitFor("snapshot");
+    const cb = await openSocket(stub, b);
+    await cb.waitFor("intro");
+    expect(cb.frames[0]?.type).toBe("snapshot");
+    expect(cb.frames[0]?.phase).toBe("intro");
+    expect(cb.frames.map((f) => f.type)).toEqual(["snapshot", "intro"]);
+    await stub.cancel("cancelled");
+    ca.close();
+    cb.close();
+  });
 });

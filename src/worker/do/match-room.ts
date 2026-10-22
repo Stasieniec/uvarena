@@ -486,11 +486,15 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
       const result = this.engine.step(state, { type: "connect", side }, now);
       // A connect the engine has nothing to say about (already connected on
       // another device, match over) is not an error for the client.
-      const out = result.out.filter((o) => !(o.to === side && o.msg.type === "error"));
-      if (!out.some((o) => o.to === side && o.msg.type === "snapshot")) {
-        out.unshift({ to: side, msg: this.engine.view(result.state, side, now) });
-      }
-      await this.commit({ ...result, out }, side);
+      // The snapshot goes first: the client rebuilds its screen from it, and
+      // anything the connect itself caused (intro, the next arming) follows.
+      // The engine adds its snapshot last, after those messages.
+      const rest = result.out.filter((o) => !(o.to === side && (o.msg.type === "error" || o.msg.type === "snapshot")));
+      const snapshot = result.out.find((o) => o.to === side && o.msg.type === "snapshot") ?? {
+        to: side,
+        msg: this.engine.view(result.state, side, now),
+      };
+      await this.commit({ ...result, out: [snapshot, ...rest] }, side);
       return new Response(null, { status: 101, webSocket: client });
     });
   }
