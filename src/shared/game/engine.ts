@@ -657,7 +657,7 @@ function startQuestion(ctx: Ctx): void {
     // separate field for the question type (requested from the orchestrator);
     // the snapshot's `question.type` carries it meanwhile.
     const qv = questionView(s, side) as NonNullable<ReturnType<typeof questionView>>;
-    return { ...qv, type: "question", serverNow: ctx.now };
+    return { ...qv, type: "question", questionType: qv.type, serverNow: ctx.now };
   });
 }
 
