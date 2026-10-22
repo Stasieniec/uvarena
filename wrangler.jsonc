@@ -1,0 +1,45 @@
+// Worker configuration. The working name "ragequiz" appears here in five
+// places (name, route, D1 database_name, R2 bucket_name, APP_URL); see
+// docs/RENAME.md before changing it.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ragequiz",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "ragequiz.swasilewski.com", "custom_domain": true }],
+  "observability": { "enabled": true },
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ragequiz",
+      // Placeholder. Replace with the id printed by `wrangler d1 create` at deploy time.
+      // Local dev and tests key their local database on this value, so it must stay a valid UUID.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "ragequiz-avatars" }],
+  "durable_objects": {
+    "bindings": [
+      { "name": "MATCH_ROOM", "class_name": "MatchRoom" },
+      { "name": "MATCHMAKER", "class_name": "Matchmaker" }
+    ]
+  },
+  // Durable Object migrations are permanent and append-only. Never edit an applied tag.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom", "Matchmaker"] }],
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["noreply@swasilewski.com"] }],
+  "ratelimits": [
+    { "name": "AUTH_LIMITER", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }
+  ],
+  "vars": {
+    "APP_URL": "https://ragequiz.swasilewski.com",
+    "NOTES_URL": "https://notes.swasilewski.com"
+  }
+}

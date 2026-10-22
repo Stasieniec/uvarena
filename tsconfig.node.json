@@ -1,0 +1,32 @@
+{
+  // Node: config files, scripts (bank tool), Node unit tests and Playwright.
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "paths": { "@shared/*": ["./src/shared/*"] },
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "vite.config.ts",
+    "drizzle.config.ts",
+    "vitest.unit.config.ts",
+    "vitest.worker.config.ts",
+    "vitest.do.config.ts",
+    "playwright.config.ts",
+    "scripts",
+    "test/unit",
+    "test/e2e",
+    "src/shared"
+  ]
+}

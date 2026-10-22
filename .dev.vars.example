@@ -1,0 +1,14 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Generate a secret with: openssl rand -base64 32
+BETTER_AUTH_SECRET=dev-only-secret-change-me-0123456789abcdef
+
+# Local URL; overrides the production APP_URL from wrangler.jsonc.
+APP_URL=http://localhost:5173
+
+# Optional. Google sign-in is hidden when either is missing.
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+
+# Test mode: shortened timers, /api/test/* routes, test bots. Only honoured for
+# requests from localhost. Never set in production.
+TEST_MODE=1
