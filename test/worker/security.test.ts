@@ -138,3 +138,14 @@ describe("per-user rate limits", () => {
     expect(JSON.parse(frames[0]!)).toMatchObject({ type: "error", code: "rate_limited" });
   });
 });
+
+describe("API response headers", () => {
+  it("marks JSON responses nosniff, unframeable and without a cross-site referrer", async () => {
+    const res = await call("/api/health");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
+    expect(res.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+    const missing = await call("/api/nothing-here");
+    expect(missing.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+});

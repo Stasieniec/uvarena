@@ -47,6 +47,26 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+// API responses are JSON (avatars set their own stricter headers): never
+// sniffed, never framed, no referrer to other sites.
+app.use("*", async (c, next) => {
+  await next();
+  if (c.res.status === 101) return;
+  const set = (res: Response) => {
+    if (!res.headers.has("X-Content-Type-Options")) res.headers.set("X-Content-Type-Options", "nosniff");
+    if (!res.headers.has("Content-Security-Policy")) res.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  };
+  try {
+    set(c.res);
+  } catch {
+    // Immutable headers (a passed-through response): copy it first.
+    const res = new Response(c.res.body, c.res);
+    set(res);
+    c.res = res;
+  }
+});
+
 app.use("*", checkMutationOrigin);
 
 app.get("/health", (c) => c.json<HealthResponse>({ ok: true }));
