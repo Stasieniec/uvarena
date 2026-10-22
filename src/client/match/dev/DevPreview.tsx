@@ -32,6 +32,11 @@ interface Config {
   engine: { botLevel: BotLevel; course: string } | null;
 }
 
+function botLevelParam(raw: string | null): BotLevel {
+  const n = raw === null ? 4 : Math.round(Number(raw));
+  return (Number.isFinite(n) ? Math.min(9, Math.max(-1, n)) : 4) as BotLevel;
+}
+
 function readConfig(search: string): Config | null {
   const p = new URLSearchParams(search);
   if (![...p.keys()].length) return null;
@@ -47,7 +52,7 @@ function readConfig(search: string): Config | null {
     controls: p.get("controls") === "1",
     engine:
       p.get("engine") === "1"
-        ? { botLevel: Math.min(9, Math.max(-1, Number(p.get("bot") ?? 4) || 4)) as BotLevel, course: p.get("course") ?? "agai" }
+        ? { botLevel: botLevelParam(p.get("bot")), course: p.get("course") ?? "agai" }
         : null,
   };
 }

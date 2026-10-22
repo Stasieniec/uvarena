@@ -253,7 +253,7 @@ export function MatchView({ state, actions, clock, nav }: Props) {
       {inDuel && reveal?.phoenix && live && step >= 4 && <PhoenixOverlay who={reveal.phoenix} seq={fx?.seq ?? 0} />}
       {edge && <div key={bigHit?.view.seq} className="rq-edge" />}
       {status === "reconnecting" && state.loaded && (
-        <div className="pointer-events-none absolute top-[max(env(safe-area-inset-top),6px)] left-1/2 z-[60] -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-text ring-1 ring-white/20">
+        <div className="pointer-events-none absolute top-[calc(max(env(safe-area-inset-top),10px)+84px)] left-1/2 z-[60] -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-text ring-1 ring-white/20">
           <span className="rq-pulse">{LINES.reconnecting}</span>
         </div>
       )}
