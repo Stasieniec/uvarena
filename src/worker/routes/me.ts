@@ -20,7 +20,7 @@ export const meRoutes = new Hono<HonoEnv>();
 meRoutes.get("/me", requireUser, async (c) => {
   const db = getDb(c.env);
   const me = currentUser(c);
-  const [row, prefs, active] = await Promise.all([getUserById(db, me.id), getPrefs(db, me.id), activeMatchId(db, me.id)]);
+  const [row, prefs, active] = await Promise.all([getUserById(db, me.id), getPrefs(db, me.id), activeMatchId(db, me.id, { includeFullLobbies: true })]);
   if (!row) throw new ApiFailure(401, "unauthorised", "Sign in first");
   const body: MeResponse = {
     user: toMeUser(row),

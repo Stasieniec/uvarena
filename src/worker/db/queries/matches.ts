@@ -16,12 +16,20 @@ export function botName(level: number): string {
   return BOT_LADDER.find((b) => b.level === level)?.name ?? "Bot";
 }
 
-/** The user's match with status `active`, if any. */
-export async function activeMatchId(db: Db, userId: string): Promise<string | null> {
+/**
+ * The user's running match: status `active` (the factory creates ranked, bot
+ * and rematch rows as active). With `includeFullLobbies`, also a private lobby
+ * both players are already in (status `lobby` until both are ready), so a
+ * refresh in the lobby still gets the "Back to your match" bar.
+ */
+export async function activeMatchId(db: Db, userId: string, opts: { includeFullLobbies?: boolean } = {}): Promise<string | null> {
+  const status = opts.includeFullLobbies
+    ? or(eq(matches.status, "active"), and(eq(matches.status, "lobby"), isNotNull(matches.playerB)))
+    : eq(matches.status, "active");
   const rows = await db
     .select({ id: matches.id })
     .from(matches)
-    .where(and(eq(matches.status, "active"), or(eq(matches.playerA, userId), eq(matches.playerB, userId))))
+    .where(and(status, or(eq(matches.playerA, userId), eq(matches.playerB, userId))))
     .orderBy(desc(matches.createdAt))
     .limit(1);
   return rows[0]?.id ?? null;
