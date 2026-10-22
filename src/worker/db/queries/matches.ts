@@ -17,6 +17,7 @@ export function botName(level: number): string {
 }
 
 /**
+ * D1 only; routes use liveMatchId (match-liveness.ts), which also asks the room.
  * The user's running match: status `active` (the factory creates ranked, bot
  * and rematch rows as active). With `includeFullLobbies`, also a private lobby
  * both players are already in (status `lobby` until both are ready), so a

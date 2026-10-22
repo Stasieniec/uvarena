@@ -10,8 +10,9 @@ import { HEADERS } from "../do/contracts";
 import { matchRounds, matches, questions } from "../db/schema";
 import { botName, getDb, lectureTitles, publicUsersById, sideOf, toQuestionPublic } from "../db/queries";
 import type { HonoEnv } from "../env";
-import { notFound, readParam } from "../middleware/http";
+import { currentUser, notFound, readParam } from "../middleware/http";
 import { requireUser } from "../middleware/session";
+import { userAllowed } from "../middleware/rate-limit";
 import { forwardedRequest, refuseSocket, socketPrecheck } from "../middleware/ws";
 
 export const matchesRoutes = new Hono<HonoEnv>();
@@ -55,6 +56,8 @@ matchesRoutes.get("/matches/:id/ws", async (c) => {
   const row = rows[0];
   if (!row) return refuseSocket(CLOSE_CODES.notFound, "match not found");
   if (!sideOf(row, me.id)) return refuseSocket(CLOSE_CODES.notAuthorised, "not a player");
+  // Reconnect spam sends the opponent a connection banner each time.
+  if (!(await userAllowed(c, "match_ws", me.id))) return refuseSocket(CLOSE_CODES.tryLater, "too many connections");
 
   const stub = c.env.MATCH_ROOM.getByName(matchId);
   return stub.fetch(forwardedRequest(c.req.raw, { [HEADERS.userId]: me.id }));
@@ -67,8 +70,11 @@ matchesRoutes.get("/matches/:id", requireUser, async (c) => {
   const match = rows[0];
   // Only finished matches: a running match's questions and keys stay secret.
   if (!match || (match.status !== "finished" && match.status !== "void")) throw notFound("Match not found");
+  // Round detail carries the key of every question; only the two players
+  // (who saw each key at the reveal) get it. Anyone else sees the result.
+  const isPlayer = sideOf(match, currentUser(c).id) !== null;
 
-  const roundRows = await db.select().from(matchRounds).where(eq(matchRounds.matchId, matchId)).orderBy(asc(matchRounds.roundNo));
+  const roundRows = !isPlayer ? [] : await db.select().from(matchRounds).where(eq(matchRounds.matchId, matchId)).orderBy(asc(matchRounds.roundNo));
   const questionIds = [...new Set(roundRows.map((r) => r.questionId))];
   const questionRows = questionIds.length > 0 ? await db.select().from(questions).where(inArray(questions.id, questionIds)) : [];
   const byId = new Map(questionRows.map((q) => [q.id, q]));
@@ -91,6 +97,7 @@ matchesRoutes.get("/matches/:id", requireUser, async (c) => {
     roundsPlayed: match.roundsPlayed ?? roundRows.length,
     startedAt: match.startedAt ?? null,
     endedAt: match.endedAt ?? match.createdAt,
+    ...(isPlayer ? {} : { roundsHidden: true }),
     players: [
       {
         side: "a",

@@ -9,9 +9,10 @@ import {
 } from "../../shared/api-schemas";
 import type { z } from "zod";
 import { user } from "../db/schema";
-import { activeMatchId, getActiveCourse, getDb, getPrefs, getUserById, isUniqueViolation, savePrefs, toMeUser } from "../db/queries";
+import { getActiveCourse, getDb, getPrefs, getUserById, isUniqueViolation, savePrefs, toMeUser } from "../db/queries";
 import type { HonoEnv } from "../env";
 import { fullName } from "../auth";
+import { liveMatchId } from "../match-liveness";
 import { ApiFailure, currentUser, readJson } from "../middleware/http";
 import { requireUser } from "../middleware/session";
 
@@ -20,7 +21,7 @@ export const meRoutes = new Hono<HonoEnv>();
 meRoutes.get("/me", requireUser, async (c) => {
   const db = getDb(c.env);
   const me = currentUser(c);
-  const [row, prefs, active] = await Promise.all([getUserById(db, me.id), getPrefs(db, me.id), activeMatchId(db, me.id, { includeFullLobbies: true })]);
+  const [row, prefs, active] = await Promise.all([getUserById(db, me.id), getPrefs(db, me.id), liveMatchId(c.env, me.id, { includeFullLobbies: true })]);
   if (!row) throw new ApiFailure(401, "unauthorised", "Sign in first");
   const body: MeResponse = {
     user: toMeUser(row),

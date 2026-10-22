@@ -121,6 +121,23 @@ describe("surrender", () => {
     }
   });
 
+  it("cannot overrule a knockout during its reveal", () => {
+    for (const quitter of [0, 1] as const) {
+      const d = startedRanked();
+      setHp(d, 1, 700);
+      d.toPhase("question", 1);
+      d.answer(0, d.correct(0), d.q.shownAt);
+      d.answer(1, d.wrong(1), d.q.shownAt + 1000);
+      expect(d.state.phase).toBe("reveal");
+      expect(d.state.players[1]!.hp).toBe(0);
+      d.event({ type: "surrender", side: quitter });
+      expectError(d, quitter, "wrong_phase");
+      expect(d.state.phase).toBe("reveal");
+      d.tick(d.state.phaseEndsAt!);
+      expect(d.state.result).toMatchObject({ winner: 0, reason: "hp" });
+    }
+  });
+
   it("is refused in the lobby and after the end", () => {
     const d = new Driver(rankedInit());
     d.event({ type: "connect", side: 0 });

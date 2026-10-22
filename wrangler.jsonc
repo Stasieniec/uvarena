@@ -35,8 +35,12 @@
   // Durable Object migrations are permanent and append-only. Never edit an applied tag.
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom", "Matchmaker"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["noreply@swasilewski.com"] }],
+  // AUTH_LIMITER: per IP. A lecture hall on one university NAT must be able to
+  // sign up at once. API_LIMITER: per user and action (lobbies, joins, bot
+  // matches, queue and match sockets, reports).
   "ratelimits": [
-    { "name": "AUTH_LIMITER", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }
+    { "name": "AUTH_LIMITER", "namespace_id": "4201", "simple": { "limit": 100, "period": 60 } },
+    { "name": "API_LIMITER", "namespace_id": "4202", "simple": { "limit": 30, "period": 60 } }
   ],
   "vars": {
     "APP_URL": "https://ragequiz.swasilewski.com",

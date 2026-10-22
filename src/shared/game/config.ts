@@ -70,10 +70,21 @@ export const MATCH = {
   noShowMs: 30000,
   /** A private lobby nobody joins expires after this long. */
   lobbyTtlMs: 15 * 60 * 1000,
+  /**
+   * Once the second player joins, the lobby lives at least this much longer,
+   * so a join near the end of lobbyTtlMs still leaves time to ready up.
+   */
+  lobbyReadyMs: 5 * 60 * 1000,
   /** Window after the match in which both players can accept a rematch. */
   rematchMs: 20000,
   /** The MatchRoom deletes its storage this long after the match ends. */
   cleanupMs: 10 * 60 * 1000,
+  /**
+   * A `matches` row still marked running whose MatchRoom has no state is only
+   * treated as dead (and closed) once it is this old: the factory initialises
+   * the room right after inserting the row.
+   */
+  roomInitGraceMs: 60 * 1000,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -340,6 +351,14 @@ export const NET = {
   reconnectMaxMs: 5000,
   /** WebSocket close reasons must stay under 123 UTF-8 bytes; keep them shorter. */
   closeReasonMaxBytes: 120,
+  /** Largest client frame the DOs read; a bigger one closes the socket. Real frames are under 1 KB. */
+  maxClientFrameBytes: 4096,
+  /**
+   * At most this many client frames per clientFrameWindowMs on one socket
+   * ("ping" is answered by the runtime and not counted); more closes it.
+   */
+  clientFrameBurst: 20,
+  clientFrameWindowMs: 1000,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -354,6 +373,8 @@ export const LIMITS = {
   nameMin: 1,
   nameMax: 50,
   passwordMin: 8,
+  /** BETTER_AUTH_SECRET length a deployed Worker requires (openssl rand -base64 32 gives 44). */
+  authSecretMin: 32,
   /** Session lifetime, refreshed daily. */
   sessionDays: 60,
   /** Avatar upload: raw JPEG, PNG or WebP, at most this many bytes. */

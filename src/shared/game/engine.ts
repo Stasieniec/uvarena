@@ -460,6 +460,10 @@ function handle(ctx: Ctx, event: Exclude<EngineEvent, { type: "tick" }>): Side |
       return onAnswer(ctx, side, event.round, event.answer);
     case "surrender":
       if (!isInPlay(s)) return fail(ctx, side, "wrong_phase", "Nothing to surrender.");
+      // A knockout is decided at the reveal; the white flag cannot overrule it.
+      if (s.phase === "reveal" && s.players.some((pl) => pl !== null && pl.hp <= 0)) {
+        return fail(ctx, side, "wrong_phase", "The match is already decided.");
+      }
       finish(ctx, other(side), "surrender");
       return null;
     case "rematch":
@@ -481,6 +485,9 @@ function onJoin(ctx: Ctx, player: PlayerInit, event: { questions: MatchState["qu
     s.qIndex = 0;
   }
   s.noShowAt = ctx.now + scaleMs(MATCH.noShowMs, s.timeScale);
+  // A join near the 15-minute mark must not leave both players seconds to ready up.
+  const readyUntil = ctx.now + MATCH.lobbyReadyMs;
+  s.lobbyExpiresAt = s.lobbyExpiresAt === null ? readyUntil : Math.max(s.lobbyExpiresAt, readyUntil);
   sendBoth(ctx, () => lobbyMessage(s, ctx.now));
 }
 

@@ -69,6 +69,50 @@ function validUsername(value: string): boolean {
   return LIMITS.usernamePattern.test(value);
 }
 
+/**
+ * Secrets that must never sign production sessions: Better Auth's public
+ * fallback (used when `secret` is empty) and the example dev secret.
+ */
+const KNOWN_SECRETS = new Set(["better-auth-secret-12345678901234567890", "dev-only-secret-change-me-0123456789abcdef"]);
+
+/**
+ * Why BETTER_AUTH_SECRET cannot be used, or null when it can. A local app
+ * (dev, tests) accepts anything; a deployed one needs a real secret of at
+ * least LIMITS.authSecretMin characters. Without this check Better Auth falls
+ * back to its public default secret on Workers, which lets anyone forge
+ * sessions.
+ */
+export function authSecretProblem(env: Env): string | null {
+  if (isLocalApp(env)) return null;
+  const secret = typeof env.BETTER_AUTH_SECRET === "string" ? env.BETTER_AUTH_SECRET.trim() : "";
+  if (secret.length === 0) return "BETTER_AUTH_SECRET is not set";
+  if (secret.length < LIMITS.authSecretMin) return `BETTER_AUTH_SECRET is shorter than ${LIMITS.authSecretMin} characters`;
+  if (KNOWN_SECRETS.has(secret)) return "BETTER_AUTH_SECRET is a published example value";
+  return null;
+}
+
+/** Better Auth's user fields that only the app's own endpoints (PATCH /me, PUT /me/avatar) may write. */
+const APP_OWNED_USER_FIELDS = ["image", "name", "displayUsername", "username"] as const;
+
+function badRequest(code: string, message: string): never {
+  throw APIError.from("BAD_REQUEST", { code, message });
+}
+
+/**
+ * Sign-up takes username, names, email and password. image and
+ * displayUsername are refused (the display name is the username as typed),
+ * and username must be a string so the plugin's validator always runs.
+ */
+function checkSignUpBody(body: Record<string, unknown>): void {
+  const last = typeof body.lastName === "string" ? body.lastName.trim() : "";
+  if (last.length < LIMITS.nameMin) badRequest("SURNAME_REQUIRED", "Surname is required");
+  if (typeof body.username !== "string") badRequest("USERNAME_REQUIRED", "Username is required");
+  if (body.image !== undefined && body.image !== null) badRequest("FIELD_NOT_ALLOWED", "Upload a picture from your profile instead");
+  if (body.displayUsername !== undefined && body.displayUsername !== body.username) {
+    badRequest("FIELD_NOT_ALLOWED", "displayUsername cannot be set");
+  }
+}
+
 /** The Better Auth options; shared by createAuth and auth.cli.ts. */
 export function authOptions(db: D1Database, env: Env, runtime: AuthRuntime = {}) {
   const local = isLocalApp(env);
@@ -117,7 +161,8 @@ export function authOptions(db: D1Database, env: Env, runtime: AuthRuntime = {})
     },
     emailVerification: {
       sendOnSignUp: email,
-      autoSignInAfterVerification: true,
+      // Verification links sign the user in only once email is really on.
+      autoSignInAfterVerification: email,
       sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
         // Non-blocking: sign-up never waits for, or fails on, the email.
         background(sendEmail(env, verificationEmail(user.email, url)));
@@ -153,11 +198,17 @@ export function authOptions(db: D1Database, env: Env, runtime: AuthRuntime = {})
     },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== "/sign-up/email") return;
         const body = (ctx.body ?? {}) as Record<string, unknown>;
-        const last = typeof body.lastName === "string" ? body.lastName.trim() : "";
-        if (last.length < LIMITS.nameMin) {
-          throw APIError.from("BAD_REQUEST", { code: "SURNAME_REQUIRED", message: "Surname is required" });
+        if (ctx.path === "/sign-up/email") checkSignUpBody(body);
+        // Better Auth's own profile update would skip the app's rules (name
+        // recomputed from the names, avatar URLs owned by the uploader,
+        // display name matching the username). The app never calls it.
+        if (ctx.path === "/update-user") {
+          const fields = APP_OWNED_USER_FIELDS.filter((f) => body[f] !== undefined);
+          throw APIError.from("FORBIDDEN", {
+            code: "USE_APP_PROFILE",
+            message: fields.length > 0 ? `Change ${fields.join(", ")} from your profile` : "Change your profile from the profile page",
+          });
         }
       }),
     },
@@ -187,14 +238,17 @@ export function authOptions(db: D1Database, env: Env, runtime: AuthRuntime = {})
         minUsernameLength: LIMITS.usernameMin,
         maxUsernameLength: LIMITS.usernameMax,
         usernameValidator: validUsername,
+        displayUsernameValidator: validUsername,
       }),
     ],
     telemetry: { enabled: false },
   } satisfies BetterAuthOptions;
 }
 
-/** Better Auth for one request. */
+/** Better Auth for one request. Throws when the secret is unusable (authSecretProblem). */
 export function createAuth(db: D1Database, env: Env, runtime: AuthRuntime = {}) {
+  const problem = authSecretProblem(env);
+  if (problem) throw new Error(`auth misconfigured: ${problem}`);
   return betterAuth(authOptions(db, env, runtime));
 }
 

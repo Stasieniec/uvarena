@@ -165,7 +165,7 @@ describe("MatchRoom alarms", () => {
     expect(await readState(stub)).toBeNull();
     expect(await readAlarm(stub)).toBeNull();
     expect((await ca.waitClosed()).code).toBe(CLOSE_CODES.normal);
-    expect(await stub.summary()).toEqual({ phase: "cancelled", players: [] });
+    expect(await stub.summary()).toEqual({ exists: false, phase: "cancelled", players: [], finalized: false, effectsPending: false });
   });
 });
 
@@ -362,7 +362,7 @@ describe("MatchRoom private lobby", () => {
     expect(await stub.join(p("guest-1"), before!.questions)).toBe("ok");
     expect(await stub.join(p("guest-1"), before!.questions)).toBe("ok");
     expect(await stub.join(p("guest-2"), before!.questions)).toBe("full");
-    expect(await stub.summary()).toEqual({ phase: "lobby", players: [host, "guest-1"] });
+    expect(await stub.summary()).toEqual({ exists: true, phase: "lobby", players: [host, "guest-1"], finalized: false, effectsPending: false });
     await stub.cancel("cancelled");
   });
 });

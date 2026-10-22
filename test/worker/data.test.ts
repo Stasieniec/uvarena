@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 // Courses, home, bots, match detail, profiles, history and leaderboards.
 import { describe, expect, it } from "vitest";
 import {
@@ -77,7 +78,8 @@ describe("GET /home and /bots", () => {
       await insertMatch({ id: `match_recent0${i}`, player_a: s.userId, player_b: opp.userId, ended_at: now() - 10_000 + i });
     }
     await insertMatch({ id: "match_otherc01", course_id: "eprm", player_a: s.userId, player_b: opp.userId });
-    await insertMatch({ id: "match_running1", player_a: s.userId, player_b: opp.userId, status: "active", ended_at: null, winner: null });
+    // Just created: its room may not exist yet, so it counts as running.
+    await insertMatch({ id: "match_running1", player_a: s.userId, player_b: opp.userId, status: "active", ended_at: null, winner: null, created_at: now() });
 
     const home = HomeResponseSchema.parse(await json(await call("/api/home?course=agai", { cookie: s })));
     expect(home.ranked).toMatchObject({ rating: 1662, provisional: true, played: 1 });
@@ -99,8 +101,22 @@ describe("GET /home and /bots", () => {
     const guest = await signUp("lobbyyou");
     await insertMatch({ id: "match_openlob1", mode: "private", player_a: host.userId, status: "lobby", join_code: "OPENLB", winner: null, ended_at: null });
     expect((await json(await call("/api/me", { cookie: host }))).activeMatchId).toBeNull();
-    await insertMatch({ id: "match_fulllob1", mode: "private", player_a: guest.userId, player_b: host.userId, status: "lobby", join_code: "FULLLB", winner: null, ended_at: null });
+    await insertMatch({ id: "match_fulllob1", mode: "private", player_a: guest.userId, player_b: host.userId, status: "lobby", join_code: "FULLLB", winner: null, ended_at: null, created_at: now() });
     expect((await json(await call("/api/me", { cookie: host }))).activeMatchId).toBe("match_fulllob1");
+  });
+
+  it("closes a running row whose room is gone, so the player is free again", async () => {
+    const s = await signUp("stuckme");
+    const opp = await signUp("stuckyou");
+    await insertMatch({ id: "match_stuck001", player_a: s.userId, player_b: opp.userId, status: "active", ended_at: null, winner: null });
+    await insertMatch({ id: "match_stuck002", player_a: s.userId, status: "active", ended_at: null, winner: null, started_at: null });
+    expect((await json(await call("/api/me", { cookie: s }))).activeMatchId).toBeNull();
+    const rows = await env.DB.prepare("SELECT id, status, end_reason, rating_a_after FROM matches WHERE id IN ('match_stuck001', 'match_stuck002') ORDER BY id").all();
+    // Started: void (its result was never written). Never started: cancelled.
+    expect(rows.results).toMatchObject([
+      { id: "match_stuck001", status: "void", end_reason: "void" },
+      { id: "match_stuck002", status: "cancelled", end_reason: "cancelled" },
+    ]);
   });
 
   it("validates the course query", async () => {
@@ -127,6 +143,23 @@ describe("GET /matches/:id", () => {
     expect(body.rounds[0]!.question.lectureTitle).toBe("Fixture: games");
     expect(body.rounds[0]!.a).toMatchObject({ armed: "zeus", effective: "zeus", score: 900, correct: true });
     expect(body.rounds[0]!.b).toMatchObject({ answer: null, correct: false, damageTaken: 900 });
+  });
+
+  it("gives round detail (and so the keys) only to the two players", async () => {
+    await seed();
+    const a = await signUp("keyowner");
+    const b = await signUp("keyother");
+    const stranger = await signUp("harvester");
+    await insertMatch({ id: "match_keys0001", player_a: a.userId, player_b: b.userId, rounds_played: 1 });
+    await roundRow("match_keys0001", 1, "agai-rrxcbz");
+    const seen = MatchDetailResponseSchema.parse(await json(await call("/api/matches/match_keys0001", { cookie: stranger })));
+    expect(seen.rounds).toEqual([]);
+    expect(seen.roundsHidden).toBe(true);
+    expect(seen.roundsPlayed).toBe(1);
+    expect(seen.players[0].user?.username).toBe("keyowner");
+    const own = MatchDetailResponseSchema.parse(await json(await call("/api/matches/match_keys0001", { cookie: a })));
+    expect(own.rounds).toHaveLength(1);
+    expect(own.roundsHidden).toBeUndefined();
   });
 
   it("shows bot matches with the bot on side b", async () => {

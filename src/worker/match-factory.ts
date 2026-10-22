@@ -8,18 +8,19 @@
 // from the moment a pairing is made. The MatchRoom's `started` effect then
 // sets started_at, and finalization or cancellation closes the row.
 
-import { and, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { botInit } from "../shared/game/bot";
 import { ECHO, LIMITS, MATCH, POWERUPS, QUESTIONS, SELECTION, TEST_BOTS, TEST_MODE } from "../shared/game/config";
 import { createRng } from "../shared/game/rng";
 import { selectQuestions, selectionTarget } from "../shared/game/select";
-import type { BotInit, BotLevel, MatchInit, MatchMode, MatchSettings, PlayerInit, PowerupId, QuestionFull } from "../shared/game/types";
+import type { BotInit, BotLevel, MatchInit, MatchMode, MatchSettings, Phase, PlayerInit, PowerupId, QuestionFull } from "../shared/game/types";
 import { POWERUP_IDS } from "../shared/game/types";
 import { answers, courses, matches, questions, ratings, user, userPrefs } from "./db/schema";
-import { MatchFactoryError, type CreateMatchResult, type CreateMatchSpec } from "./do/contracts";
+import { MatchFactoryError, type CreateMatchResult, type CreateMatchSpec, type MatchRoomRpc } from "./do/contracts";
 import type { Env } from "./env";
 import { isTestEnv } from "./middleware/test-mode";
+import { BUSY_ROW_SQL, roomVerdict, type RunningRow } from "./match-liveness";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Join code insert attempts before giving up on unique-index collisions. */
@@ -179,28 +180,41 @@ async function loadPlayers(orm: DrizzleD1Database, userIds: string[], courseId: 
 // Busy players
 // ---------------------------------------------------------------------------
 
-async function cancelLobby(env: Env, orm: DrizzleD1Database, matchId: string, now: number): Promise<void> {
+/**
+ * Cancels a private lobby the user is in. The D1 row is only closed when the
+ * room really cancelled (or is gone): a room already in play keeps its row,
+ * and its players count as busy.
+ */
+async function cancelLobby(env: Env, orm: DrizzleD1Database, row: RunningRow, now: number): Promise<"cancelled" | "running"> {
+  let phase: Phase | null | undefined;
   try {
-    await env.MATCH_ROOM.getByName(matchId).cancel("cancelled");
+    phase = await env.MATCH_ROOM.getByName(row.id).cancel("cancelled");
   } catch (err) {
-    console.error("cancelLobby: room cancel failed", matchId, err);
+    console.error("cancelLobby: room cancel failed", row.id, err);
+    return (await roomVerdict(env, row, now)) === "live" ? "running" : "cancelled";
   }
+  if (phase === "finished") return "cancelled"; // ended; its finalization writes the row
+  if (phase !== null && phase !== "cancelled") return "running";
+  if (phase === null && now - row.createdAt < MATCH.roomInitGraceMs) return "running";
   // The room's cancelled effect does this too; repeat it in case the room is gone.
   await orm
     .update(matches)
     .set({ status: "cancelled", endReason: "cancelled", endedAt: now })
-    .where(and(eq(matches.id, matchId), eq(matches.status, "lobby")));
+    .where(and(eq(matches.id, row.id), eq(matches.status, "lobby")));
+  return "cancelled";
 }
 
 /**
  * Throws already_in_match if any of the users plays in a running match, then
- * cancels the private lobbies they are in. A row still marked `active` whose
- * room says the match is over (its D1 update is pending or was lost) does not
- * count, so a stuck row never locks a player out.
+ * cancels the private lobbies they are in. Each running row is checked with
+ * its room (match-liveness.ts): a row whose room is over is closed and does
+ * not count, so a stuck row never locks a player out, while a room that has
+ * ended but not yet written its result still counts, so a new match never
+ * starts on ratings that are about to change.
  */
-async function refuseIfBusy(env: Env, orm: DrizzleD1Database, userIds: string[], now: number): Promise<void> {
+async function refuseIfBusy(env: Env, orm: DrizzleD1Database, userIds: string[], now: number, ignore?: string): Promise<void> {
   const rows = await orm
-    .select({ id: matches.id, status: matches.status })
+    .select({ id: matches.id, status: matches.status, createdAt: matches.createdAt, startedAt: matches.startedAt })
     .from(matches)
     .where(
       and(
@@ -210,20 +224,66 @@ async function refuseIfBusy(env: Env, orm: DrizzleD1Database, userIds: string[],
     );
 
   for (const row of rows) {
-    if (row.status !== "active") continue;
-    let over = false;
-    try {
-      const summary = await env.MATCH_ROOM.getByName(row.id).summary();
-      over = summary.phase === "finished" || summary.phase === "cancelled";
-    } catch (err) {
-      console.error("refuseIfBusy: summary failed", row.id, err);
-    }
-    if (!over) throw new MatchFactoryError("already_in_match", "Already in a match", row.id);
+    if (row.status !== "active" || row.id === ignore) continue;
+    if ((await roomVerdict(env, row, now)) === "live") throw new MatchFactoryError("already_in_match", "Already in a match", row.id);
   }
 
   for (const row of rows) {
-    if (row.status === "lobby") await cancelLobby(env, orm, row.id, now);
+    if (row.status !== "lobby" || row.id === ignore) continue;
+    if ((await cancelLobby(env, orm, row, now)) === "running") {
+      throw new MatchFactoryError("already_in_match", "Already in a match", row.id);
+    }
   }
+}
+
+/** The running match (active, or a full lobby) of any of the users, if one exists. */
+async function busyMatchOf(env: Env, userIds: string[]): Promise<string | null> {
+  const marks = userIds.map(() => "?").join(", ");
+  const row = await env.DB.prepare(
+    `SELECT m.id FROM matches m WHERE ${BUSY_ROW_SQL} AND (m.player_a IN (${marks}) OR m.player_b IN (${marks}))
+     ORDER BY m.created_at DESC LIMIT 1`,
+  )
+    .bind(...userIds, ...userIds)
+    .first<{ id: string }>();
+  return row?.id ?? null;
+}
+
+/**
+ * Inserts the matches row only if none of its humans is in a running match,
+ * as one statement, so two concurrent creations can never put one user in
+ * two matches. Returns false when another row won the race.
+ */
+async function insertIfFree(env: Env, row: typeof matches.$inferInsert, humans: string[]): Promise<boolean> {
+  const marks = humans.map(() => "?").join(", ");
+  const json = (v: unknown) => (v === null || v === undefined ? null : JSON.stringify(v));
+  const result = await env.DB.prepare(
+    `INSERT INTO matches (id, course_id, mode, rated, join_code, status, player_a, player_b, bot_level, bot_rating,
+       settings_json, loadout_a_json, loadout_b_json, created_at)
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+     WHERE NOT EXISTS (
+       SELECT 1 FROM matches m WHERE ${BUSY_ROW_SQL} AND (m.player_a IN (${marks}) OR m.player_b IN (${marks}))
+     )`,
+  )
+    .bind(
+      row.id,
+      row.courseId,
+      row.mode,
+      row.rated ? 1 : 0,
+      row.joinCode ?? null,
+      row.status,
+      row.playerA,
+      row.playerB ?? null,
+      row.botLevel ?? null,
+      row.botRating ?? null,
+      json(row.settingsJson),
+      json(row.loadoutAJson),
+      json(row.loadoutBJson),
+      row.createdAt,
+      ...humans,
+      ...humans,
+    )
+    .run();
+  return result.meta.changes === 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -365,7 +425,8 @@ export async function createMatch(env: Env, spec: CreateMatchSpec): Promise<Crea
     .where(and(eq(courses.id, spec.courseId), eq(courses.active, true)));
   if (!course) throw new MatchFactoryError("unknown_course", "Unknown course");
 
-  await refuseIfBusy(env, orm, spec.humans, now);
+  // A rematch is created by the finished match's own room: that row is over.
+  await refuseIfBusy(env, orm, spec.humans, now, spec.rematchOf);
   const loaded = await loadPlayers(orm, spec.humans, spec.courseId);
   const players = loaded.map((p) => p.init);
   const bot = spec.mode === "bot" ? resolveBot(env, spec, loaded[0]!) : null;
@@ -389,7 +450,7 @@ export async function createMatch(env: Env, spec: CreateMatchSpec): Promise<Crea
   for (let attempt = 1; ; attempt++) {
     code = isLobby ? newJoinCode() : null;
     try {
-      await orm.insert(matches).values({
+      const inserted = await insertIfFree(env, {
         id: matchId,
         courseId: spec.courseId,
         mode: spec.mode,
@@ -404,7 +465,12 @@ export async function createMatch(env: Env, spec: CreateMatchSpec): Promise<Crea
         loadoutAJson: loadout(players[0]),
         loadoutBJson: loadout(players[1]),
         createdAt: now,
-      });
+      }, spec.humans);
+      if (!inserted) {
+        // Another match for one of these players was created since the check.
+        const busy = await busyMatchOf(env, spec.humans);
+        throw new MatchFactoryError("already_in_match", "Already in a match", busy);
+      }
       break;
     } catch (err) {
       if (isLobby && attempt < JOIN_CODE_ATTEMPTS && isJoinCodeCollision(err)) continue;
@@ -465,14 +531,38 @@ export async function joinLobby(env: Env, code: string, userId: string): Promise
     now,
   });
 
-  const result = await env.MATCH_ROOM.getByName(row.id).join(joiner, selected);
-  if (result === "ok") {
-    await orm
-      .update(matches)
-      .set({ playerB: userId, loadoutBJson: row.settingsJson.powerups ? joiner.loadout : [] })
-      .where(and(eq(matches.id, row.id), isNull(matches.playerB)));
-    return { matchId: row.id };
+  // Claim the seat in D1 first, in one statement that also checks the joiner
+  // is not in another running match (created since refuseIfBusy), so one user
+  // can never end up in two matches. Undone if the room refuses the join (a
+  // refusal means the room does not hold this user).
+  const claimed = await env.DB.prepare(
+    `UPDATE matches SET player_b = ?, loadout_b_json = ?
+     WHERE id = ? AND status = 'lobby' AND player_b IS NULL
+       AND NOT EXISTS (SELECT 1 FROM matches m WHERE ${BUSY_ROW_SQL} AND (m.player_a = ? OR m.player_b = ?))`,
+  )
+    .bind(userId, JSON.stringify(row.settingsJson.powerups ? joiner.loadout : []), row.id, userId, userId)
+    .run();
+  if (claimed.meta.changes !== 1) {
+    const [now2] = await orm.select({ status: matches.status, playerB: matches.playerB }).from(matches).where(eq(matches.id, row.id));
+    if (!now2 || now2.status === "cancelled") throw new MatchFactoryError("lobby_expired", "That match has expired");
+    if (now2.playerB !== null || now2.status !== "lobby") throw new MatchFactoryError("lobby_full", "That match is full");
+    throw new MatchFactoryError("already_in_match", "Already in a match", await busyMatchOf(env, [userId]));
   }
+  const release = () =>
+    orm
+      .update(matches)
+      .set({ playerB: null, loadoutBJson: null })
+      .where(and(eq(matches.id, row.id), eq(matches.playerB, userId)));
+
+  let result: Awaited<ReturnType<MatchRoomRpc["join"]>>;
+  try {
+    result = await env.MATCH_ROOM.getByName(row.id).join(joiner, selected);
+  } catch (err) {
+    await release().catch((e: unknown) => console.error("joinLobby: release failed", row.id, e));
+    throw err;
+  }
+  if (result === "ok") return { matchId: row.id };
+  await release();
   if (result === "full") throw new MatchFactoryError("lobby_full", "That match is full");
   if (result === "expired") throw new MatchFactoryError("lobby_expired", "That match has expired");
 

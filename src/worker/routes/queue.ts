@@ -4,11 +4,13 @@ import { Hono } from "hono";
 import { and, desc, eq, or } from "drizzle-orm";
 import { QueueWsQuerySchema } from "../../shared/api-schemas";
 import { GLICKO, MATCHMAKER } from "../../shared/game/config";
-import { CLOSE_CODES, type QueueErrorMessage } from "../../shared/protocol";
+import { CLOSE_CODES, type MatchedMessage, type QueueErrorMessage } from "../../shared/protocol";
 import { HEADERS, matchmakerName } from "../do/contracts";
 import { matches } from "../db/schema";
-import { activeMatchId, getActiveCourse, getDb, ratingsFor, type Db } from "../db/queries";
+import { getActiveCourse, getDb, ratingsFor, type Db } from "../db/queries";
+import { liveMatchId } from "../match-liveness";
 import type { HonoEnv } from "../env";
+import { userAllowed } from "../middleware/rate-limit";
 import { forwardedRequest, refuseSocket, socketPrecheck } from "../middleware/ws";
 
 export const queueRoutes = new Hono<HonoEnv>();
@@ -36,6 +38,9 @@ queueRoutes.get("/queue/ws", async (c) => {
   const me = c.get("user");
   if (!me) return refuseSocket(CLOSE_CODES.notAuthorised, "sign in first");
   if (!me.username) return refuseSocket(CLOSE_CODES.notAuthorised, "pick a username first");
+  if (!(await userAllowed(c, "queue", me.id))) {
+    return refuseSocket(CLOSE_CODES.normal, "too many attempts", queueError("rate_limited", null));
+  }
 
   const query = QueueWsQuerySchema.safeParse(c.req.query());
   const db = getDb(c.env);
@@ -44,8 +49,24 @@ queueRoutes.get("/queue/ws", async (c) => {
   }
   const courseId = query.data.course;
 
-  const active = await activeMatchId(db, me.id);
-  if (active) return refuseSocket(CLOSE_CODES.normal, "already in a match", queueError("already_in_match", active));
+  // Checked with the match's room, so a row left `active` by a failed D1
+  // write is closed here instead of locking the player out of ranked.
+  const active = await liveMatchId(c.env, me.id);
+  if (active) {
+    // A ranked match made for this player that is still waiting for them
+    // (their previous queue socket got `matched`, or never saw it): this
+    // socket gets `matched` too, so the client goes straight to it.
+    const [row] = await db
+      .select({ mode: matches.mode, startedAt: matches.startedAt })
+      .from(matches)
+      .where(eq(matches.id, active))
+      .limit(1);
+    if (row?.mode === "ranked" && row.startedAt === null) {
+      const matched: MatchedMessage = { type: "matched", serverNow: Date.now(), matchId: active };
+      return refuseSocket(CLOSE_CODES.normal, "matched", matched);
+    }
+    return refuseSocket(CLOSE_CODES.normal, "already in a match", queueError("already_in_match", active));
+  }
 
   const [ranked, lastOpponent] = await Promise.all([
     ratingsFor(db, me.id, courseId).then((m) => m.get(courseId)?.ranked),

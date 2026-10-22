@@ -1,0 +1,10 @@
+# Security headers for the app's pages and static files (Workers Static
+# Assets). /api responses get theirs from the Worker (src/worker/index.ts).
+# connect-src names the production host for the match and queue sockets:
+# older Safari does not let 'self' cover wss:. See docs/RENAME.md.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' wss://ragequiz.swasilewski.com; media-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
