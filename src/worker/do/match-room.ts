@@ -527,7 +527,9 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
   /** A socket closed or failed: a disconnect, unless the user has another live socket. */
   private async socketGone(ws: WebSocket): Promise<void> {
     await this.serial(async () => {
-      const { userId } = ws.deserializeAttachment() as MatchSocketAttachment;
+      const attachment = ws.deserializeAttachment() as MatchSocketAttachment | null;
+      if (!attachment) return;
+      const { userId } = attachment;
       const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && s.readyState === WebSocket.OPEN);
       if (others.length > 0) return;
       const state = await this.loadState();
