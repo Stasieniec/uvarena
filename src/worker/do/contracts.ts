@@ -26,9 +26,15 @@ import type {
 export type JoinResult = "ok" | "full" | "expired" | "not_lobby";
 
 export interface MatchRoomSummary {
+  /** False when the room has no state (never initialised, or cleaned up); phase is then "cancelled". */
+  exists: boolean;
   phase: Phase;
   /** User ids of the human players, side order. */
   players: string[];
+  /** The finalization batch landed in D1. */
+  finalized: boolean;
+  /** An effect (D1 write, rematch) is still waiting to be retried. */
+  effectsPending: boolean;
 }
 
 export interface MatchRoomRpc {
@@ -36,8 +42,11 @@ export interface MatchRoomRpc {
   init(init: MatchInit): Promise<void>;
   /** Private lobby: adds player b and the selected questions. */
   join(player: PlayerInit, questions: QuestionFull[]): Promise<JoinResult>;
-  /** Cancels a lobby or a match that has not started. No-op once finished. */
-  cancel(reason: CancelReason): Promise<void>;
+  /**
+   * Cancels a lobby or a match that has not started. No-op once it has
+   * started or ended. Returns the phase afterwards (null: no room state).
+   */
+  cancel(reason: CancelReason): Promise<Phase | null>;
   summary(): Promise<MatchRoomSummary>;
 }
 

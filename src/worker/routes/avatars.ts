@@ -79,9 +79,14 @@ function randomToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function deleteOld(env: HonoEnv["Bindings"], image: string | null): Promise<void> {
+/**
+ * Deletes the caller's previous avatar object. Only keys under the caller's
+ * own prefix are touched, whatever the stored image URL says, so a user row
+ * pointing at someone else's avatar can never delete it.
+ */
+async function deleteOld(env: HonoEnv["Bindings"], ownerId: string, image: string | null): Promise<void> {
   const key = r2KeyFromImageUrl(image);
-  if (!key) return;
+  if (!key || !key.startsWith(`avatars/${ownerId}/`)) return;
   try {
     await env.AVATARS.delete(key);
   } catch (err) {
@@ -118,7 +123,7 @@ avatarsRoutes.put("/me/avatar", requireUser, async (c) => {
   });
   const image = `${AVATAR_URL_PREFIX}${me.id}.${token}.${ext}`;
   await db.update(user).set({ image, updatedAt: new Date() }).where(eq(user.id, me.id));
-  await deleteOld(c.env, row.image ?? null);
+  await deleteOld(c.env, me.id, row.image ?? null);
   return c.json({ image });
 });
 
@@ -128,7 +133,7 @@ avatarsRoutes.delete("/me/avatar", requireUser, async (c) => {
   const row = await getUserById(db, me.id);
   if (!row) throw new ApiFailure(401, "unauthorised", "Sign in first");
   await db.update(user).set({ image: null, updatedAt: new Date() }).where(eq(user.id, me.id));
-  await deleteOld(c.env, row.image ?? null);
+  await deleteOld(c.env, me.id, row.image ?? null);
   return c.json({ image: null });
 });
 

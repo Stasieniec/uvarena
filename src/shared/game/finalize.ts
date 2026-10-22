@@ -15,6 +15,9 @@
 //   answers move neither the player nor the item. Timeouts count as wrong.
 // - Item ratings move on human answers from every mode, subject to the guards
 //   in itemGuardPasses().
+// - A question asked again in the same match (a lecture filter with fewer
+//   questions than the match needs) moves neither the bot rating nor the
+//   item rating after its first appearance: its key was already revealed.
 // - Void (both players gone): match, rounds, answers, missed questions and
 //   answer totals are written; no rating of any kind moves (ranked, bot or
 //   item) and no win, loss or played counter changes.
@@ -325,6 +328,9 @@ export function planFinalization(state: MatchState, ctx: FinalizationContext): F
     const pc = ctx.playerCourse[human.userId] ?? null;
     let answersSoFar = pc?.answers ?? 0;
     const recent = new Set(ctx.recentAnswers[human.userId] ?? []);
+    // A narrow lecture filter can repeat a question within the match after
+    // its key was revealed; only its first appearance moves any rating.
+    const seenThisMatch = new Set<string>();
     const bot = botState.get(human.userId)!;
     let answered = 0;
     let correct = 0;
@@ -372,7 +378,9 @@ export function planFinalization(state: MatchState, ctx: FinalizationContext): F
       item.attemptsDelta += 1;
       if (s.correct) item.correctDelta += 1;
 
-      if (!isVoid && !s.helped) {
+      const repeat = seenThisMatch.has(round.questionId);
+      seenThisMatch.add(round.questionId);
+      if (!isVoid && !s.helped && !repeat) {
         const update = eloUpdate(bot.theta, bot.n, round.itemRating, round.itemRatingN + item.ratingNDelta, round.chance, s.correct);
         const movesItem = itemGuardPasses({
           playerAnswersBefore: answersSoFar,

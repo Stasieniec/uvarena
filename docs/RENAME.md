@@ -14,6 +14,7 @@ Do the rename **before the first deploy**. After it, the D1 database, R2 bucket 
 | `wrangler.jsonc` | R2 `bucket_name` | `ragequiz-avatars` |
 | `wrangler.jsonc` | `vars.APP_URL` | `https://ragequiz.swasilewski.com` |
 | `wrangler.jsonc` | the comment on line 1 that names it | |
+| `public/_headers` | `connect-src` host in the Content-Security-Policy | `wss://ragequiz.swasilewski.com` |
 | `index.html` | `<title>` (the app also sets `document.title` from `APP_NAME`) | `Ragequiz` |
 | `package.json` | `name` | `ragequiz` |
 | `package-lock.json` | `name`, twice at the top; regenerate with `npm install` after editing `package.json` | `ragequiz` |

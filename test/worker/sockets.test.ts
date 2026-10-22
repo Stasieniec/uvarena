@@ -92,11 +92,32 @@ describe("GET /matches/:id/ws", () => {
 describe("GET /queue/ws", () => {
   it("refuses a player with a running match, with its id", async () => {
     const a = await signUp("queuebusy");
-    await insertMatch({ id: "match_qbusy001", player_a: a.userId, status: "active", ended_at: null, winner: null });
+    await insertMatch({ id: "match_qbusy001", player_a: a.userId, status: "active", ended_at: null, winner: null, created_at: Date.now() });
     const res = await call("/api/queue/ws?course=agai", { cookie: a, headers: UPGRADE, origin: "http://localhost" });
     const { frames, closed } = await openSocket(res);
     expect((await closed).code).toBe(1000);
     expect(JSON.parse(frames[0]!)).toMatchObject({ type: "error", code: "already_in_match", matchId: "match_qbusy001" });
+  });
+
+  it("sends matched, not an error, for a ranked match still waiting for this player", async () => {
+    const a = await signUp("queuewait");
+    await insertMatch({ id: "match_qwait001", player_a: a.userId, status: "active", ended_at: null, winner: null, started_at: null, created_at: Date.now() });
+    const res = await call("/api/queue/ws?course=agai", { cookie: a, headers: UPGRADE, origin: "http://localhost" });
+    const { frames, closed } = await openSocket(res);
+    expect((await closed).code).toBe(1000);
+    expect(JSON.parse(frames[0]!)).toMatchObject({ type: "matched", matchId: "match_qwait001" });
+  });
+
+  it("never locks a player out of ranked with a row whose room is gone", async () => {
+    await seed();
+    const a = await signUp("queuestuck");
+    await insertMatch({ id: "match_qstuck01", player_a: a.userId, status: "active", ended_at: null, winner: null });
+    const res = await call("/api/queue/ws?course=agai", { cookie: a, headers: UPGRADE, origin: "http://localhost" });
+    const { ws, frames } = await openSocket(res);
+    await until(() => frames.length > 0);
+    expect(JSON.parse(frames[0]!)).toMatchObject({ type: "queue_status" });
+    ws.close(1000, "done");
+    expect(await env.DB.prepare("SELECT status FROM matches WHERE id = 'match_qstuck01'").first("status")).toBe("void");
   });
 
   it("refuses an unknown course and a signed-out user", async () => {

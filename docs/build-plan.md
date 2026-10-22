@@ -705,9 +705,12 @@ npx wrangler r2 bucket create ragequiz-avatars
 npx wrangler d1 migrations apply DB --remote
 
 npm run build                                    # vite build writes dist/ and the deploy redirect
-npx wrangler deploy                              # first deploy creates the Worker, DOs and custom domain
-
-openssl rand -base64 32 | npx wrangler secret put BETTER_AUTH_SECRET
+# The auth secret ships with the first version, so the custom domain never
+# serves a Worker without it (the Worker also answers 503 until it is set).
+umask 077
+printf '{"BETTER_AUTH_SECRET":"%s"}' "$(openssl rand -base64 32)" > /tmp/ragequiz-secrets.json
+npx wrangler deploy --secrets-file /tmp/ragequiz-secrets.json   # creates the Worker, DOs and custom domain
+rm /tmp/ragequiz-secrets.json
 # later, once Stas has the Google client:
 printf %s "$GOOGLE_CLIENT_ID"     | npx wrangler secret put GOOGLE_CLIENT_ID
 printf %s "$GOOGLE_CLIENT_SECRET" | npx wrangler secret put GOOGLE_CLIENT_SECRET
@@ -719,6 +722,7 @@ curl -sS https://ragequiz.swasilewski.com/api/health
 Gotchas, all from the architecture report or checked today:
 - Every wrangler command needs both exported variables above; plain `wrangler whoami` says "not authenticated" through the proxy and that is expected.
 - `new_sqlite_classes` must be right on the first deploy; DO migrations are permanent and append-only.
+- `BETTER_AUTH_SECRET` must exist before the first request. Without it Better Auth falls back to its public default secret (anyone could forge a session), so `createAuth` and an `/api` middleware refuse to run: every API route, `/api/health` included, answers 503 until the secret is set. Never delete or rotate it away without putting a new one in the same step.
 - `compatibility_date` 2026-10-15 with `nodejs_compat` (needed for Better Auth and native scrypt). WebSocket close reasons over 123 bytes throw.
 - One alarm per DO: every timer goes through `nextDeadline`. Alarms are at-least-once: `tick` and finalize are idempotent.
 - Always pass `--local` or `--remote` to D1 commands.

@@ -463,6 +463,23 @@ describe("item ratings", () => {
     expect(byId.q3.ratingNDelta).toBe(2);
   });
 
+  it("moves bot and item ratings only on a question's first appearance in the match", () => {
+    const specs: RoundSpec[] = [
+      { a: true, b: false, questionId: "rep", itemRating: 1500, chance: 0.25 },
+      { a: true, b: false, questionId: "other", itemRating: 1500, chance: 0.25 },
+      { a: true, b: false, questionId: "rep", itemRating: 1500, chance: 0.25 },
+    ];
+    const state = finishedState({ mode: "bot", rated: false, players: [human("alice"), botPlayer(3, 1500)], rounds: rounds(specs), winner: 0, reason: "hp" });
+    const plan = planFinalization(state, context({ users: ["alice"], playerCourse: [pcRow("alice", 50)] }));
+    const byId = Object.fromEntries(plan.items.map((i) => [i.questionId, i]));
+    expect(byId.rep).toMatchObject({ ratingNDelta: 1, attemptsDelta: 2, correctDelta: 2 });
+    expect(byId.other.ratingNDelta).toBe(1);
+    // Two rated answers, not three.
+    expect(row(plan, "alice", "bot").n).toBe(2);
+    // The repeat is still recorded as an answer.
+    expect(plan.answers).toHaveLength(3);
+  });
+
   it("guard function", () => {
     const ok = { playerAnswersBefore: ELO.itemMinPlayerAnswers, helped: false, answeredRecently: false, timedOutAfterCountdown: false };
     expect(itemGuardPasses(ok)).toBe(true);

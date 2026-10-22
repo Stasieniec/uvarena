@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ApiError, ConfigResponse, HealthResponse } from "../shared/api-schemas";
-import { googleEnabled } from "./auth";
+import { authSecretProblem, googleEnabled } from "./auth";
 import { emailEnabled } from "./email";
 import type { HonoEnv } from "./env";
 import { ApiFailure, apiError, errorBody } from "./middleware/http";
@@ -34,6 +34,38 @@ export { Matchmaker } from "./do/matchmaker";
 export { MatchRoom } from "./do/match-room";
 
 const app = new Hono<HonoEnv>().basePath("/api");
+
+// Fail closed: a deployed Worker without a real BETTER_AUTH_SECRET would sign
+// sessions with Better Auth's public default. Every API request, /health
+// included, is refused until the secret is set.
+app.use("*", async (c, next) => {
+  const problem = authSecretProblem(c.env);
+  if (problem) {
+    console.error(`refusing requests: ${problem}`);
+    return c.json<ApiError>(errorBody("internal", "The server is not configured yet"), 503);
+  }
+  await next();
+});
+
+// API responses are JSON (avatars set their own stricter headers): never
+// sniffed, never framed, no referrer to other sites.
+app.use("*", async (c, next) => {
+  await next();
+  if (c.res.status === 101) return;
+  const set = (res: Response) => {
+    if (!res.headers.has("X-Content-Type-Options")) res.headers.set("X-Content-Type-Options", "nosniff");
+    if (!res.headers.has("Content-Security-Policy")) res.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  };
+  try {
+    set(c.res);
+  } catch {
+    // Immutable headers (a passed-through response): copy it first.
+    const res = new Response(c.res.body, c.res);
+    set(res);
+    c.res = res;
+  }
+});
 
 app.use("*", checkMutationOrigin);
 

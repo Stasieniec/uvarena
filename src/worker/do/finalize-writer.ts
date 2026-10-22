@@ -115,6 +115,11 @@ export async function loadFinalizationContext(db: D1Database, state: MatchState,
   return ctx;
 }
 
+/** Whether the match's finalization batch has landed. */
+export async function isMatchFinalized(db: D1Database, matchId: string): Promise<boolean> {
+  return isFinalized(drizzle(db), matchId);
+}
+
 async function isFinalized(orm: DrizzleD1Database, matchId: string): Promise<boolean> {
   const [row] = await orm
     .select({ matchId: matchFinalizations.matchId })
@@ -153,7 +158,8 @@ export function finalizationStatements(orm: DrizzleD1Database, plan: Finalizatio
           target: [missedQuestions.userId, missedQuestions.questionId],
           set: {
             timesMissed: sql`${missedQuestions.timesMissed} + 1`,
-            lastMissedAt: m.missedAt,
+            // Never move backwards (an older match finalized late).
+            lastMissedAt: sql`max(${missedQuestions.lastMissedAt}, ${m.missedAt})`,
             lastAnswerJson: m.lastAnswerJson,
             lastMatchId: m.matchId,
             status: "open",

@@ -390,6 +390,11 @@ export const MatchDetailResponseSchema = z.object({
   startedAt: epochMs.nullable(),
   endedAt: epochMs,
   players: z.tuple([MatchDetailPlayerSchema, MatchDetailPlayerSchema]),
+  /**
+   * True when the viewer did not play in the match: `rounds` is then empty,
+   * because round detail carries every question's key.
+   */
+  roundsHidden: z.boolean().optional(),
   rounds: z.array(
     z.object({
       round: z.number().int(),

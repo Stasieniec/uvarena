@@ -72,6 +72,30 @@ describe("lobby and start", () => {
     expect(nextDeadline(d.state)).toBe(T0 + MATCH.lobbyTtlMs + MATCH.cleanupMs);
   });
 
+  it("private: a join near the end of the lobby's life extends it so both can ready up", () => {
+    const d = new Driver(rankedInit({ mode: "private", humans: [human("alice")], questions: [] }));
+    d.event({ type: "connect", side: 0 });
+    const joinAt = T0 + MATCH.lobbyTtlMs - 5000;
+    d.event({ type: "join", player: human("bob"), questions: questions() }, joinAt);
+    expect(d.state.lobbyExpiresAt).toBe(joinAt + MATCH.lobbyReadyMs);
+    d.event({ type: "connect", side: 1 }, joinAt + 1000);
+    d.tick(T0 + MATCH.lobbyTtlMs);
+    expect(d.state.phase).toBe("lobby");
+    d.event({ type: "ready", side: 0 }, joinAt + 60_000);
+    d.event({ type: "ready", side: 1 }, joinAt + 61_000);
+    expect(d.state.phase).toBe("intro");
+  });
+
+  it("private: a lobby joined and never readied still expires", () => {
+    const d = new Driver(rankedInit({ mode: "private", humans: [human("alice")], questions: [] }));
+    d.event({ type: "connect", side: 0 });
+    const joinAt = T0 + MATCH.lobbyTtlMs - 5000;
+    d.event({ type: "join", player: human("bob"), questions: questions() }, joinAt);
+    d.event({ type: "connect", side: 1 }, joinAt + 1000);
+    d.tick(joinAt + MATCH.lobbyReadyMs);
+    expect(d.state.result?.reason).toBe("expired");
+  });
+
   it("private: a joined player who never connects cancels with no_show", () => {
     const d = new Driver(rankedInit({ mode: "private", humans: [human("alice")], questions: [] }));
     d.event({ type: "connect", side: 0 });

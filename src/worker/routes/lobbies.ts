@@ -7,6 +7,7 @@ import { existingLectureIds, getActiveCourse, getDb, type Db } from "../db/queri
 import type { HonoEnv } from "../env";
 import { createMatch, joinLobby } from "../match-factory";
 import { ApiFailure, currentUser, notFound, readJson, requireUsername, rethrowFactoryError } from "../middleware/http";
+import { userRateLimit } from "../middleware/rate-limit";
 import { requireUser } from "../middleware/session";
 import { isTestMode } from "../middleware/test-mode";
 
@@ -30,7 +31,7 @@ export async function validateLectureFilter(
   return unique;
 }
 
-lobbiesRoutes.post("/lobbies", requireUser, async (c) => {
+lobbiesRoutes.post("/lobbies", requireUser, userRateLimit("lobby"), async (c) => {
   const me = currentUser(c);
   requireUsername(me);
   const body = await readJson(c, CreateLobbyBodySchema);
@@ -56,7 +57,7 @@ lobbiesRoutes.post("/lobbies", requireUser, async (c) => {
   }
 });
 
-lobbiesRoutes.post("/lobbies/join", requireUser, async (c) => {
+lobbiesRoutes.post("/lobbies/join", requireUser, userRateLimit("join"), async (c) => {
   const me = currentUser(c);
   requireUsername(me);
   const { code } = await readJson(c, JoinLobbyBodySchema);
