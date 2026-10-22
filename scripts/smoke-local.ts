@@ -391,6 +391,12 @@ async function rankedMatch(a: User, b: User): Promise<void> {
     "detail: every round a right, b wrong and damaged",
   );
   check(detail.rounds.every((r) => r.question.key && r.question.why.length > 0), "detail: questions carry key and explanation");
+  check(
+    detail.rounds.every((r, i) => reveals[i]?.questionId === r.question.id),
+    "each reveal's questionId is the round's bank question",
+  );
+  const flagged = await http("POST", `/api/questions/${reveals[0]!.questionId}/report`, b, { reason: "other", matchId });
+  check(flagged.status === 200, `the reveal's report flag can file a report (${flagged.status})`);
   const lastRound = detail.rounds.at(-1)!;
   check(lastRound[sideB].hpAfter === 0 || lastRound[sideB].phoenix, "detail: b ends at 0 hp");
 

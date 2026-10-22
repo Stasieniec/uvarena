@@ -20,6 +20,7 @@
     "test:do": "vitest run --config vitest.do.config.ts --max-workers=1 --no-isolate",
     "test:e2e": "playwright test",
     "smoke": "tsx scripts/smoke-local.ts",
+    "smoke:ui": "tsx scripts/smoke-ui.ts",
     "e2e:server": "wrangler d1 migrations apply DB --local && vite build && vite preview",
     "bank": "tsx scripts/quiz-bank.ts",
     "lint:copy": "tsx scripts/lint-copy.ts"
