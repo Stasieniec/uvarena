@@ -2,24 +2,87 @@
 // Static assets (the SPA) are served by the assets binding; only /api/* runs
 // the Worker first (wrangler.jsonc run_worker_first).
 //
-// Scaffold version: only /api/health. The Worker API and auth package owns
-// this file and mounts the routers from ./routes.
+// Order matters: public routes and Better Auth come before the session
+// middleware; every app route that needs a user says so with requireUser.
 import { Hono } from "hono";
-import type { ApiError, HealthResponse } from "../shared/api-schemas";
+import { HTTPException } from "hono/http-exception";
+import type { ApiError, ConfigResponse, HealthResponse } from "../shared/api-schemas";
+import { googleEnabled } from "./auth";
+import { emailEnabled } from "./email";
 import type { HonoEnv } from "./env";
+import { ApiFailure, apiError, errorBody } from "./middleware/http";
+import { checkMutationOrigin } from "./middleware/origin";
+import { authRateLimit } from "./middleware/rate-limit";
+import { getAuth, sessionMiddleware } from "./middleware/session";
+import { isTestMode } from "./middleware/test-mode";
+import { avatarsRoutes } from "./routes/avatars";
+import { botMatchesRoutes } from "./routes/bot-matches";
+import { botsRoutes } from "./routes/bots";
+import { coursesRoutes } from "./routes/courses";
+import { homeRoutes } from "./routes/home";
+import { leaderboardsRoutes } from "./routes/leaderboards";
+import { lobbiesRoutes } from "./routes/lobbies";
+import { matchesRoutes } from "./routes/matches";
+import { meRoutes } from "./routes/me";
+import { missedRoutes } from "./routes/missed";
+import { queueRoutes } from "./routes/queue";
+import { reportsRoutes } from "./routes/reports";
+import { testRoutes } from "./routes/test";
+import { usersRoutes } from "./routes/users";
 
 export { Matchmaker } from "./do/matchmaker";
 export { MatchRoom } from "./do/match-room";
 
 const app = new Hono<HonoEnv>().basePath("/api");
 
+app.use("*", checkMutationOrigin);
+
 app.get("/health", (c) => c.json<HealthResponse>({ ok: true }));
+
+app.get("/config", (c) =>
+  c.json<ConfigResponse>({
+    googleEnabled: googleEnabled(c.env),
+    emailEnabled: emailEnabled(c.env),
+    testMode: isTestMode(c.env, c.req.raw),
+  }),
+);
+
+// Better Auth. Password reset needs email; without it, say so plainly.
+app.use("/auth/*", authRateLimit);
+app.post("/auth/request-password-reset", async (c, next) => {
+  if (!emailEnabled(c.env)) {
+    return apiError(c, 403, "forbidden", "Password reset is not available yet. Ask Stas to reset your password.");
+  }
+  await next();
+});
+app.on(["GET", "POST"], "/auth/*", (c) => getAuth(c).handler(c.req.raw));
+
+app.use("*", sessionMiddleware);
+
+app.route("/", testRoutes);
+app.route("/", meRoutes);
+app.route("/", avatarsRoutes);
+app.route("/", coursesRoutes);
+app.route("/", homeRoutes);
+app.route("/", botsRoutes);
+app.route("/", botMatchesRoutes);
+app.route("/", lobbiesRoutes);
+app.route("/", queueRoutes);
+app.route("/", matchesRoutes);
+app.route("/", usersRoutes);
+app.route("/", leaderboardsRoutes);
+app.route("/", missedRoutes);
+app.route("/", reportsRoutes);
 
 app.notFound((c) => c.json<ApiError>({ error: { code: "not_found", message: "Not found" } }, 404));
 
 app.onError((err, c) => {
+  if (err instanceof ApiFailure) return c.json<ApiError>(errorBody(err.code, err.message, err.extra), err.status);
+  if (err instanceof HTTPException && err.status < 500) {
+    return c.json<ApiError>(errorBody("bad_request", err.message || "Bad request"), err.status);
+  }
   console.error(err);
-  return c.json<ApiError>({ error: { code: "internal", message: "Internal error" } }, 500);
+  return c.json<ApiError>(errorBody("internal", "Internal error"), 500);
 });
 
 export default {
