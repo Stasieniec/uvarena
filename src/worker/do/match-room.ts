@@ -20,6 +20,7 @@ import type {
   EndReason,
   EngineEvent,
   FinalizationPlan,
+  Phase,
   MatchInit,
   MatchState,
   Outbound,
@@ -42,8 +43,9 @@ import {
 import type { Env } from "../env";
 import { createMatch } from "../match-factory";
 import { HEADERS, MatchFactoryError, type JoinResult, type MatchRoomRpc, type MatchRoomSummary, type MatchSocketAttachment } from "./contracts";
-import { humanIds, loadFinalizationContext, writeFinalization } from "./finalize-writer";
+import { humanIds, isMatchFinalized, loadFinalizationContext, writeFinalization } from "./finalize-writer";
 import { isTestEnv } from "../middleware/test-mode";
+import { closeMatchRow } from "../match-liveness";
 
 // ---------------------------------------------------------------------------
 // Engine seam. The shell tests (test/do/match-room.test.ts) drive the room
@@ -81,7 +83,7 @@ const KEY_PLAN = "plan";
 const EFFECT_RETRY_MS = 2000;
 const EFFECT_RETRY_MAX_MS = 60000;
 /** After this many failures an effect is dropped (logged), so cleanup can still run. */
-const EFFECT_MAX_ATTEMPTS = 15;
+export const EFFECT_MAX_ATTEMPTS = 15;
 /**
  * A socket whose client has pinged before but not for this long is treated as
  * gone (a locked phone often leaves a half-open connection behind). Clients
@@ -243,7 +245,7 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
         const attempts = effect.attempts + 1;
         if (attempts >= EFFECT_MAX_ATTEMPTS) {
           console.error(`MatchRoom ${state.matchId}: giving up on ${effect.kind} after ${attempts} attempts`, err);
-          next = this.afterGivingUp(state, effect);
+          next = await this.afterGivingUp(state, effect);
         } else {
           console.error(`MatchRoom ${state.matchId}: ${effect.kind} failed (attempt ${attempts})`, err);
           await this.ctx.storage.put(KEY_EFFECTS, [{ ...effect, attempts }, ...rest]);
@@ -257,11 +259,21 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
     }
   }
 
-  /** Players still get their end screen when the D1 side failed for good. */
-  private afterGivingUp(state: MatchState, effect: PendingEffect): MatchState {
-    if (effect.kind === "finalize") {
-      const now = Date.now();
-      this.sendToHumans(state, (side) => this.engine.matchEnd(state, side, now));
+  /**
+   * Players still get their end screen when the D1 side failed for good, and
+   * the matches row is closed (void, no rating change) so it cannot hold its
+   * players as "in a match". If that write fails too, the busy check heals
+   * the row once the room is gone (match-liveness.ts).
+   */
+  private async afterGivingUp(state: MatchState, effect: PendingEffect): Promise<MatchState> {
+    if (effect.kind !== "finalize" && effect.kind !== "cancelled") return state;
+    const now = Date.now();
+    if (effect.kind === "finalize") this.sendToHumans(state, (side) => this.engine.matchEnd(state, side, now));
+    const status = effect.kind === "finalize" && !(state.result && isCancelledReason(state.result.reason)) ? "void" : "cancelled";
+    try {
+      await closeMatchRow(this.env.DB, state.matchId, status, state.result?.endedAt ?? now);
+    } catch (err) {
+      console.error(`MatchRoom ${state.matchId}: could not close the matches row either`, err);
     }
     return state;
   }
@@ -309,14 +321,19 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
     if (state.result && isCancelledReason(state.result.reason)) return this.markCancelled(state, state.result.reason);
     const now = Date.now();
     let plan = await this.ctx.storage.get<FinalizationPlan>(KEY_PLAN);
-    if (!plan || plan.matchId !== state.matchId) {
+    const landed = plan !== undefined && plan.matchId === state.matchId && (await isMatchFinalized(this.env.DB, state.matchId));
+    if (!landed) {
+      // Rating rows are written as absolute values, so a retry plans again
+      // from the rows as they are now: a plan computed before a failure must
+      // never overwrite what a later match wrote in between.
       const ctx = await loadFinalizationContext(this.env.DB, state, now);
       plan = this.engine.planFinalization(state, ctx);
       // Kept until the state records the result: a retry after the batch
       // landed must reuse these summaries, not recompute from updated rows.
       await this.ctx.storage.put(KEY_PLAN, plan);
+      await writeFinalization(this.env.DB, plan);
     }
-    await writeFinalization(this.env.DB, plan);
+    if (!plan) throw new Error(`MatchRoom ${state.matchId}: no finalization plan`);
     const next: MatchState = { ...state, finalized: true, endSummaries: plan.summaries };
     await this.ctx.storage.put(KEY_STATE, next);
     await this.ctx.storage.delete(KEY_PLAN);
@@ -431,21 +448,30 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
     });
   }
 
-  /** Cancels a lobby or a match that has not started. No-op once finished. */
-  async cancel(reason: CancelReason): Promise<void> {
-    await this.serial(async () => {
+  /** Cancels a lobby or a match that has not started. No-op once it has started. Returns the phase afterwards. */
+  async cancel(reason: CancelReason): Promise<Phase | null> {
+    return this.serial(async () => {
       const state = await this.loadState();
-      if (!state || state.phase === "finished" || state.phase === "cancelled") return;
+      if (!state) return null;
+      if (state.phase === "finished" || state.phase === "cancelled") return state.phase;
       await this.commit(this.engine.step(state, { type: "cancel", reason }, Date.now()), null);
+      return (await this.loadState())?.phase ?? null;
     });
   }
 
-  /** Phase and human players. A room without state (never created, or cleaned up) reports cancelled. */
+  /** Phase, human players and whether D1 writes are settled. A room without state reports exists: false. */
   async summary(): Promise<MatchRoomSummary> {
     return this.serial(async () => {
       const state = await this.loadState();
-      if (!state) return { phase: "cancelled", players: [] };
-      return { phase: state.phase, players: humanIds(state) };
+      if (!state) return { exists: false, phase: "cancelled", players: [], finalized: false, effectsPending: false };
+      const effects = await this.loadEffects();
+      return {
+        exists: true,
+        phase: state.phase,
+        players: humanIds(state),
+        finalized: state.finalized,
+        effectsPending: effects.length > 0,
+      };
     });
   }
 

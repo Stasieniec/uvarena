@@ -79,6 +79,12 @@ export const MATCH = {
   rematchMs: 20000,
   /** The MatchRoom deletes its storage this long after the match ends. */
   cleanupMs: 10 * 60 * 1000,
+  /**
+   * A `matches` row still marked running whose MatchRoom has no state is only
+   * treated as dead (and closed) once it is this old: the factory initialises
+   * the room right after inserting the row.
+   */
+  roomInitGraceMs: 60 * 1000,
 } as const;
 
 // ---------------------------------------------------------------------------

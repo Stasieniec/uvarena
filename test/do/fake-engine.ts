@@ -355,7 +355,8 @@ export const fakeEngine: RoomEngine = {
         return res;
       }
       case "cancel":
-        if (s.phase === "finished" || s.phase === "cancelled") return { state: prev, out: [], effects: [] };
+        // Like the real engine: only a match still in its lobby can be cancelled.
+        if (s.phase !== "lobby") return { state: prev, out: [], effects: [] };
         return cancel(s, event.reason, now);
       case "tick":
         return tick(s, now);

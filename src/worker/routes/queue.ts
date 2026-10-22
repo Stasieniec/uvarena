@@ -7,7 +7,8 @@ import { GLICKO, MATCHMAKER } from "../../shared/game/config";
 import { CLOSE_CODES, type QueueErrorMessage } from "../../shared/protocol";
 import { HEADERS, matchmakerName } from "../do/contracts";
 import { matches } from "../db/schema";
-import { activeMatchId, getActiveCourse, getDb, ratingsFor, type Db } from "../db/queries";
+import { getActiveCourse, getDb, ratingsFor, type Db } from "../db/queries";
+import { liveMatchId } from "../match-liveness";
 import type { HonoEnv } from "../env";
 import { forwardedRequest, refuseSocket, socketPrecheck } from "../middleware/ws";
 
@@ -44,7 +45,9 @@ queueRoutes.get("/queue/ws", async (c) => {
   }
   const courseId = query.data.course;
 
-  const active = await activeMatchId(db, me.id);
+  // Checked with the match's room, so a row left `active` by a failed D1
+  // write is closed here instead of locking the player out of ranked.
+  const active = await liveMatchId(c.env, me.id);
   if (active) return refuseSocket(CLOSE_CODES.normal, "already in a match", queueError("already_in_match", active));
 
   const [ranked, lastOpponent] = await Promise.all([
