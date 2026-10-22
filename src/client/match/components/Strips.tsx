@@ -191,7 +191,7 @@ function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButt
   const label =
     state === "armed" ? "Armed" : state === "used" || state === "spent" ? "Used" : state === "pending" ? "..." : POWERUP_KIND_LABEL[id];
   const cls = [
-    "relative flex h-14 items-center gap-2 rounded-xl px-2.5 text-left ring-1 transition-[transform,opacity] duration-150",
+    "relative flex h-14 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left ring-1 transition-[transform,opacity] duration-150",
     tappable ? "active:scale-95 bg-surface-2 ring-white/15" : "bg-surface ring-white/5",
     state === "armable" || state === "usable" ? "rq-glow" : "",
     state === "armed" ? "rq-armed bg-[color-mix(in_srgb,var(--color-zeus)_16%,var(--color-surface-2))]" : "",
@@ -209,7 +209,7 @@ function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButt
       aria-pressed={state === "armed"}
       aria-label={`${POWERUP_NAMES[id]}: ${POWERUP_HINTS[id]}${dim ? " Used." : ""}`}
     >
-      <PowerupIcon id={id} size={26} />
+      <PowerupIcon id={id} size={24} />
       <span className="min-w-0 leading-tight">
         <span className={`block truncate text-[13px] font-semibold ${dim ? "line-through" : ""}`}>{POWERUP_NAMES[id]}</span>
         <span className={`block text-[11px] ${state === "armed" ? "font-semibold text-zeus" : "text-muted"}`}>{label}</span>

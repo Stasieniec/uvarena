@@ -1,7 +1,7 @@
 // Hand-written UI primitives. Phone first: every control is at least 48 px tall.
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
-import { errorMessage } from "../lib/api";
+import { ApiRequestError, errorMessage } from "../lib/api";
 import { BackIcon, XIcon } from "./icons";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
@@ -84,10 +84,17 @@ export function FullScreenLoader() {
 }
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
+  const navigate = useNavigate();
+  // Retrying a "not found" finds nothing again: offer the way back instead.
+  const missing = error instanceof ApiRequestError && error.status === 404;
   return (
     <div className={cx("flex flex-col items-center gap-3 rounded-2xl border border-wrong/30 bg-wrong/5 p-5 text-center", className)} role="alert">
       <p className="text-sm text-text">{errorMessage(error)}</p>
-      {onRetry ? (
+      {missing ? (
+        <Button variant="secondary" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))} className="min-w-32">
+          Back
+        </Button>
+      ) : onRetry ? (
         <Button variant="secondary" onClick={onRetry} className="min-w-32">
           Try again
         </Button>

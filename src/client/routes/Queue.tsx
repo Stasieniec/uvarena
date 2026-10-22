@@ -15,8 +15,8 @@ import { qk } from "../lib/queries";
 import { SwordsIcon } from "../components/icons";
 import { Button, ErrorState, buttonClass } from "../components/ui";
 
-/** How long "Opponent found" stays up before the match screen takes over. */
-const FOUND_PAUSE_MS = 900;
+/** How long "Opponent found" stays up here; the match screen then shows who you drew. */
+const FOUND_PAUSE_MS = 500;
 
 export function Queue() {
   const navigate = useNavigate();

@@ -1,4 +1,5 @@
 // The six power-ups: names, kinds, one-line effects (design.md "Power-ups"), and icons.
+import { PowerupIcon as MatchPowerupIcon } from "../match/components/icons";
 import { POWERUPS } from "@shared/game/config";
 import type { ReactNode } from "react";
 import type { PowerupId } from "@shared/game/types";
@@ -33,60 +34,11 @@ export function powerupInfo(id: PowerupId): PowerupInfo {
   return { id, kind: kindOf(id), ...BASE[id] };
 }
 
-const PATHS: Record<PowerupId, ReactNode> = {
-  zeus: <path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2L13.5 2Z" fill="currentColor" stroke="none" />,
-  aegis: (
-    <>
-      <path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6l-8-3Z" fill="currentColor" fillOpacity={0.25} />
-      <circle cx="12" cy="11.5" r="3" fill="currentColor" stroke="none" />
-    </>
-  ),
-  nemesis: (
-    <>
-      <path d="M12 3v18M5 7h14" />
-      <path d="M5 7 2.5 13a3 3 0 0 0 5 0L5 7ZM19 7l-2.5 6a3 3 0 0 0 5 0L19 7Z" fill="currentColor" fillOpacity={0.3} />
-      <path d="M8 21h8" />
-    </>
-  ),
-  oracle: (
-    <>
-      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" fill="currentColor" fillOpacity={0.2} />
-      <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none" />
-    </>
-  ),
-  hermes: (
-    <>
-      <path d="M3 15c4 0 6-2 8-5M3 11c3 0 5-1.5 6.5-3.5M4 19c5 0 9-2 12-7l5-7" />
-      <path d="M14 14.5c2.5.5 4.5 0 6.5-1.5" />
-    </>
-  ),
-  phoenix: (
-    <path
-      d="M12 22c-4 0-7-2.7-7-6.6 0-3.1 2-5.4 3.6-7 .2 2 1 3.3 2.2 3.8-.3-3.6 1-7 4.2-9.2-.3 3 .6 5 2.2 6.7 1.5 1.6 2.8 3.4 2.8 5.9 0 3.9-3.1 6.4-8 6.4Z"
-      fill="currentColor"
-      fillOpacity={0.35}
-    />
-  ),
-};
-
+/** The same drawings as the match screen, so a power-up looks the same everywhere. */
 export function PowerupIcon({ id, size = 28, className }: { id: PowerupId; size?: number; className?: string }) {
-  const info = BASE[id];
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ color: info.color }}
-      className={className}
-      role="img"
-      aria-label={info.name}
-    >
-      {PATHS[id]}
-    </svg>
+    <span role="img" aria-label={BASE[id].name} className={className} style={{ display: "inline-flex", width: size, height: size }}>
+      <MatchPowerupIcon id={id} size={size} />
+    </span>
   );
 }

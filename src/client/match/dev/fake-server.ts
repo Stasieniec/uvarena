@@ -90,6 +90,8 @@ export interface Scenario {
   surrender?: { side: Side; round: number; afterShownMs: number };
   /** Private lobby before the intro: side 1 joins and readies up; side 0 taps Ready. */
   lobby?: { code: string; joinAtMs: number; readyAtMs: [number, number] };
+  /** Ranked or bot match opened before side 1 connected: side 1 connects at `connectAtMs`. */
+  waiting?: { connectAtMs: number };
 }
 
 export type ServerEvent = { kind: "msg"; to: Side; msg: ServerMessage } | { kind: "auto"; side: Side; msg: ClientMessage };
@@ -221,10 +223,25 @@ export class FakeMatchServer {
   // ----- driving -----------------------------------------------------------
 
   private joined = true;
+  private noShowAt: number | null = null;
 
   /** Starts the match: the lobby if the scenario has one, else the intro. */
   start(): ServerEvent[] {
     const lobby = this.scenario.lobby;
+    const waiting = this.scenario.waiting;
+    if (waiting && !lobby) {
+      this.setPhase("lobby", null);
+      this.noShowAt = this.now + MATCH.noShowMs;
+      this.sides[1].connected = false;
+      this.emit(0, this.snapshot(0));
+      this.at(this.now + waiting.connectAtMs, () => {
+        this.sides[1].connected = true;
+        this.noShowAt = null;
+        this.emit(0, { type: "opponent_connection", serverNow: this.now, connected: true, forfeitAt: null });
+        this.startIntro();
+      });
+      return this.drain();
+    }
     if (!lobby) {
       this.startIntro();
       return this.drain();
@@ -823,6 +840,7 @@ export class FakeMatchServer {
           ? { you: st.rematch, opponent: this.sides[o].rematch, until: this.rematchUntil, matchId: this.rematchMatchId }
           : null,
       opponentForfeitAt: this.forfeitAt[o],
+      noShowAt: this.phase === "lobby" ? this.noShowAt : null,
     };
   }
 }

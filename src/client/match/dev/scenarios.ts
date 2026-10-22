@@ -243,6 +243,72 @@ const BOT_ROUNDS: ScenarioRound[] = [
   },
 ];
 
+// Crowded questions for the small-phone layout: five long multiple-select
+// options with a long explanation (both wrong, your Zeus fizzles), and a long
+// single choice.
+const DENSE_ROUNDS: ScenarioRound[] = [
+  {
+    question: {
+      type: "multi",
+      prompt: "Which findings does the ReAct paper report for prompting PaLM-540B?",
+      statement: null,
+      codeLang: null,
+      options: opts(
+        "A frequent ReAct error was repeating earlier thoughts and actions in a loop.",
+        "On HotpotQA, hallucination was a far bigger problem for chain-of-thought than for ReAct.",
+        "ReAct alone scored higher than chain-of-thought on HotpotQA.",
+        "Combining ReAct with self-consistency chain-of-thought gave the best prompting results.",
+        "ReAct needed fine-tuning before it beat acting-only prompting.",
+      ),
+      key: { kind: "options", ids: ["a", "b", "d"] },
+      whyShort:
+        "ReAct hallucinated far less than chain-of-thought but got stuck repeating itself, scored below it on HotpotQA alone, and did best combined with self-consistency.",
+    },
+    sides: [
+      { arm: "zeus", armAtMs: 900, answer: { kind: "options", ids: ["c"] }, answerAtMs: 7000 },
+      { answer: { kind: "options", ids: ["b", "c", "d"] }, answerAtMs: 9700 },
+    ],
+  },
+  {
+    question: {
+      type: "single",
+      prompt:
+        "A model behind an API keeps its median latency flat, but its p99 latency climbs every time traffic spikes. The team has one sprint. Which change most directly targets the cause?",
+      statement: null,
+      codeLang: null,
+      options: opts(
+        "Autoscale replicas on queue depth, so requests stop waiting behind a full batch.",
+        "Retrain the model on more recent data to improve its accuracy.",
+        "Log every request body so the slow ones can be replayed later.",
+        "Move the model weights to a faster object store in another region.",
+      ),
+      key: { kind: "options", ids: ["a"] },
+      whyShort: "Tail latency that grows with load is queueing; adding capacity when the queue grows removes the wait.",
+    },
+    sides: [
+      { answer: { kind: "options", ids: ["a"] }, answerAtMs: 6000 },
+      { answer: { kind: "options", ids: ["c"] }, answerAtMs: 9000 },
+    ],
+  },
+];
+
+/** A ladder win: you answer fast, the bot never does, and round 6 knocks it out. */
+const BOTWIN_ROUNDS: ScenarioRound[] = DUEL_ROUNDS.slice(0, 7).map((r) => ({
+  question: r.question,
+  sides: [{ answer: r.question.key, answerAtMs: 800 }, {}],
+}));
+
+const ECHO_PLAYER = {
+  userId: null,
+  kind: "bot",
+  name: "Echo",
+  avatarUrl: null,
+  botLevel: -1,
+  loadout: ["zeus", "aegis", "oracle"],
+  rating: { value: 1500, provisional: true },
+  ratingChange: null,
+} as const;
+
 export const SCENARIOS: Record<string, Scenario> = {
   duel: {
     id: "duel",
@@ -340,6 +406,91 @@ export const SCENARIOS: Record<string, Scenario> = {
     rounds: DUEL_ROUNDS,
     lobby: { code: "K7Q4MX", joinAtMs: 1500, readyAtMs: [3500, 2500] },
   },
+  waiting: {
+    id: "waiting",
+    title: "Ranked, opponent late",
+    matchId: "dev-waiting",
+    courseId: "agai",
+    mode: "ranked",
+    rated: true,
+    players: [
+      {
+        userId: "u-stas",
+        kind: "human",
+        name: "stas",
+        avatarUrl: null,
+        botLevel: null,
+        loadout: ["zeus", "aegis", "oracle"],
+        rating: { value: 1540, provisional: true },
+        ratingChange: { before: 1540, after: 1702, provisional: true },
+      },
+      {
+        userId: "u-tomek",
+        kind: "human",
+        name: "tomek",
+        avatarUrl: null,
+        botLevel: null,
+        loadout: ["nemesis", "hermes", "phoenix"],
+        rating: { value: 1588, provisional: false },
+        ratingChange: { before: 1588, after: 1570, provisional: false },
+      },
+    ],
+    rounds: DUEL_ROUNDS,
+    waiting: { connectAtMs: 6000 },
+  },
+  dense: {
+    id: "dense",
+    title: "Crowded questions",
+    matchId: "dev-dense",
+    courseId: "agai",
+    mode: "bot",
+    rated: true,
+    players: [
+      {
+        userId: "u-zoe",
+        kind: "human",
+        name: "zoe",
+        avatarUrl: null,
+        botLevel: null,
+        loadout: ["zeus", "oracle", "hermes"],
+        rating: { value: 1500, provisional: true },
+        ratingChange: { before: 1500, after: 1462, provisional: true },
+      },
+      { ...ECHO_PLAYER, loadout: [...ECHO_PLAYER.loadout], rating: { ...ECHO_PLAYER.rating } },
+    ],
+    rounds: DENSE_ROUNDS,
+  },
+  botwin: {
+    id: "botwin",
+    title: "Ladder win",
+    matchId: "dev-botwin",
+    courseId: "agai",
+    mode: "bot",
+    rated: true,
+    players: [
+      {
+        userId: "u-stas",
+        kind: "human",
+        name: "stas",
+        avatarUrl: null,
+        botLevel: null,
+        loadout: ["zeus", "aegis", "oracle"],
+        rating: { value: 1500, provisional: true },
+        ratingChange: { before: 1500, after: 1376, provisional: true },
+      },
+      {
+        userId: null,
+        kind: "bot",
+        name: "Narcissus",
+        avatarUrl: null,
+        botLevel: 2,
+        loadout: ["zeus", "aegis", "oracle"],
+        rating: { value: 1200, provisional: false },
+        ratingChange: null,
+      },
+    ],
+    rounds: BOTWIN_ROUNDS,
+  },
 };
 
 /** Named moments for screenshots: a phase in a round, plus ms into it. */
@@ -383,4 +534,16 @@ export const MOMENTS: Record<string, Moment> = {
   end: { scenario: "duel", round: 10, phase: "finished", offsetMs: 2500 },
   "end-loss": { scenario: "duel", side: 1, round: 10, phase: "finished", offsetMs: 2500 },
   "end-bot": { scenario: "bot", round: 4, phase: "finished", offsetMs: 2500 },
+  found: { scenario: "waiting", round: 0, phase: "lobby", offsetMs: 2500 },
+  "found-intro": { scenario: "waiting", round: 0, phase: "intro", offsetMs: 300 },
+  "dense-question": { scenario: "dense", round: 1, phase: "question", offsetMs: 3000 },
+  "dense-reveal": { scenario: "dense", round: 1, phase: "reveal", offsetMs: 2600 },
+  "long-single": { scenario: "dense", round: 2, phase: "question", offsetMs: 2000 },
+  "long-single-reveal": { scenario: "dense", round: 2, phase: "reveal", offsetMs: 2600 },
+  "damage-x2": { scenario: "duel", round: 6, phase: "arming", offsetMs: 900 },
+  "damage-x3": { scenario: "duel", round: 8, phase: "arming", offsetMs: 900 },
+  "x3-question": { scenario: "duel", round: 8, phase: "question", offsetMs: 2000 },
+  knockout: { scenario: "botwin", round: 6, phase: "reveal", offsetMs: 2200 },
+  "knockout-loss": { scenario: "duel", side: 1, round: 10, phase: "reveal", offsetMs: 2200 },
+  "end-bot-win": { scenario: "botwin", round: 6, phase: "finished", offsetMs: 2500 },
 };

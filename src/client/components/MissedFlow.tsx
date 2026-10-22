@@ -7,7 +7,7 @@ import type { MissedAnswerResponse, MissedQuestionResponse, MissedRetryResponse,
 import { LIMITS } from "@shared/game/config";
 import type { AnswerKey } from "@shared/game/types";
 import { apiRequest, errorMessage } from "../lib/api";
-import { answerIds, buildAnswer, isRenderable, togglePick } from "../lib/answers";
+import { answerIds, buildAnswer, isRenderable, stableOrder, togglePick } from "../lib/answers";
 import { formatAgo } from "../lib/format";
 import { qk } from "../lib/queries";
 import { ExternalIcon, FlagIcon } from "./icons";
@@ -186,7 +186,10 @@ export function MissedFlow({
     if (q.type !== "multi") submit(next);
   };
 
-  const rows = optionRows(q);
+  // The server shuffles options on every fetch; keep the order this view first showed, so nothing jumps after a retry or an undo.
+  const firstOrder = useRef<{ id: string; order: string[] } | null>(null);
+  if (firstOrder.current?.id !== q.id) firstOrder.current = { id: q.id, order: q.options.map((o) => o.id) };
+  const rows = stableOrder(optionRows(q), firstOrder.current.order);
 
   if (!isRenderable(q.type)) {
     return <p className="rounded-2xl border border-border bg-surface p-4 text-muted">This question type cannot be shown here yet.</p>;
@@ -223,7 +226,7 @@ export function MissedFlow({
       </div>
 
       <OptionList
-        question={q}
+        question={{ ...q, options: q.type === "truefalse" ? q.options : rows }}
         marks={marks}
         onPick={stage === "retry" && !revealed ? onPick : undefined}
         disabled={retry.isPending}

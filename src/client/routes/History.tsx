@@ -140,9 +140,9 @@ function RoundCard({ round, mine, theirs, myName, theirName }: { round: Round; m
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1">
           {dmgToThem > 0 ? (
-            <span className="rounded-md bg-you/15 px-1.5 py-0.5 text-xs font-bold text-you tabular-nums">{formatDelta(-dmgToThem)}</span>
+            <span className="rounded-md bg-you/15 px-1.5 py-0.5 text-xs font-bold whitespace-nowrap text-you tabular-nums">Hit {formatNumber(dmgToThem)}</span>
           ) : dmgToMe > 0 ? (
-            <span className="rounded-md bg-opponent/15 px-1.5 py-0.5 text-xs font-bold text-opponent tabular-nums">{formatDelta(-dmgToMe)}</span>
+            <span className="rounded-md bg-opponent/15 px-1.5 py-0.5 text-xs font-bold whitespace-nowrap text-opponent tabular-nums">Took {formatNumber(dmgToMe)}</span>
           ) : (
             <span className="text-xs text-muted">no damage</span>
           )}

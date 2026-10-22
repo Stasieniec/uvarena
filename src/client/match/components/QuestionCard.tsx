@@ -45,6 +45,8 @@ export function QuestionCard({ state, question, clock, onTick }: Props) {
         ? "text-[17px]"
         : "text-xl";
   const theme = modeTheme(state.mode);
+  // The prompt has been read by the reveal: a crowded one steps down to make room for the answers and the explanation.
+  const shownSize = reveal && (crowded || long) && !isTf ? "text-[15px]" : size;
 
   return (
     <section
@@ -58,7 +60,7 @@ export function QuestionCard({ state, question, clock, onTick }: Props) {
           <span>{TYPE_LABEL[question.type]}</span>
         </div>
       )}
-      <div className={`px-4 pt-1.5 leading-snug font-semibold ${reveal ? "pb-3" : "pb-4"} ${size}`}>
+      <div className={`px-4 leading-snug font-semibold ${reveal ? "pt-2 pb-2.5" : "pt-1.5 pb-4"} ${shownSize}`}>
         <Prompt text={text} fill={fill} />
       </div>
     </section>
@@ -172,7 +174,7 @@ function RevealHeader({ reveal }: { reveal: RevealPayload }) {
 /**
  * The reveal's teaching lines: the Zeus fizzle, the one-line explanation, the
  * report flag and "Saved to missed questions". It sits under the answers and
- * sticks to the bottom of the duel area, so it is never pushed out of sight.
+ * keeps its full height; the answer list above it scrolls instead.
  */
 export function RevealBand({
   reveal,
@@ -186,27 +188,29 @@ export function RevealBand({
   const fizzled =
     (reveal.zeus === "you" && reveal.damageToOpponent === 0) || (reveal.zeus === "opponent" && reveal.damageToYou === 0);
   return (
-    <div className="rq-rise sticky bottom-0 z-10 shrink-0 rounded-2xl border border-border bg-surface px-4 pt-2.5 pb-3 shadow-[0_-10px_24px_-6px_rgba(4,7,18,0.95)]">
-      {fizzled && <p className="rq-display mb-1.5 text-sm font-bold text-zeus">{LINES.zeusFizzle}</p>}
-      <div className="flex items-start gap-2">
-        <p className="min-w-0 flex-1 text-[14px] leading-snug text-text/85">{reveal.whyShort}</p>
-        {onReport && (
-          <button
-            type="button"
-            disabled={reported}
-            onClick={() => onReport(reveal.questionId)}
-            aria-label={reported ? LINES.reportedQuestion : "Report this question"}
-            className="-my-1 flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-semibold text-muted hover:text-text disabled:opacity-60"
-          >
-            <FlagIcon size={14} />
-            {reported ? LINES.reportedQuestion : LINES.reportQuestion}
-          </button>
-        )}
-      </div>
-      {reveal.savedToMissed && (
-        <span className="mt-2 inline-block rounded-full bg-wrong/15 px-2.5 py-0.5 text-[11px] font-semibold text-wrong ring-1 ring-wrong/30">
-          {LINES.savedToMissed}
-        </span>
+    <div className="rq-rise relative z-10 shrink-0 rounded-2xl border border-border bg-surface px-3.5 pt-2 pb-2.5 shadow-[0_-10px_24px_-6px_rgba(4,7,18,0.95)]">
+      {fizzled && <p className="rq-display mb-1 text-sm font-bold text-zeus">{LINES.zeusFizzle}</p>}
+      <p className="text-[13.5px] leading-snug text-text/90">{reveal.whyShort}</p>
+      {(reveal.savedToMissed || onReport) && (
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {reveal.savedToMissed ? (
+            <span className="rounded-full bg-wrong/15 px-2.5 py-0.5 text-[11px] font-semibold text-wrong ring-1 ring-wrong/30">{LINES.savedToMissed}</span>
+          ) : (
+            <span />
+          )}
+          {onReport && (
+            <button
+              type="button"
+              disabled={reported}
+              onClick={() => onReport(reveal.questionId)}
+              aria-label={reported ? LINES.reportedQuestion : "Report this question"}
+              className="-my-1 -mr-1.5 flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-semibold text-muted hover:text-text disabled:opacity-60"
+            >
+              <FlagIcon size={14} />
+              {reported ? LINES.reportedQuestion : LINES.reportQuestion}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

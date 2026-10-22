@@ -18,6 +18,17 @@ interface Props {
   /** Answers flip a moment into the reveal. */
   flipped: boolean;
   onAnswer(answer: AnswerKey): void;
+  /** Multiple select: the options ticked so far (owned by the duel, so Lock in can sit outside the scrolling list). */
+  picked: string[];
+  onToggle(id: string): void;
+}
+
+/** Multiple-select ticks for the current question; a new question clears them. */
+export function useMultiPick(round: number | null): [string[], (id: string) => void] {
+  const [picked, setPicked] = useState<string[]>([]);
+  useEffect(() => setPicked([]), [round]);
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  return [picked, toggle];
 }
 
 type Mark = "none" | "selected" | "right" | "wrong" | "missed";
@@ -26,7 +37,7 @@ function idsOf(a: AnswerKey | null | undefined): string[] {
   return a && a.kind === "options" ? a.ids : [];
 }
 
-export function AnswerArea({ state, question, flipped, onAnswer }: Props) {
+export function AnswerArea({ state, question, flipped, onAnswer, picked, onToggle }: Props) {
   const reveal = state.phase === "reveal" && flipped ? state.reveal : null;
   const locked = state.phase !== "question" || state.yourAnswer !== null;
 
@@ -36,7 +47,7 @@ export function AnswerArea({ state, question, flipped, onAnswer }: Props) {
   if (question.type === "order" || question.type === "match") {
     return <p className="px-2 text-center text-sm text-muted">This question type is not playable yet. It counts as a timeout.</p>;
   }
-  return <Options state={state} question={question} reveal={reveal} locked={locked} onAnswer={onAnswer} />;
+  return <Options state={state} question={question} reveal={reveal} locked={locked} onAnswer={onAnswer} picked={picked} onToggle={onToggle} />;
 }
 
 /** The opponent's pick: a small orange tag on the top edge of the option, inside its width. */
@@ -107,17 +118,18 @@ function Options({
   reveal,
   locked,
   onAnswer,
+  picked,
+  onToggle,
 }: {
   state: MatchUiState;
   question: QuestionView;
   reveal: RevealPayload | null;
   locked: boolean;
   onAnswer(a: AnswerKey): void;
+  picked: string[];
+  onToggle(id: string): void;
 }) {
   const multi = question.type === "multi";
-  const [picked, setPicked] = useState<string[]>([]);
-  // A new question clears the selection.
-  useEffect(() => setPicked([]), [question.round]);
 
   const mine = idsOf(state.yourAnswer);
   const keyIds = idsOf(reveal?.key);
@@ -127,11 +139,13 @@ function Options({
   // Many or long options get tighter rows; during the reveal, when nothing is tapped any more, tighter still.
   const dense = question.options.length >= 5 || question.options.reduce((n, o) => n + o.text.length, 0) > 260;
   const rowCls = reveal
-    ? "min-h-11 gap-2.5 px-3 py-1.5"
+    ? dense
+      ? "min-h-10 gap-2 px-3 py-1"
+      : "min-h-11 gap-2.5 px-3 py-1.5"
     : dense
-      ? "min-h-12 gap-2.5 px-3 py-2"
+      ? "min-h-12 gap-2.5 px-3 py-1.5"
       : "min-h-14 gap-3 px-3.5 py-2.5";
-  const textCls = reveal || dense ? "text-[15px]" : "text-[16px]";
+  const textCls = reveal && dense ? "text-[13.5px] leading-[1.3]" : reveal || dense ? "text-[14.5px] leading-[1.3]" : "text-[16px] leading-snug";
 
   const tap = (o: OptionText) => {
     if (locked || hidden.has(o.id)) return;
@@ -139,7 +153,7 @@ function Options({
       onAnswer({ kind: "options", ids: [o.id] });
       return;
     }
-    setPicked((p) => (p.includes(o.id) ? p.filter((x) => x !== o.id) : [...p, o.id]));
+    onToggle(o.id);
   };
 
   const selectedNow = reveal || state.yourAnswer ? mine : picked;
@@ -176,7 +190,7 @@ function Options({
           >
             {multi && (
               <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-2 ${sel ? "bg-you text-bg ring-you" : "ring-white/30"}`}
+                className={`flex ${reveal ? "h-5 w-5" : "h-6 w-6"} shrink-0 items-center justify-center rounded-md ring-2 ${sel ? "bg-you text-bg ring-you" : "ring-white/30"}`}
                 aria-hidden
               >
                 {sel && <CheckIcon size={16} />}
@@ -185,7 +199,7 @@ function Options({
             {code ? (
               <pre className="rq-code min-w-0 flex-1 text-[13px] leading-snug">{o.text}</pre>
             ) : (
-              <span className={`min-w-0 flex-1 leading-snug font-medium ${textCls}`}>
+              <span className={`min-w-0 flex-1 font-medium ${textCls}`}>
                 <InlineText text={o.text} />
               </span>
             )}
@@ -195,22 +209,27 @@ function Options({
           </button>
         );
       })}
-      {multi && !reveal && (
-        <button
-          type="button"
-          disabled={locked || picked.length === 0}
-          onClick={() => onAnswer({ kind: "options", ids: picked })}
-          className={`mt-1 h-14 rounded-xl text-lg font-bold transition-[transform,opacity] active:scale-[0.98] ${
-            state.yourAnswer
-              ? "bg-surface text-you ring-1 ring-you/50"
-              : picked.length === 0
-                ? "bg-surface-2 text-muted"
-                : "bg-you text-bg shadow-[0_0_24px_-4px_var(--color-you)]"
-          }`}
-        >
-          {state.yourAnswer ? LINES.lockedIn : LINES.lockIn}
-        </button>
-      )}
     </div>
+  );
+}
+
+/** Multiple select's Lock in, under the scrolling answer list so it is always in reach. */
+export function LockInButton({ state, picked, onAnswer }: { state: MatchUiState; picked: string[]; onAnswer(a: AnswerKey): void }) {
+  const locked = state.phase !== "question" || state.yourAnswer !== null;
+  return (
+    <button
+      type="button"
+      disabled={locked || picked.length === 0}
+      onClick={() => onAnswer({ kind: "options", ids: picked })}
+      className={`h-13 shrink-0 rounded-xl text-lg font-bold transition-[transform,opacity] active:scale-[0.98] ${
+        state.yourAnswer
+          ? "bg-surface text-you ring-1 ring-you/50"
+          : picked.length === 0
+            ? "bg-surface-2 text-muted"
+            : "bg-you text-bg shadow-[0_0_24px_-4px_var(--color-you)]"
+      }`}
+    >
+      {state.yourAnswer ? LINES.lockedIn : LINES.lockIn}
+    </button>
   );
 }

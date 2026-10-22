@@ -27,10 +27,12 @@ function lineSize(text: string): string {
   return "min(9.4vw, 44px)";
 }
 
+/** Whose power-up this is. The opponent's is marked as incoming, so a threat never reads like your own. */
 function Caption({ who, opponentName }: { who: BannerItem["who"]; opponentName: string }) {
+  if (who === "you") return <div className="mb-2 text-xs font-semibold tracking-[0.2em] text-you uppercase">You</div>;
   return (
-    <div className={`mb-2 text-xs font-semibold tracking-[0.2em] uppercase ${who === "you" ? "text-you" : "text-opponent"}`}>
-      {who === "you" ? "You" : opponentName}
+    <div className="mb-2.5 rounded-full bg-opponent/20 px-3 py-1 text-xs font-bold tracking-[0.16em] text-opponent uppercase ring-1 ring-opponent/60">
+      Incoming from {opponentName}
     </div>
   );
 }
@@ -120,13 +122,20 @@ export function BannerOverlay({ banner, opponent }: { banner: BannerState; oppon
   const aegis = items.some((i) => i.powerup === "aegis" && i.outcome === "active");
   const small = items.length > 1;
   const name = opponent?.name ?? "Opponent";
+  const incoming = items.every((i) => i.who === "opponent");
   const style = { "--rq-banner-ms": `${TIMING.bannerMs}ms` } as CSSProperties;
 
   return (
     <div
       key={banner.seq}
       className="rq-banner absolute inset-0 z-50 flex flex-col items-center justify-center gap-7 overflow-hidden px-4"
-      style={{ ...style, background: "radial-gradient(ellipse at center, rgba(12,19,44,0.96) 0%, rgba(4,7,18,0.99) 75%)" }}
+      style={{
+        ...style,
+        background: incoming
+          ? "radial-gradient(ellipse at center, rgba(60,24,10,0.96) 0%, rgba(18,6,4,0.99) 75%)"
+          : "radial-gradient(ellipse at center, rgba(12,19,44,0.96) 0%, rgba(4,7,18,0.99) 75%)",
+        boxShadow: incoming ? "inset 0 0 0 3px rgba(251,146,60,0.55), inset 0 0 60px 10px rgba(251,146,60,0.25)" : undefined,
+      }}
       role="status"
       aria-live="assertive"
     >
@@ -177,9 +186,9 @@ export function QuickBanner({ fx }: { fx: QuickFx }) {
             style={{ top: `${top}%`, animationDelay: `${i * 70}ms`, background: "linear-gradient(90deg, transparent, #fff, transparent)" }}
           />
         ))}
-      <div className="rq-slam flex items-center gap-3">
-        <PowerupIcon id={fx.powerup} size={30} />
-        <span className="rq-display text-[min(5.4vw,25px)] font-black whitespace-nowrap" style={{ color, textShadow: `0 0 16px ${color}` }}>
+      <div className="rq-slam flex items-center gap-2.5 px-4">
+        <PowerupIcon id={fx.powerup} size={28} />
+        <span className="rq-display text-[min(4.9vw,23px)] font-black whitespace-nowrap" style={{ color, textShadow: `0 0 16px ${color}` }}>
           {text}
         </span>
       </div>

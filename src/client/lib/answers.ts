@@ -46,3 +46,12 @@ export function togglePick(type: QuestionType, picked: readonly string[], id: st
 export function isRenderable(type: QuestionType): boolean {
   return type === "single" || type === "multi" || type === "truefalse" || type === "cloze";
 }
+
+/** Rows sorted by a remembered id order; ids it does not know go last, in their own order. */
+export function stableOrder<T extends { id: string }>(rows: readonly T[], order: readonly string[]): T[] {
+  const rank = new Map(order.map((id, i) => [id, i]));
+  return rows
+    .map((r, i) => ({ r, k: rank.get(r.id) ?? order.length + i }))
+    .sort((a, b) => a.k - b.k)
+    .map((x) => x.r);
+}

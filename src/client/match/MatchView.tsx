@@ -14,7 +14,7 @@ import { FX } from "./fx";
 import { sfx } from "./sfx";
 import { canSurrender, canUseQuick, type MatchUiState } from "./state";
 import type { MatchActions } from "./useMatch";
-import { AnswerArea } from "./components/AnswerArea";
+import { AnswerArea, LockInButton, useMultiPick } from "./components/AnswerArea";
 import { BannerOverlay, OpponentToast, PhoenixOverlay, QuickBanner } from "./components/Banners";
 import { MuteButton, SurrenderButton } from "./components/Controls";
 import { EndView, type NextBot } from "./components/EndView";
@@ -396,11 +396,12 @@ function Streak({ state, rootRef }: { state: MatchUiState; rootRef: RefObject<HT
 }
 
 /**
- * The middle of the duel screen. It scrolls when a question does not fit (the
- * prompt and the reveal band are never clipped), and says so with a fade and
- * an arrow at the bottom while there is more below.
+ * The answer list's own scroll region, between the question card and the
+ * reveal band. The prompt above and the band below never move or clip; when
+ * the answers do not fit, this part scrolls and says so with a fade and an
+ * arrow at its bottom edge. Answers sit at the bottom, in the thumb zone.
  */
-function DuelArea({ scrollKey, hint, children }: { scrollKey: string; hint: boolean; children: ReactNode }) {
+function AnswerScroll({ scrollKey, children }: { scrollKey: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   useEffect(() => {
@@ -426,16 +427,19 @@ function DuelArea({ scrollKey, hint, children }: { scrollKey: string; hint: bool
     };
   }, []);
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      <div ref={ref} className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain px-3 pt-1 pb-2">
-        {children}
+    <div className="relative flex min-h-[7.5rem] flex-1 flex-col">
+      <div ref={ref} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+        <div className="mt-auto pt-2.5 pb-0.5">{children}</div>
       </div>
-      {more && hint && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex h-10 items-end justify-center bg-gradient-to-t from-bg to-transparent pb-0.5">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="rq-pulse text-text/80" aria-hidden>
-            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
+      {more && (
+        <>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-3 bg-gradient-to-t from-bg/90 to-transparent" />
+          <div className="pointer-events-none absolute right-1 bottom-1 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/80 ring-1 ring-white/25" aria-hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="rq-pulse text-text">
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </>
       )}
     </div>
   );
@@ -461,6 +465,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
   const question = state.question;
   const showQuestion = (state.phase === "question" || state.phase === "reveal") && question !== null;
   const quick = freshQuick(state, clock);
+  const [picked, togglePick] = useMultiPick(question?.round ?? null);
   const toastVisible = usePulse(quick && quick.who === "opponent" ? quick.seq : null, FX.toastMs);
   // The reveal's report flag: one tap files the report without leaving the duel.
   const [reported, setReported] = useState<ReadonlySet<string>>(() => new Set());
@@ -519,13 +524,14 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
         mode={state.mode}
         opponentAnswered={state.phase === "question" && state.opponentAnswered}
       />
-      <DuelArea scrollKey={`${state.round}:${showQuestion ? "q" : "a"}`} hint={state.phase === "question"}>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pt-1 pb-2">
         {showQuestion ? (
           <>
             <QuestionCard state={state} question={question!} clock={clock} onTick={onTick} />
-            <div className="mt-auto pt-1">
-              <AnswerArea state={state} question={question!} flipped={step >= 1} onAnswer={actions.answer} />
-            </div>
+            <AnswerScroll scrollKey={`${state.round}`}>
+              <AnswerArea state={state} question={question!} flipped={step >= 1} onAnswer={actions.answer} picked={picked} onToggle={togglePick} />
+            </AnswerScroll>
+            {question!.type === "multi" && state.phase === "question" && <LockInButton state={state} picked={picked} onAnswer={actions.answer} />}
             {state.phase === "reveal" && state.reveal && step >= 4 && (
               <RevealBand reveal={state.reveal} reported={reported.has(state.reveal.questionId)} onReport={report} />
             )}
@@ -543,7 +549,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
             covered={state.phase === "banner" && state.banner !== null}
           />
         )}
-      </DuelArea>
+      </div>
       <YourStrip player={you} hp={displayHp.you} hit={hit?.victim === "you" ? hit.view : null} buttons={buttons} onTap={onTap} />
     </>
   );

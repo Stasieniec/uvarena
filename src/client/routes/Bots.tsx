@@ -79,7 +79,12 @@ export function Bots() {
               <span className="block text-sm text-muted">{bots.data.echo.line}</span>
             </span>
             <span className="text-right">
-              <span className="block text-lg font-semibold tabular-nums text-[#bfdbfe]">{Math.round(bots.data.echo.rating)}</span>
+              {/* Echo plays at your bot rating, so show that number (the same one as below). */}
+              {home.data ? (
+                <span className="block text-lg font-semibold tabular-nums text-[#bfdbfe]">
+                  {formatRating(home.data.bot.rating, home.data.bot.provisional, ELO.startBotRating)}
+                </span>
+              ) : null}
               <span className="block text-[11px] text-muted">your level</span>
             </span>
             {pending === "echo" ? <Spinner size={20} className="text-[#93c5fd]" /> : null}

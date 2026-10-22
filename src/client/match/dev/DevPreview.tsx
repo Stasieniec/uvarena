@@ -10,7 +10,7 @@
 //   engine=1&bot=7&course=agai the real engine against a bot, with the fixture bank
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MATCH } from "@shared/game/config";
+import { BOT_LADDER, MATCH } from "@shared/game/config";
 import { createRng } from "@shared/game/rng";
 import type { BotLevel, QuestionFull, Side } from "@shared/game/types";
 import { BankFileSchema } from "@shared/question-schema";
@@ -114,13 +114,20 @@ function Run({ config, onRestart }: { config: Config; onRestart(): void }) {
         window.location.search = "";
       },
       match: onRestart,
+      fightBot: onRestart,
     }),
     [onRestart],
+  );
+  // As if the ladder screen had cached the ladder before the match: the bot after the opponent still locked.
+  const opponentLevel = SCENARIOS[config.scenario]!.players[config.side === 0 ? 1 : 0].botLevel ?? 0;
+  const extras = useMemo(
+    () => ({ record: { wins: 2, losses: 1, draws: 0 }, ladderBefore: BOT_LADDER.map((b) => ({ level: b.level, unlocked: b.level <= Math.max(1, opponentLevel) })) }),
+    [opponentLevel],
   );
 
   return (
     <>
-      <MatchView state={state} actions={actions} clock={harness} nav={nav} />
+      <MatchView state={state} actions={actions} clock={harness} nav={nav} extras={extras} />
       {config.controls && (
         <div className="fixed bottom-2 left-2 z-[100] flex gap-1 text-xs">
           <button type="button" className="rounded bg-black/80 px-2 py-1 ring-1 ring-white/20" onClick={onRestart}>
