@@ -118,6 +118,8 @@ export const RatingChangeSchema = z.object({
 /** Reveal payload (the `reveal` message without type and serverNow). */
 export const RevealPayloadSchema = z.object({
   round: roundNo,
+  /** The question's stable bank id, so the reveal's report flag can post to /questions/:id/report. */
+  questionId: z.string(),
   /** The key in the receiver's id space. */
   key: AnswerSchema,
   yourAnswer: AnswerSchema.nullable(),

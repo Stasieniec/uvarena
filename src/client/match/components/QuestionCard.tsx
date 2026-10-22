@@ -9,6 +9,7 @@ import { fmtSeconds } from "../format";
 import { FX } from "../fx";
 import type { MatchUiState } from "../state";
 import { useFrame } from "./hooks";
+import { FlagIcon } from "../../components/icons";
 import { CheckIcon, CrossIcon } from "./icons";
 import { InlineText, Prompt } from "./Prompt";
 
@@ -19,9 +20,13 @@ interface Props {
   /** The reveal line is visible (after the hit lands). */
   showRevealLine: boolean;
   onTick(secondsLeft: number): void;
+  /** Questions reported from this match (stable ids). */
+  reported?: ReadonlySet<string>;
+  /** The reveal's report flag. Absent: no flag (the dev preview). */
+  onReport?(questionId: string): void;
 }
 
-export function QuestionCard({ state, question, clock, showRevealLine, onTick }: Props) {
+export function QuestionCard({ state, question, clock, showRevealLine, onTick, reported, onReport }: Props) {
   const reveal = state.phase === "reveal" ? state.reveal : null;
   const fill = clozeFill(question, state, reveal);
   const isTf = question.type === "truefalse";
@@ -42,7 +47,7 @@ export function QuestionCard({ state, question, clock, showRevealLine, onTick }:
         <Prompt text={text} fill={fill} />
       </div>
       {reveal && (
-        <RevealFooter reveal={reveal} visible={showRevealLine} />
+        <RevealFooter reveal={reveal} visible={showRevealLine} reported={reported?.has(reveal.questionId) ?? false} onReport={onReport} />
       )}
     </section>
   );
@@ -143,14 +148,38 @@ function RevealHeader({ reveal }: { reveal: RevealPayload }) {
   );
 }
 
-function RevealFooter({ reveal, visible }: { reveal: RevealPayload; visible: boolean }) {
+function RevealFooter({
+  reveal,
+  visible,
+  reported,
+  onReport,
+}: {
+  reveal: RevealPayload;
+  visible: boolean;
+  reported: boolean;
+  onReport?(questionId: string): void;
+}) {
   if (!visible) return <div className="h-2" />;
   const fizzled =
     (reveal.zeus === "you" && reveal.damageToOpponent === 0) || (reveal.zeus === "opponent" && reveal.damageToYou === 0);
   return (
     <div className="rq-rise border-t border-border/70 px-4 pt-2.5 pb-3.5">
       {fizzled && <p className="rq-display mb-1.5 text-sm font-bold text-zeus/80">{LINES.zeusFizzle}</p>}
-      <p className="text-[14px] leading-snug text-text/85">{reveal.whyShort}</p>
+      <div className="flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-[14px] leading-snug text-text/85">{reveal.whyShort}</p>
+        {onReport && (
+          <button
+            type="button"
+            disabled={reported}
+            onClick={() => onReport(reveal.questionId)}
+            aria-label={reported ? LINES.reportedQuestion : "Report this question"}
+            className="-my-1 flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-semibold text-muted hover:text-text disabled:opacity-60"
+          >
+            <FlagIcon size={14} />
+            {reported ? LINES.reportedQuestion : LINES.reportQuestion}
+          </button>
+        )}
+      </div>
       {reveal.savedToMissed && (
         <span className="mt-2 inline-block rounded-full bg-wrong/15 px-2.5 py-0.5 text-[11px] font-semibold text-wrong ring-1 ring-wrong/30">
           {LINES.savedToMissed}

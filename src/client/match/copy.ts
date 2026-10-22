@@ -48,6 +48,8 @@ export const LINES = {
   opponentAnswered: "Opponent answered",
   opponentDisconnected: "Opponent disconnected",
   savedToMissed: "Saved to missed questions",
+  reportQuestion: "Report",
+  reportedQuestion: "Reported",
   armHint: "Tap a glowing power-up to arm it.",
   armHintSub: "Your opponent cannot see what you armed.",
   armNothing: "Get ready.",

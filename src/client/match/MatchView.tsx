@@ -335,6 +335,18 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
   const showQuestion = (state.phase === "question" || state.phase === "reveal") && question !== null;
   const quick = freshQuick(state, clock);
   const toastVisible = usePulse(quick && quick.who === "opponent" ? quick.seq : null, FX.toastMs);
+  // The reveal's report flag: one tap files the report without leaving the duel.
+  const [reported, setReported] = useState<ReadonlySet<string>>(() => new Set());
+  const report = (questionId: string) => {
+    setReported((prev) => new Set(prev).add(questionId));
+    apiRequest("report", { params: { id: questionId }, body: { reason: "other", matchId: state.matchId ?? undefined } }).catch(() => {
+      setReported((prev) => {
+        const next = new Set(prev);
+        next.delete(questionId);
+        return next;
+      });
+    });
+  };
 
   const buttons = you.loadout.map((id): { id: PowerupId; state: PowerupButtonState } => {
     if (id === "phoenix") return { id, state: you.used.includes(id) ? "spent" : "passive" };
@@ -383,7 +395,15 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
       <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-3 pt-1 pb-2">
         {showQuestion ? (
           <>
-            <QuestionCard state={state} question={question!} clock={clock} showRevealLine={step >= 4} onTick={onTick} />
+            <QuestionCard
+              state={state}
+              question={question!}
+              clock={clock}
+              showRevealLine={step >= 4}
+              onTick={onTick}
+              reported={reported}
+              onReport={state.matchId ? report : undefined}
+            />
             <div className="mt-auto pt-1">
               <AnswerArea state={state} question={question!} flipped={step >= 1} onAnswer={actions.answer} />
             </div>

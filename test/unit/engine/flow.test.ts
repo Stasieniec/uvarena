@@ -206,6 +206,9 @@ describe("a round", () => {
     expect(r0.key).toEqual(d.correct(0));
     const r1 = d.lastMsg(1, "reveal");
     expect(r1.savedToMissed).toBe(true);
+    // The stable bank id, for the reveal's report flag.
+    expect(r0.questionId).toBe(d.state.rounds[0]!.questionId);
+    expect(r1.questionId).toBe(r0.questionId);
     expect(r1.opponentAnswer).toEqual(d.correct(1));
     expect(d.state.phaseEndsAt).toBe(shown + 6000 + TIMING.revealMs);
   });

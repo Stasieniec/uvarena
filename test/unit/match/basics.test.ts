@@ -75,6 +75,7 @@ describe("cues", () => {
       type: "reveal",
       serverNow: 1,
       round: 1,
+      questionId: "agai-abcdef",
       key: { kind: "bool", value: true },
       yourAnswer: null,
       opponentAnswer: { kind: "bool", value: true },

@@ -189,6 +189,7 @@ export function revealPayload(state: MatchState, side: Side, rec: RoundRecord, p
   const player = state.players[side];
   return {
     round: rec.round,
+    questionId: rec.questionId,
     key: answerToOpaque(q.question.key, q, side),
     yourAnswer: me.answer ? answerToOpaque(me.answer, q, side) : null,
     opponentAnswer: opp.answer ? answerToOpaque(opp.answer, q, side) : null,

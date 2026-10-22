@@ -697,6 +697,7 @@ export class FakeMatchServer {
       const o = other(s);
       return {
         round: this.round,
+        questionId: `preview-q${this.round}`,
         key: this.toOpaque(s, q.key),
         yourAnswer: this.sides[s].answer ? this.toOpaque(s, this.sides[s].answer!) : null,
         opponentAnswer: this.sides[o].answer ? this.toOpaque(s, this.sides[o].answer!) : null,
