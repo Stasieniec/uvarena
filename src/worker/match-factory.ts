@@ -19,6 +19,7 @@ import { POWERUP_IDS } from "../shared/game/types";
 import { answers, courses, matches, questions, ratings, user, userPrefs } from "./db/schema";
 import { MatchFactoryError, type CreateMatchResult, type CreateMatchSpec } from "./do/contracts";
 import type { Env } from "./env";
+import { isTestEnv } from "./middleware/test-mode";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Join code insert attempts before giving up on unique-index collisions. */
@@ -42,7 +43,7 @@ export const FACTORY_TEST_DEPS_KEY = "__matchFactoryTestDeps";
 const realDeps: FactoryDeps = { createRng, selectQuestions, selectionTarget, botInit };
 
 function deps(env: Env): FactoryDeps {
-  if (env.TEST_MODE === "1") {
+  if (isTestEnv(env)) {
     const override = (globalThis as Record<string, unknown>)[FACTORY_TEST_DEPS_KEY];
     if (override) return override as FactoryDeps;
   }

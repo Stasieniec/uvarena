@@ -43,11 +43,15 @@ import type { Env } from "../env";
 import { createMatch } from "../match-factory";
 import { HEADERS, MatchFactoryError, type JoinResult, type MatchRoomRpc, type MatchRoomSummary, type MatchSocketAttachment } from "./contracts";
 import { humanIds, loadFinalizationContext, writeFinalization } from "./finalize-writer";
+import { isTestEnv } from "../middleware/test-mode";
 
 // ---------------------------------------------------------------------------
-// Engine seam. The DO test suite runs before the engine and ratings packages
-// are merged, so in test mode (and only there) it may swap in a scripted
-// engine through globalThis[ROOM_TEST_ENGINE_KEY].
+// Engine seam. The shell tests (test/do/match-room.test.ts) drive the room
+// with a scripted engine to reach paths the real one makes slow or rare
+// (failing effects, retries). Only a test can set
+// globalThis[ROOM_TEST_ENGINE_KEY], and it is read only when TEST_MODE is "1"
+// and APP_URL is a localhost URL, so a deployed Worker always runs the real
+// engine.
 // ---------------------------------------------------------------------------
 
 export interface RoomEngine {
@@ -154,7 +158,7 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
   }
 
   private get engine(): RoomEngine {
-    if (this.env.TEST_MODE === "1") {
+    if (isTestEnv(this.env)) {
       const override = (globalThis as Record<string, unknown>)[ROOM_TEST_ENGINE_KEY];
       if (override) return override as RoomEngine;
     }

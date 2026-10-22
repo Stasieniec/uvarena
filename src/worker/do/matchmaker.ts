@@ -23,6 +23,7 @@ import {
 import type { Env } from "../env";
 import { createMatch } from "../match-factory";
 import { HEADERS, MatchFactoryError, type MatchmakerRpc, type QueueSocketAttachment } from "./contracts";
+import { isTestEnv } from "../middleware/test-mode";
 
 const KEY_COURSE = "courseId";
 const SEC = 1000;
@@ -265,7 +266,7 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
           rated: true,
           settings: RANKED_SETTINGS,
           humans: userIds,
-          testMode: this.env.TEST_MODE === "1",
+          testMode: isTestEnv(this.env),
         });
         const matched: MatchedMessage = { type: "matched", serverNow: Date.now(), matchId };
         for (const id of userIds) {

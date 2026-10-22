@@ -6,9 +6,17 @@ import type { Env, HonoEnv } from "../env";
 import { apiError } from "./http";
 import { isLocalApp, isLocalRequest } from "./origin";
 
-/** TEST_MODE === "1" and the request comes from localhost. Both checked. */
+/**
+ * TEST_MODE === "1" and APP_URL is a localhost URL. For code with no request
+ * at hand (Durable Objects, the match factory's test seams).
+ */
+export function isTestEnv(env: Env): boolean {
+  return env.TEST_MODE === "1" && isLocalApp(env);
+}
+
+/** TEST_MODE === "1", APP_URL is local, and the request comes from localhost. All checked. */
 export function isTestMode(env: Env, request: Request): boolean {
-  return env.TEST_MODE === "1" && isLocalRequest(request) && isLocalApp(env);
+  return isTestEnv(env) && isLocalRequest(request);
 }
 
 /** 404 unless isTestMode. */
