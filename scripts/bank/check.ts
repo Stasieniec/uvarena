@@ -106,6 +106,7 @@ function issueMessages(
       if (path[path.length - 1] === "type") return [{ path, message: `type must be one of single, multi, truefalse, cloze, order, match` }];
       return [{ path, message: `${field}: ${issue.message}` }];
     case "invalid_value":
+      if (valueAt(root, path) === undefined) return [{ path, message: `Missing ${field}` }];
       return [{ path, message: `${field} must be one of ${issue.values.map(String).join(", ")}` }];
     case "invalid_format":
       if (path[path.length - 1] === "id" && path.length === 3) {
