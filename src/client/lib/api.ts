@@ -128,7 +128,7 @@ export function errorMessage(err: unknown): string {
       case "unauthorised":
         return "You are signed out. Log in again.";
       case "rate_limited":
-        return "Too many tries. Wait a minute and try again.";
+        return "Slow down. Try again in a minute.";
       case "already_in_match":
         return "You are already in a match.";
       case "username_taken":

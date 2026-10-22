@@ -230,7 +230,7 @@ function MatchDetailBody({ data, meId }: { data: MatchDetailResponse; meId: stri
       </section>
 
       {data.rounds.length === 0 ? (
-        <EmptyState title="No rounds played" />
+        <EmptyState title={data.roundsHidden ? "Round detail is only visible to the two players." : "No rounds played"} />
       ) : (
         <ol className="flex flex-col gap-2">
           {data.rounds.map((r) => (

@@ -42,7 +42,15 @@ export function Queue() {
         } else if (msg.code === "already_in_match") {
           setState({ kind: "in_match", matchId: msg.matchId });
         } else {
-          setState({ kind: "failed", message: msg.code === "bad_course" ? "That course has no ranked queue." : "The queue hit a problem." });
+          setState({
+            kind: "failed",
+            message:
+              msg.code === "bad_course"
+                ? "That course has no ranked queue."
+                : msg.code === "rate_limited"
+                  ? "Slow down. Try again in a minute."
+                  : "The queue hit a problem.",
+          });
         }
       },
       onClose(code) {
