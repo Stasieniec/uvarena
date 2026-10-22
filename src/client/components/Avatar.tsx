@@ -1,4 +1,6 @@
 // A player's picture, or their initials on a coloured circle until they add one.
+// One rule app-wide, the match screen included: the first two letters of the
+// username, on a colour from the user id.
 import { useState } from "react";
 import { hueFor, initials } from "../lib/format";
 import { cx } from "./ui";
@@ -42,7 +44,7 @@ export function Avatar({ user, size = 40, className, ring }: { user: AvatarUser;
         fontSize: Math.max(10, Math.round(size * 0.38)),
       }}
     >
-      {initials(user.firstName, user.lastName, user.username)}
+      {initials(null, null, user.displayUsername ?? user.username)}
     </span>
   );
 }

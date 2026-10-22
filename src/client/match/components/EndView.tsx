@@ -8,9 +8,21 @@ import type { MatchClock } from "../clock";
 import { POWERUP_NAMES, endReasonLine, resultWord } from "../copy";
 import { fmtClock, fmtInt, fmtRating, fmtSeconds, fmtSigned } from "../format";
 import { FX } from "../fx";
+import { Avatar } from "./Avatar";
 import { useCountTo, useNow } from "./hooks";
 import { PowerupIcon } from "./icons";
 import { modeAccent } from "./Phases";
+
+/** The ladder step after a win against a ladder bot. */
+export interface NextBot {
+  /** Null at the top of the ladder. */
+  level: number | null;
+  name: string | null;
+  line: string | null;
+  /** This win unlocked it (it was locked before the match). */
+  unlocked: boolean;
+  beatenName: string;
+}
 
 interface Props {
   result: MatchEndPayload;
@@ -25,6 +37,10 @@ interface Props {
   onPlayAgain(): void;
   onReviewMissed(): void;
   onHome(): void;
+  nextBot?: NextBot | null;
+  onFightBot?(level: number): void;
+  fightPending?: boolean;
+  fightError?: string | null;
 }
 
 const WORD_STYLE: Record<string, { color: string; glow: string }> = {
@@ -35,7 +51,7 @@ const WORD_STYLE: Record<string, { color: string; glow: string }> = {
   CANCELLED: { color: "var(--color-muted)", glow: "0 4px 0 #000" },
 };
 
-function RatingLine({ label, change }: { label: string; change: RatingChange }) {
+function RatingLine({ label, change, note }: { label: string; change: RatingChange; note?: string }) {
   const shown = useCountTo(change.after, FX.ratingCountMs, change.before);
   const delta = shown - change.before;
   const q = change.provisional;
@@ -49,6 +65,41 @@ function RatingLine({ label, change }: { label: string; change: RatingChange }) 
         <span>{fmtRating(shown, q)}</span>
         <span className={`text-lg ${color}`}>({fmtSigned(delta)})</span>
       </div>
+      {note && <p className="mt-1.5 text-[13px] leading-snug text-muted">{note}</p>}
+    </div>
+  );
+}
+
+function NextBotCard({ next, onFight, pending, error }: { next: NextBot; onFight?(level: number): void; pending: boolean; error: string | null }) {
+  if (next.level === null || next.name === null) {
+    return (
+      <div className="rq-rise rounded-2xl border border-bot/50 bg-gradient-to-br from-[#14306e] to-surface px-4 py-3 text-sm">
+        <span className="font-semibold text-[#bfdbfe]">{next.beatenName} beaten.</span> That was the top of the ladder.
+      </div>
+    );
+  }
+  const level = next.level;
+  return (
+    <div className="rq-rise rounded-2xl border border-bot/60 bg-gradient-to-br from-[#14306e] to-surface px-4 py-3" style={{ animationDelay: "700ms" }}>
+      <div className="flex items-center gap-3">
+        <Avatar name={next.name} url={null} size={44} ring="var(--color-bot)" bot />
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold tracking-[0.15em] text-[#93c5fd] uppercase">{next.unlocked ? "Unlocked" : "Next on the ladder"}</div>
+          <div className="rq-display text-lg leading-tight font-bold">{next.unlocked ? `${next.name} unlocked` : next.name}</div>
+          {next.line && <div className="text-[13px] leading-snug text-muted">{next.line}</div>}
+        </div>
+      </div>
+      {onFight && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => onFight(level)}
+          className="mt-3 h-12 w-full rounded-xl bg-bot font-bold text-white active:scale-[0.98] disabled:opacity-60"
+        >
+          {pending ? "Starting" : `Fight ${next.name}`}
+        </button>
+      )}
+      {error && <p className="mt-2 text-xs text-wrong">{error}</p>}
     </div>
   );
 }
@@ -66,7 +117,7 @@ export function EndView(props: Props) {
   const { result, mode, rated, rematch, clock, connected } = props;
   const word = resultWord(result.result);
   const style = WORD_STYLE[word]!;
-  const reason = endReasonLine(result.reason, result.result);
+  const reason = endReasonLine(result.reason, result.result, props.opponent?.name ?? null);
   const accent = modeAccent(mode);
   const now = useNow(clock, 250, rematch?.until != null);
   const s = result.summary;
@@ -75,7 +126,8 @@ export function EndView(props: Props) {
   const rematchOpen = rematch?.until != null && now < rematch.until && !rematch.matchId;
   const rematchLeft = rematch?.until != null ? fmtClock(rematch.until - now) : "";
   let rematchLabel = "Rematch";
-  if (rematch?.you && !rematch.opponent) rematchLabel = `Waiting for them · ${rematchLeft}`;
+  if (mode === "bot") rematchLabel = "Rematch";
+  else if (rematch?.you && !rematch.opponent) rematchLabel = `Waiting for them · ${rematchLeft}`;
   else if (rematch?.opponent && !rematch.you) rematchLabel = `Accept rematch · ${rematchLeft}`;
   else if (rematchOpen) rematchLabel = `Rematch · ${rematchLeft}`;
   if (rematch?.matchId) rematchLabel = "Starting rematch";
@@ -105,9 +157,16 @@ export function EndView(props: Props) {
 
       <div className="mt-4 flex flex-col gap-3">
         {result.ranked && <RatingLine label="Ranked rating" change={result.ranked} />}
-        {result.bot && <RatingLine label="Bot rating" change={result.bot} />}
+        {result.bot && (
+          <RatingLine
+            label="Bot rating"
+            change={result.bot}
+            note={`Bot rating follows your answers, not the result. ${s.correct} of ${result.rounds} right.`}
+          />
+        )}
+        {props.nextBot && <NextBotCard next={props.nextBot} onFight={props.onFightBot} pending={props.fightPending ?? false} error={props.fightError ?? null} />}
         {counted && !result.ranked && !result.bot && mode !== "bot" && (
-          <div className="rounded-2xl bg-surface px-4 py-3 text-sm text-muted ring-1 ring-white/10">Unrated. No rating change.</div>
+          <div className="rounded-2xl bg-surface px-4 py-3 text-sm text-muted ring-1 ring-white/10">Unrated. Your ranked rating did not move.</div>
         )}
         {result.pairCapped && (
           <p className="text-xs text-muted">You two have played your rated games for today. This one did not move ratings.</p>
@@ -152,7 +211,7 @@ export function EndView(props: Props) {
         )}
         {mode === "ranked" && (
           <button type="button" onClick={props.onPlayAgain} className="h-14 rounded-xl bg-ranked text-lg font-bold text-white active:scale-[0.98]">
-            Play again
+            {result.result === "cancelled" ? "Back to the queue" : "Play again"}
           </button>
         )}
         {result.missedCount > 0 && (

@@ -106,7 +106,11 @@ export function resultWord(result: "win" | "loss" | "draw" | "void" | "cancelled
 }
 
 /** One line under WIN/LOSS explaining how it ended, or null when HP says it all. */
-export function endReasonLine(reason: EndReason, result: "win" | "loss" | "draw" | "void" | "cancelled"): string | null {
+export function endReasonLine(
+  reason: EndReason,
+  result: "win" | "loss" | "draw" | "void" | "cancelled",
+  opponentName: string | null = null,
+): string | null {
   switch (reason) {
     case "hp":
       return null;
@@ -119,7 +123,7 @@ export function endReasonLine(reason: EndReason, result: "win" | "loss" | "draw"
     case "void":
       return "Both players left. No rating change.";
     case "no_show":
-      return "Your opponent never showed up. No rating change.";
+      return `${opponentName ?? "Your opponent"} never showed up. No rating change.`;
     case "expired":
       return "Nobody joined. No rating change.";
     case "cancelled":

@@ -39,13 +39,17 @@ export function AnswerArea({ state, question, flipped, onAnswer }: Props) {
   return <Options state={state} question={question} reveal={reveal} locked={locked} onAnswer={onAnswer} />;
 }
 
+/** The opponent's pick: a small orange tag on the top edge of the option, inside its width. */
 function OpponentDot() {
   return (
     <span
-      className="absolute top-1/2 -right-1.5 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-opponent ring-2 ring-bg"
+      className="absolute -top-2 right-3 flex items-center gap-1 rounded-full bg-opponent px-1.5 py-px text-[10px] leading-tight font-bold text-bg ring-2 ring-bg"
       title="Opponent's pick"
       aria-label="Opponent's pick"
-    />
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-bg/70" aria-hidden />
+      Them
+    </span>
   );
 }
 
@@ -83,7 +87,7 @@ function TrueFalse({
             type="button"
             disabled={locked}
             onClick={() => onAnswer({ kind: "bool", value: v })}
-            className={`relative flex h-28 flex-col items-center justify-center gap-1 rounded-2xl text-2xl font-bold ring-1 transition-[transform,opacity] duration-150 active:scale-[0.97] ${MARK_CLS[mark]} ${reveal ? "rq-flip" : ""} ${dim ? "opacity-40" : ""}`}
+            className={`relative flex ${reveal ? "h-20" : "h-28"} flex-col items-center justify-center gap-1 rounded-2xl text-2xl font-bold ring-1 transition-[transform,opacity] duration-150 active:scale-[0.97] ${MARK_CLS[mark]} ${reveal ? "rq-flip" : ""} ${dim ? "opacity-40" : ""}`}
           >
             {v ? "True" : "False"}
             {reveal && key === v && <CheckIcon className="text-correct" />}
@@ -120,6 +124,14 @@ function Options({
   const theirs = idsOf(reveal?.opponentAnswer);
   const hidden = new Set(state.hidden);
   const code = question.codeLang !== null || question.options.some((o) => o.text.includes("\n"));
+  // Many or long options get tighter rows; during the reveal, when nothing is tapped any more, tighter still.
+  const dense = question.options.length >= 5 || question.options.reduce((n, o) => n + o.text.length, 0) > 260;
+  const rowCls = reveal
+    ? "min-h-11 gap-2.5 px-3 py-1.5"
+    : dense
+      ? "min-h-12 gap-2.5 px-3 py-2"
+      : "min-h-14 gap-3 px-3.5 py-2.5";
+  const textCls = reveal || dense ? "text-[15px]" : "text-[16px]";
 
   const tap = (o: OptionText) => {
     if (locked || hidden.has(o.id)) return;
@@ -133,7 +145,7 @@ function Options({
   const selectedNow = reveal || state.yourAnswer ? mine : picked;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col ${reveal ? "gap-2.5" : "gap-2"}`}>
       {question.options.map((o) => {
         const isHidden = hidden.has(o.id);
         const sel = selectedNow.includes(o.id);
@@ -153,7 +165,8 @@ function Options({
             aria-hidden={isHidden || undefined}
             onClick={() => tap(o)}
             className={[
-              "relative flex min-h-14 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left ring-1 transition-[transform,opacity] duration-150 active:scale-[0.985]",
+              "relative flex w-full items-center rounded-xl text-left ring-1 transition-[transform,opacity] duration-150 active:scale-[0.985]",
+              rowCls,
               MARK_CLS[mark],
               reveal ? "rq-flip" : "",
               dim ? "opacity-40" : "",
@@ -172,7 +185,7 @@ function Options({
             {code ? (
               <pre className="rq-code min-w-0 flex-1 text-[13px] leading-snug">{o.text}</pre>
             ) : (
-              <span className="min-w-0 flex-1 text-[16px] leading-snug font-medium">
+              <span className={`min-w-0 flex-1 leading-snug font-medium ${textCls}`}>
                 <InlineText text={o.text} />
               </span>
             )}

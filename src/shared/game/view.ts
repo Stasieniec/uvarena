@@ -313,6 +313,7 @@ export function view(state: MatchState, side: Side, now: number): SnapshotMessag
           }
         : null,
     opponentForfeitAt: opponentForfeitAt(state, side),
+    noShowAt: state.phase === "lobby" ? state.noShowAt : null,
   };
 }
 
