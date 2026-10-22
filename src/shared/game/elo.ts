@@ -1,28 +1,40 @@
-// STUB (Ratings and finalization package). Per-answer player-vs-item ratings.
-import { notImplemented } from "../not-implemented";
+// Per-answer player-vs-item ratings (Math Garden style): the player's bot
+// rating and every question's item rating live on one scale and move after
+// each answer. Pure; parameters come from ELO in config.ts.
+
+import { ELO } from "./config";
+
+function kFactor(count: number, k: { min: number; base: number; decay: number }): number {
+  const c = Number.isFinite(count) ? Math.max(0, count) : 0;
+  return Math.max(k.min, k.base / (1 + k.decay * c));
+}
 
 /** P(theta, beta, c) = c + (1 - c) / (1 + 10^((beta - theta) / 400)). */
 export function pCorrect(theta: number, beta: number, chance: number): number {
-  void theta; void beta; void chance;
-  return notImplemented("elo.pCorrect");
+  const c = Number.isFinite(chance) ? Math.min(1, Math.max(0, chance)) : 0;
+  return c + (1 - c) / (1 + Math.pow(10, (beta - theta) / 400));
 }
 
 /** Ks(n) = max(24, 174 / (1 + 0.05 n)). */
 export function playerK(n: number): number {
-  void n;
-  return notImplemented("elo.playerK");
+  return kFactor(n, ELO.playerK);
 }
 
 /** Ki(m) = max(8, 174 / (1 + 0.05 m)). */
 export function itemK(m: number): number {
-  void m;
-  return notImplemented("elo.itemK");
+  return kFactor(m, ELO.itemK);
 }
 
 /** n reduced by 1 per ELO.idleDaysPerNStep full idle days, never below 0. */
 export function effectiveN(n: number, idleDays: number): number {
-  void n; void idleDays;
-  return notImplemented("elo.effectiveN");
+  const days = Number.isFinite(idleDays) ? Math.max(0, Math.floor(idleDays)) : 0;
+  const base = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  return Math.max(0, base - Math.floor(days / ELO.idleDaysPerNStep));
+}
+
+/** Bot rating shows "?" while the player has fewer rated bot answers than this. */
+export function isBotRatingProvisional(n: number): boolean {
+  return n < ELO.botProvisionalAnswers;
 }
 
 export interface EloAnswerUpdate {
@@ -31,8 +43,16 @@ export interface EloAnswerUpdate {
   p: number;
 }
 
-/** One answer: x = 1 correct, 0 wrong or timed out. */
+/**
+ * One answer: x = 1 correct, 0 wrong or timed out.
+ * theta += Ks(n) * (x - P); beta -= Ki(m) * (x - P).
+ */
 export function eloUpdate(theta: number, n: number, beta: number, m: number, chance: number, correct: boolean): EloAnswerUpdate {
-  void theta; void n; void beta; void m; void chance; void correct;
-  return notImplemented("elo.eloUpdate");
+  const p = pCorrect(theta, beta, chance);
+  const surprise = (correct ? 1 : 0) - p;
+  return {
+    playerDelta: playerK(n) * surprise,
+    itemDelta: -itemK(m) * surprise,
+    p,
+  };
 }
