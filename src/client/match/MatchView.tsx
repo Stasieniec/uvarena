@@ -402,7 +402,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
               showRevealLine={step >= 4}
               onTick={onTick}
               reported={reported}
-              onReport={state.matchId ? report : undefined}
+              onReport={report}
             />
             <div className="mt-auto pt-1">
               <AnswerArea state={state} question={question!} flipped={step >= 1} onAnswer={actions.answer} />
