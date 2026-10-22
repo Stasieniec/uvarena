@@ -51,15 +51,22 @@ export function AvatarCropper({
   const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
 
   useEffect(() => {
+    let live = true;
     const url = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => {
+      if (!live) return;
       setImg(image);
       setView(initialView(image.naturalWidth, image.naturalHeight, VIEWPORT));
     };
-    image.onerror = () => setLoadError("That file is not an image this browser can open.");
+    image.onerror = () => {
+      if (live) setLoadError("That file is not an image this browser can open.");
+    };
     image.src = url;
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      live = false;
+      URL.revokeObjectURL(url);
+    };
   }, [file]);
 
   if (loadError) {
