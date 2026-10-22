@@ -7,11 +7,12 @@ import { questionReports } from "../db/schema";
 import { getDb, getQuestion } from "../db/queries";
 import type { HonoEnv } from "../env";
 import { currentUser, notFound, readJson, readParam } from "../middleware/http";
+import { userRateLimit } from "../middleware/rate-limit";
 import { requireUser } from "../middleware/session";
 
 export const reportsRoutes = new Hono<HonoEnv>();
 
-reportsRoutes.post("/questions/:id/report", requireUser, async (c) => {
+reportsRoutes.post("/questions/:id/report", requireUser, userRateLimit("report"), async (c) => {
   const db = getDb(c.env);
   const me = currentUser(c);
   const questionId = readParam(c, "id", QuestionIdSchema);

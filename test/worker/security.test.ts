@@ -79,3 +79,62 @@ describe("avatar deletion", () => {
     expect((await call(image)).status).toBe(200);
   });
 });
+
+describe("per-user rate limits", () => {
+  /** A limiter that allows `allowed` calls per key, then refuses. */
+  function countingLimiter(allowed: number) {
+    const seen = new Map<string, number>();
+    return {
+      keys: seen,
+      limit: async ({ key }: { key: string }) => {
+        const n = (seen.get(key) ?? 0) + 1;
+        seen.set(key, n);
+        return { success: n <= allowed };
+      },
+    };
+  }
+  const live = (limiter: unknown) => ({ ...env, TEST_MODE: undefined, API_LIMITER: limiter }) as unknown as Env;
+  const send = (path: string, cookie: string, limiter: unknown, body?: unknown, headers: Record<string, string> = {}) =>
+    worker.fetch(
+      new Request(`http://localhost${path}`, {
+        method: body === undefined ? "GET" : "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie, Origin: "http://localhost", ...headers },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+      live(limiter),
+      createExecutionContext(),
+    );
+
+  it("limits lobby creation, joins, bot matches and reports per user", async () => {
+    const s = await signUp("spammer");
+    const limiter = countingLimiter(0);
+    expect((await send("/api/lobbies", s.cookie, limiter, { courseId: "agai", powerups: true, rated: false })).status).toBe(429);
+    expect((await send("/api/lobbies/join", s.cookie, limiter, { code: "ABCDEF" })).status).toBe(429);
+    expect((await send("/api/bot-matches", s.cookie, limiter, { courseId: "agai", bot: "echo" })).status).toBe(429);
+    const report = await send("/api/questions/agai-rrxcbz/report", s.cookie, limiter, { reason: "typo" });
+    expect(report.status).toBe(429);
+    expect(await report.json()).toMatchObject({ error: { code: "rate_limited" } });
+    expect([...limiter.keys.keys()].sort()).toEqual(["bot", "join", "lobby", "report"].map((a) => `${a}:${s.userId}`));
+  });
+
+  it("lets requests through under the limit, and when the limiter fails", async () => {
+    const s = await signUp("calmuser");
+    const res = await send("/api/questions/nope-000000/report", s.cookie, countingLimiter(5), { reason: "typo" });
+    expect(res.status).not.toBe(429);
+    const broken = { limit: async () => Promise.reject(new Error("limiter down")) };
+    expect((await send("/api/questions/nope-000000/report", s.cookie, broken, { reason: "typo" })).status).not.toBe(429);
+  });
+
+  it("refuses a queue socket over the limit with a final rate_limited frame", async () => {
+    const s = await signUp("queuespam");
+    const res = await send("/api/queue/ws?course=agai", s.cookie, countingLimiter(0), undefined, { Upgrade: "websocket" });
+    expect(res.status).toBe(101);
+    const ws = res.webSocket!;
+    const frames: string[] = [];
+    const closed = new Promise<number>((resolve) => ws.addEventListener("close", (e) => resolve(e.code)));
+    ws.addEventListener("message", (e) => frames.push(String(e.data)));
+    ws.accept();
+    expect(await closed).toBe(1000);
+    expect(JSON.parse(frames[0]!)).toMatchObject({ type: "error", code: "rate_limited" });
+  });
+});

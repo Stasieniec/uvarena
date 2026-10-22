@@ -1,7 +1,8 @@
 // AUTH_LIMITER (wrangler.jsonc ratelimits) on the Better Auth endpoints that
 // take a password or send email. Better Auth's own in-memory limiter is off
-// (it is per isolate, so useless on Workers).
-import type { MiddlewareHandler } from "hono";
+// (it is per isolate, so useless on Workers). API_LIMITER per user on the
+// endpoints that create rows, Durable Objects or socket connections.
+import type { Context, MiddlewareHandler } from "hono";
 import { AUTH_BASE_PATH } from "../auth";
 import type { HonoEnv } from "../env";
 import { apiError } from "./http";
@@ -43,3 +44,32 @@ export const authRateLimit: MiddlewareHandler<HonoEnv> = async (c, next) => {
   }
   await next();
 };
+
+/** What a user does that API_LIMITER counts, each with its own budget. */
+export type LimitedAction = "lobby" | "join" | "bot" | "queue" | "match_ws" | "report";
+
+/**
+ * Whether the user may do `action` now. Always true in test mode, and when
+ * the limiter itself fails (it is a cost guard, not a security boundary).
+ */
+export async function userAllowed(c: Context<HonoEnv>, action: LimitedAction, userId: string): Promise<boolean> {
+  if (isTestMode(c.env, c.req.raw) || !c.env.API_LIMITER) return true;
+  try {
+    const { success } = await c.env.API_LIMITER.limit({ key: `${action}:${userId}` });
+    return success;
+  } catch (err) {
+    console.error("rate limit: limiter failed", err);
+    return true;
+  }
+}
+
+/** 429 rate_limited when the signed-in user is over their budget for `action`. Use after requireUser. */
+export function userRateLimit(action: LimitedAction): MiddlewareHandler<HonoEnv> {
+  return async (c, next) => {
+    const user = c.get("user");
+    if (user && !(await userAllowed(c, action, user.id))) {
+      return apiError(c, 429, "rate_limited", "Too many requests. Wait a minute and try again.");
+    }
+    await next();
+  };
+}

@@ -20,6 +20,8 @@ export interface AppBindings {
   EMAIL: SendEmail;
   /** Keyed by cf-connecting-ip on sign-up, sign-in and password reset. */
   AUTH_LIMITER: RateLimit;
+  /** Keyed by `<action>:<userId>` on lobby creation and joins, bot matches, queue and match sockets, and reports. */
+  API_LIMITER: RateLimit;
 
   // Vars (wrangler.jsonc; .dev.vars overrides APP_URL locally)
   /** Public origin: the production URL from wrangler.jsonc, http://localhost:5173 in dev. */

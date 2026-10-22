@@ -46,6 +46,7 @@ import { HEADERS, MatchFactoryError, type JoinResult, type MatchRoomRpc, type Ma
 import { humanIds, isMatchFinalized, loadFinalizationContext, writeFinalization } from "./finalize-writer";
 import { isTestEnv } from "../middleware/test-mode";
 import { closeMatchRow } from "../match-liveness";
+import { FrameGuard } from "./frame-guard";
 
 // ---------------------------------------------------------------------------
 // Engine seam. The shell tests (test/do/match-room.test.ts) drive the room
@@ -151,6 +152,7 @@ function retryDelay(attempts: number): number {
 
 export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
   private queue: Promise<unknown> = Promise.resolve();
+  private readonly frames = new FrameGuard();
   /** When the first pending effect may be retried; in memory only (a restart retries at once). */
   private retryAt: number | null = null;
 
@@ -527,6 +529,12 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
 
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     if (message === PING) return;
+    const refusal = this.frames.check(ws, message, Date.now());
+    if (refusal) {
+      // The close event reports the disconnect through socketGone.
+      safeClose(ws, refusal.code, refusal.reason);
+      return;
+    }
     const parsed = typeof message === "string" ? parseClientMessage(message) : null;
     await this.serial(async () => {
       const state = await this.loadState();

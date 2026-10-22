@@ -9,6 +9,7 @@ import { getActiveCourse, getDb, ratingsFor } from "../db/queries";
 import type { HonoEnv } from "../env";
 import { createMatch } from "../match-factory";
 import { ApiFailure, currentUser, notFound, readJson, requireUsername, rethrowFactoryError } from "../middleware/http";
+import { userRateLimit } from "../middleware/rate-limit";
 import { requireUser } from "../middleware/session";
 import { isTestMode } from "../middleware/test-mode";
 import { validateLectureFilter } from "./lobbies";
@@ -17,7 +18,7 @@ export const botMatchesRoutes = new Hono<HonoEnv>();
 
 const TEST_LEVELS: readonly number[] = [TEST_BOTS.dummy.level, TEST_BOTS.oracle.level];
 
-botMatchesRoutes.post("/bot-matches", requireUser, async (c) => {
+botMatchesRoutes.post("/bot-matches", requireUser, userRateLimit("bot"), async (c) => {
   const me = currentUser(c);
   requireUsername(me);
   const body = await readJson(c, CreateBotMatchBodySchema);

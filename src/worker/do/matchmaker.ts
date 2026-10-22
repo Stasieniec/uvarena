@@ -24,6 +24,7 @@ import type { Env } from "../env";
 import { createMatch } from "../match-factory";
 import { HEADERS, MatchFactoryError, type MatchmakerRpc, type QueueSocketAttachment } from "./contracts";
 import { isTestEnv } from "../middleware/test-mode";
+import { FrameGuard } from "./frame-guard";
 
 const KEY_COURSE = "courseId";
 const SEC = 1000;
@@ -113,6 +114,7 @@ function close(ws: WebSocket, code: number, reason: string): void {
 
 export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
   private queue: Promise<unknown> = Promise.resolve();
+  private readonly frames = new FrameGuard();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -188,8 +190,10 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
   }
 
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    // Clients send nothing but "ping", which the runtime answers.
-    void ws; void message;
+    // Clients send nothing but "ping", which the runtime answers. Anything
+    // else is ignored, within the same size and rate bounds as the MatchRoom.
+    const refusal = this.frames.check(ws, message, Date.now());
+    if (refusal) close(ws, refusal.code, refusal.reason);
   }
 
   override async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {

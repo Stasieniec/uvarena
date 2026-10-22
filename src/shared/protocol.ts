@@ -443,7 +443,7 @@ export const MatchedMessageSchema = z.object({
   matchId: z.string(),
 });
 
-export const QUEUE_ERROR_CODES = ["already_in_match", "bad_course", "internal"] as const;
+export const QUEUE_ERROR_CODES = ["already_in_match", "bad_course", "rate_limited", "internal"] as const;
 
 export const QueueErrorMessageSchema = z.object({
   type: z.literal("error"),
@@ -481,6 +481,12 @@ export const CLOSE_CODES = {
   notAuthorised: 4003,
   /** Match not found. Do not reconnect. */
   notFound: 4004,
+  /** Too many frames from this socket (policy violation). Reconnect with backoff. */
+  tooMany: 1008,
+  /** A frame over NET.maxClientFrameBytes. Reconnect with backoff. */
+  tooBig: 1009,
+  /** Too many socket connections from this user; back off and retry. */
+  tryLater: 1013,
 } as const;
 export type CloseCode = (typeof CLOSE_CODES)[keyof typeof CLOSE_CODES];
 

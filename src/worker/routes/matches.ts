@@ -12,6 +12,7 @@ import { botName, getDb, lectureTitles, publicUsersById, sideOf, toQuestionPubli
 import type { HonoEnv } from "../env";
 import { currentUser, notFound, readParam } from "../middleware/http";
 import { requireUser } from "../middleware/session";
+import { userAllowed } from "../middleware/rate-limit";
 import { forwardedRequest, refuseSocket, socketPrecheck } from "../middleware/ws";
 
 export const matchesRoutes = new Hono<HonoEnv>();
@@ -55,6 +56,8 @@ matchesRoutes.get("/matches/:id/ws", async (c) => {
   const row = rows[0];
   if (!row) return refuseSocket(CLOSE_CODES.notFound, "match not found");
   if (!sideOf(row, me.id)) return refuseSocket(CLOSE_CODES.notAuthorised, "not a player");
+  // Reconnect spam sends the opponent a connection banner each time.
+  if (!(await userAllowed(c, "match_ws", me.id))) return refuseSocket(CLOSE_CODES.tryLater, "too many connections");
 
   const stub = c.env.MATCH_ROOM.getByName(matchId);
   return stub.fetch(forwardedRequest(c.req.raw, { [HEADERS.userId]: me.id }));

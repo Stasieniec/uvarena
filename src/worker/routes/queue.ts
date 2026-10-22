@@ -10,6 +10,7 @@ import { matches } from "../db/schema";
 import { getActiveCourse, getDb, ratingsFor, type Db } from "../db/queries";
 import { liveMatchId } from "../match-liveness";
 import type { HonoEnv } from "../env";
+import { userAllowed } from "../middleware/rate-limit";
 import { forwardedRequest, refuseSocket, socketPrecheck } from "../middleware/ws";
 
 export const queueRoutes = new Hono<HonoEnv>();
@@ -37,6 +38,9 @@ queueRoutes.get("/queue/ws", async (c) => {
   const me = c.get("user");
   if (!me) return refuseSocket(CLOSE_CODES.notAuthorised, "sign in first");
   if (!me.username) return refuseSocket(CLOSE_CODES.notAuthorised, "pick a username first");
+  if (!(await userAllowed(c, "queue", me.id))) {
+    return refuseSocket(CLOSE_CODES.normal, "too many attempts", queueError("rate_limited", null));
+  }
 
   const query = QueueWsQuerySchema.safeParse(c.req.query());
   const db = getDb(c.env);

@@ -351,6 +351,14 @@ export const NET = {
   reconnectMaxMs: 5000,
   /** WebSocket close reasons must stay under 123 UTF-8 bytes; keep them shorter. */
   closeReasonMaxBytes: 120,
+  /** Largest client frame the DOs read; a bigger one closes the socket. Real frames are under 1 KB. */
+  maxClientFrameBytes: 4096,
+  /**
+   * At most this many client frames per clientFrameWindowMs on one socket
+   * ("ping" is answered by the runtime and not counted); more closes it.
+   */
+  clientFrameBurst: 20,
+  clientFrameWindowMs: 1000,
 } as const;
 
 // ---------------------------------------------------------------------------
