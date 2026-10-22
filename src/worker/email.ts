@@ -21,15 +21,9 @@ export interface OutgoingEmail {
 /** Sender address; must be listed in wrangler.jsonc send_email.allowed_sender_addresses. */
 export const EMAIL_FROM_ADDRESS = "noreply@swasilewski.com";
 
-/**
- * EMAIL_ENABLED is not in the frozen Env contract yet (requested from the
- * orchestrator); read it through a local widening until it is.
- */
-type EnvWithEmailFlag = Env & { EMAIL_ENABLED?: string };
-
 /** Whether email sending is set up (reported as emailEnabled by /api/config). */
 export function emailEnabled(env: Env): boolean {
-  return (env as EnvWithEmailFlag).EMAIL_ENABLED === "1" && typeof env.EMAIL?.send === "function";
+  return env.EMAIL_ENABLED === "1" && typeof env.EMAIL?.send === "function";
 }
 
 /** Sends one email. Logs and returns false on a missing binding or any failure; never throws. */

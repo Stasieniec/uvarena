@@ -31,6 +31,8 @@ export interface AppBindings {
   /** Google sign-in is hidden unless both are set. */
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  /** "1" once the sending domain is onboarded in Cloudflare Email Service. */
+  EMAIL_ENABLED?: string;
   /** "1" enables test mode (with a localhost request). Never set in production. */
   TEST_MODE?: string;
 }
