@@ -657,7 +657,7 @@ A 30-question fixture (`test/fixtures/questions.json`, mixed types, known keys) 
 
 ## Client
 
-- Routes: `/` (landing, or Home when signed in), `/login`, `/signup`, `/onboarding`, `/bots`, `/queue`, `/friend` (create or join), `/join/:code`, `/match/:id` (lobby, duel and end screen), `/missed`, `/missed/:questionId`, `/missed/run`, `/leaderboard`, `/profile`, `/u/:username`, `/history`, `/matches/:id`, `/settings`, `/dev/match` (test mode).
+- Routes: `/` (landing, or Home when signed in), `/login`, `/signup`, `/onboarding`, `/bots`, `/queue`, `/friend` (create or join), `/join/:code`, `/match/:id` (lobby, duel and end screen), `/missed`, `/missed/:questionId`, `/missed/run`, `/leaderboard`, `/profile`, `/u/:username`, `/history`, `/matches/:id`, `/settings`, `/dev/match` (dev builds only).
 - Data: TanStack Query over typed fetch helpers built from `api-schemas.ts`. Auth: `createAuthClient` from `better-auth/react` with `usernameClient()`.
 - Theme tokens in `styles.css` as CSS variables: navy background, teal (you), orange (opponent), gold (Zeus), red and gold for ranked, blue for bot. Dark only in this release.
 - Match screen: one reducer over `ServerMessage`s; timers from server deadlines plus clock offset; wake lock during a match; `navigator.vibrate` on hits where available; `prefers-reduced-motion` swaps shakes and flashes for fades; banners never cover the question while the timer runs (they play in the banner phase, and quick power-up banners for the opponent are a small toast).
