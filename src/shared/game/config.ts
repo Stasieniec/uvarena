@@ -70,6 +70,11 @@ export const MATCH = {
   noShowMs: 30000,
   /** A private lobby nobody joins expires after this long. */
   lobbyTtlMs: 15 * 60 * 1000,
+  /**
+   * Once the second player joins, the lobby lives at least this much longer,
+   * so a join near the end of lobbyTtlMs still leaves time to ready up.
+   */
+  lobbyReadyMs: 5 * 60 * 1000,
   /** Window after the match in which both players can accept a rematch. */
   rematchMs: 20000,
   /** The MatchRoom deletes its storage this long after the match ends. */
