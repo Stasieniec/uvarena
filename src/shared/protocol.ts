@@ -291,6 +291,8 @@ export const BannerMessageSchema = z.object({
 
 export const QuestionMessageSchema = QuestionViewSchema.extend({
   type: z.literal("question"),
+  /** The view's own `type` is overwritten by the message tag, so the question type travels here. */
+  questionType: QuestionViewSchema.shape.type,
   ...base,
 });
 
