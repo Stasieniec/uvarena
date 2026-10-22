@@ -81,6 +81,7 @@ export function SurrenderButton({ enabled, onSurrender }: { enabled: boolean; on
             strokeWidth="3"
             strokeDasharray={circ}
             strokeDashoffset={holding ? 0 : circ}
+            className={holding ? "rq-hold" : undefined}
             style={{ transition: holding ? `stroke-dashoffset ${FX.surrenderHoldMs}ms linear` : "none" }}
           />
         </svg>

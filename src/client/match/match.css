@@ -346,3 +346,8 @@
 .rq-rm .rq-glow {
   box-shadow: 0 0 0 2px var(--rq-glow, var(--color-zeus));
 }
+
+/* The surrender ring fills over the hold time, also with reduced motion (it is a progress bar, not motion). */
+.rq-match .rq-hold {
+  transition-duration: 1000ms !important;
+}
