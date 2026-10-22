@@ -4,7 +4,16 @@
 import { env } from "cloudflare:workers";
 import { runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { call, insertMatch, signUp } from "./helpers";
+import { createMatch } from "../../src/worker/match-factory";
+import { call, insertMatch, seed, signUp } from "./helpers";
+
+async function until(check: () => boolean, timeoutMs = 3000): Promise<void> {
+  const start = Date.now();
+  while (!check()) {
+    if (Date.now() - start > timeoutMs) throw new Error("timed out");
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
 
 const UPGRADE = { Upgrade: "websocket" };
 
@@ -46,22 +55,37 @@ describe("GET /matches/:id/ws", () => {
   });
 
   it("forwards a player to the MatchRoom with the authenticated user id, ignoring a spoofed one", async () => {
+    await seed();
     const a = await signUp("wsplayer");
     const b = await signUp("wsvictim");
-    await insertMatch({ id: "match_wstest03", player_a: a.userId, player_b: b.userId, status: "active", ended_at: null, winner: null });
-    const res = await call("/api/matches/match_wstest03/ws", {
+    // A real match through the factory, so the MatchRoom has state and accepts players.
+    const { matchId } = await createMatch(env, {
+      courseId: "agai",
+      mode: "ranked",
+      rated: true,
+      settings: { powerups: true, lectures: null },
+      humans: [a.userId, b.userId],
+      testMode: true,
+    });
+    const res = await call(`/api/matches/${matchId}/ws`, {
       cookie: a,
       headers: { ...UPGRADE, "x-user-id": b.userId },
       origin: "http://localhost:5173",
     });
-    const { ws } = await openSocket(res);
-    const stub = env.MATCH_ROOM.getByName("match_wstest03");
+    const { ws, frames } = await openSocket(res);
+    await until(() => frames.length > 0);
+    const snapshot = JSON.parse(frames[0]!) as { type: string; you: { name: string } };
+    expect(snapshot.type).toBe("snapshot");
+    expect(snapshot.you.name).toBe("wsplayer");
+
+    const stub = env.MATCH_ROOM.getByName(matchId);
     const tagged = await runInDurableObject(stub, (_instance, state) => ({
       a: state.getWebSockets(a.userId).length,
       b: state.getWebSockets(b.userId).length,
     }));
     expect(tagged).toEqual({ a: 1, b: 0 });
     ws.close(1000, "done");
+    await stub.cancel("cancelled");
   });
 });
 

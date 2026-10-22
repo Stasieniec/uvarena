@@ -2,15 +2,14 @@
 // fired with runDurableObjectAlarm, reconnects, abandon, bot matches, the
 // answer-leak scan and the D1 rows finalization leaves behind.
 //
-// Every test here is skipped until the engine package is merged into this
-// branch ("needs engine merge"). Then remove the .skip and run npm run test:do.
 import { env } from "cloudflare:workers";
 import { runDurableObjectAlarm } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { MatchState, Side } from "@shared/game/types";
 import { createMatch } from "../../src/worker/match-factory";
 import { removeFakes } from "./fake-engine";
-import { type Client, fastForward, matchRow, openSocket, readState, roomStub, seedCourse, seedUser } from "./helpers";
+import { CLOSE_CODES } from "@shared/protocol";
+import { type Client, fastForward, matchRow, openSocket, readAlarm, readState, roomStub, seedCourse, seedUser } from "./helpers";
 
 const SETTINGS = { powerups: true, lectures: null };
 const MAX_STEPS = 400;
@@ -125,8 +124,7 @@ async function rankedMatch() {
 }
 
 describe("duel with the real engine", () => {
-  // needs engine merge
-  it.skip("plays a ranked match to 0 HP, leaks nothing and finalizes once", async () => {
+  it("plays a ranked match to 0 HP, leaks nothing and finalizes once", async () => {
     const { courseId, a, b, matchId, stub } = await rankedMatch();
     const ca = await openSocket(stub, a);
     const cb = await openSocket(stub, b);
@@ -176,8 +174,7 @@ describe("duel with the real engine", () => {
     cb.close();
   });
 
-  // needs engine merge
-  it.skip("gives a reconnecting player a snapshot of the running question without the key", async () => {
+  it("gives a reconnecting player a snapshot of the running question without the key", async () => {
     const { a, b, stub } = await rankedMatch();
     const ca = await openSocket(stub, a);
     let cb = await openSocket(stub, b);
@@ -200,8 +197,7 @@ describe("duel with the real engine", () => {
     cb.close();
   });
 
-  // needs engine merge
-  it.skip("ends in an abandon when a player stays away past the forfeit time", async () => {
+  it("ends in an abandon when a player stays away past the forfeit time", async () => {
     const { a, b, matchId, stub } = await rankedMatch();
     const ca = await openSocket(stub, a);
     const cb = await openSocket(stub, b);
@@ -217,8 +213,7 @@ describe("duel with the real engine", () => {
     ca.close();
   });
 
-  // needs engine merge
-  it.skip("cancels a ranked match nobody showed up for", async () => {
+  it("cancels a ranked match nobody showed up for", async () => {
     const { a, matchId, stub } = await rankedMatch();
     const ca = await openSocket(stub, a);
     await ca.waitFor("snapshot");
@@ -228,8 +223,7 @@ describe("duel with the real engine", () => {
     ca.close();
   });
 
-  // needs engine merge
-  it.skip("plays a bot match against Oracle Bot and moves the bot rating", async () => {
+  it("plays a bot match against Oracle Bot and moves the bot rating", async () => {
     const { courseId } = await seedCourse();
     const me = await seedUser();
     const { matchId } = await createMatch(env, {
@@ -257,6 +251,53 @@ describe("duel with the real engine", () => {
     expect(rematch).toMatchObject({ state: "accepted" });
     expect(await matchRow(rematch.matchId as string)).toMatchObject({ mode: "bot", bot_level: 9, player_a: me });
     await roomStub(rematch.matchId as string).cancel("cancelled");
+    c.close();
+  });
+  it("deletes its storage at cleanupAt after a finished match instead of ticking", async () => {
+    const { a, b, matchId, stub } = await rankedMatch();
+    const ca = await openSocket(stub, a);
+    const cb = await openSocket(stub, b);
+    await ca.waitFor("intro");
+    cb.send({ type: "surrender" });
+    expect(await ca.waitFor("match_end")).toMatchObject({ result: "win", reason: "surrender" });
+    const finished = (await readState(stub))!;
+    expect(finished.phase).toBe("finished");
+    expect(finished.cleanupAt).not.toBeNull();
+    // Ranked has no rematch window, so the only deadline left is cleanup.
+    expect(await readAlarm(stub)).toBe(finished.cleanupAt);
+
+    await fastForward(stub);
+    expect(await readState(stub)).toBeNull();
+    expect(await readAlarm(stub)).toBeNull();
+    expect((await ca.waitClosed()).code).toBe(CLOSE_CODES.normal);
+    expect((await cb.waitClosed()).code).toBe(CLOSE_CODES.normal);
+    // D1 keeps the finished row; a late alarm on the empty room does nothing.
+    expect((await matchRow(matchId))?.status).toBe("finished");
+    await runDurableObjectAlarm(stub);
+    expect(await readState(stub)).toBeNull();
+  });
+
+  it("runs the rematch window before cleanup in a bot match", async () => {
+    const { courseId } = await seedCourse();
+    const me = await seedUser();
+    const { matchId } = await createMatch(env, { courseId, mode: "bot", rated: false, settings: SETTINGS, humans: [me], bot: { level: 1 }, testMode: true });
+    const stub = roomStub(matchId);
+    const c = await openSocket(stub, me);
+    await c.waitFor("intro");
+    c.send({ type: "surrender" });
+    const end = await c.waitFor("match_end");
+    expect(end).toMatchObject({ result: "loss", reason: "surrender" });
+    const finished = (await readState(stub))!;
+    expect(finished.rematchUntil).not.toBeNull();
+    expect(await readAlarm(stub)).toBe(finished.rematchUntil);
+    await fastForward(stub); // rematch window closes
+    const after = (await readState(stub))!;
+    expect(after.phase).toBe("finished");
+    expect(await readAlarm(stub)).toBe(after.cleanupAt);
+    await fastForward(stub); // cleanup
+    expect(await readState(stub)).toBeNull();
+    expect(await readAlarm(stub)).toBeNull();
+    expect((await matchRow(matchId))?.status).toBe("finished");
     c.close();
   });
 });
