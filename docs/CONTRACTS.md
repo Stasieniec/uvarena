@@ -103,3 +103,9 @@ API and contracts:
 21. The fixture bank has 42 questions, not 30: AGAI needs at least 25 playable (single, multi, truefalse, cloze) questions for a full test match. Fixture fingerprints use the plan's definition but are not guaranteed to match the bank tool's exact serialisation.
 
 Open point for the API and E2E packages: `.dev.vars` sets `APP_URL=http://localhost:5173` (dev), but the E2E server runs `vite preview` on :4173, so Origin checks and Better Auth's `baseURL` will not match under Playwright unless test mode accepts localhost origins or E2E gets its own `APP_URL`. Decide this in the API package and tell the E2E package.
+
+Integration (2026-10-22):
+22. **`RevealPayloadSchema` gained `questionId`** (the stable bank id), filled by the engine's `revealPayload`, so the reveal's report flag can post to `/questions/:id/report`.
+23. **On connect the MatchRoom sends the snapshot first**, then whatever the connect caused (intro, or a due arming). The engine still appends its snapshot last; the room reorders.
+24. **`isTestEnv(env)`** (`TEST_MODE=1` and a localhost `APP_URL`) gates everything that has no request at hand: the Matchmaker's ranked time scale, the MatchRoom's engine seam and the factory's dependency seam.
+25. **`/dev/match` exists in dev builds only** (`import.meta.env.DEV`), independent of test mode; production bundles do not contain the preview. The match screen is lazy-loaded.

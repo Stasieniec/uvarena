@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { createExecutionContext } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import worker from "../../src/worker/index";
-import { isTestMode } from "../../src/worker/middleware/test-mode";
+import { isTestEnv, isTestMode } from "../../src/worker/middleware/test-mode";
 import { isRateLimitedAuthPath } from "../../src/worker/middleware/rate-limit";
 import { isAllowedOriginValue } from "../../src/worker/middleware/origin";
 import { call, json, seed } from "./helpers";
@@ -15,6 +15,13 @@ describe("test mode gate", () => {
     expect(isTestMode({ ...env, TEST_MODE: undefined }, local)).toBe(false);
     expect(isTestMode(env, new Request("https://ragequiz.swasilewski.com/api/test/seed"))).toBe(false);
     expect(isTestMode({ ...env, APP_URL: "https://ragequiz.swasilewski.com" }, local)).toBe(false);
+  });
+
+  it("isTestEnv (DOs, ranked time scale, test seams) needs TEST_MODE=1 and a localhost APP_URL", () => {
+    expect(isTestEnv(env)).toBe(true);
+    expect(isTestEnv({ ...env, TEST_MODE: undefined })).toBe(false);
+    // A stray TEST_MODE on the deployed Worker must not shorten ranked matches.
+    expect(isTestEnv({ ...env, APP_URL: "https://ragequiz.swasilewski.com" })).toBe(false);
   });
 
   it("refuses the test routes without test mode", async () => {
