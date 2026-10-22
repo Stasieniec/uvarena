@@ -9,7 +9,7 @@
 // is searching even if no other event arrives.
 
 import { DurableObject } from "cloudflare:workers";
-import { GLICKO, MATCHMAKER } from "../../shared/game/config";
+import { GLICKO, MATCH, MATCHMAKER, NET } from "../../shared/game/config";
 import type { MatchSettings } from "../../shared/game/types";
 import {
   CLOSE_CODES,
@@ -96,12 +96,25 @@ function parseNumber(raw: string | null, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function send(ws: WebSocket, msg: QueueServerMessage): void {
+/** True when the frame was handed to the socket. */
+function send(ws: WebSocket, msg: QueueServerMessage): boolean {
   try {
     ws.send(JSON.stringify(msg));
+    return true;
   } catch {
     // Closed under us; the close event updates the queue.
+    return false;
   }
+}
+
+/** A socket whose client pinged before but not for this long is treated as gone (as in the MatchRoom). */
+const STALE_SOCKET_MS = NET.pingIntervalMs * 2.5;
+/** Storage key of a user's last pairing: { matchId, at }. */
+const recentKey = (userId: string) => `matched:${userId}`;
+
+interface RecentMatch {
+  matchId: string;
+  at: number;
 }
 
 function close(ws: WebSocket, code: number, reason: string): void {
@@ -166,6 +179,15 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
       if (stored === undefined) await this.ctx.storage.put(KEY_COURSE, course);
 
       const now = Date.now();
+      // Paired a moment ago (the socket that got `matched` may have been one
+      // the client had already dropped): hand this socket the match instead.
+      const recent = await this.recentMatch(userId, now);
+      if (recent) {
+        server.accept();
+        send(server, { type: "matched", serverNow: now, matchId: recent });
+        close(server, CLOSE_CODES.normal, "matched");
+        return new Response(null, { status: 101, webSocket: client });
+      }
       let joinedAt = now;
       for (const old of this.ctx.getWebSockets(userId)) {
         // A newer socket replaces the older one but keeps its place in the queue.
@@ -255,33 +277,92 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
     else await this.ctx.storage.setAlarm(at);
   }
 
+  /**
+   * The user's pairing from the last MATCH.noShowMs, if that match is still
+   * waiting for its players (D1 active, not started). Clears a stale record.
+   */
+  private async recentMatch(userId: string, now: number): Promise<string | null> {
+    const recent = await this.ctx.storage.get<RecentMatch>(recentKey(userId));
+    if (!recent) return null;
+    if (now - recent.at < MATCH.noShowMs) {
+      const row = await this.env.DB.prepare("SELECT status, started_at FROM matches WHERE id = ?")
+        .bind(recent.matchId)
+        .first<{ status: string; started_at: number | null }>();
+      if (row?.status === "active" && row.started_at === null) return recent.matchId;
+    }
+    await this.ctx.storage.delete(recentKey(userId));
+    return null;
+  }
+
+  /** Closes sockets whose client stopped pinging, so pairing never picks a dead one. */
+  private dropStaleSockets(now: number): void {
+    for (const ws of this.openSockets()) {
+      const lastPing = this.ctx.getWebSocketAutoResponseTimestamp(ws);
+      if (lastPing !== null && now - lastPing.getTime() > STALE_SOCKET_MS) close(ws, 1001, "connection timed out");
+    }
+  }
+
+  /** Sends `matched` to the user's open sockets and closes them. True when at least one took it. */
+  deliverMatched(userId: string, msg: MatchedMessage): boolean {
+    let delivered = false;
+    for (const ws of this.openSockets().filter((w) => this.entry(w).userId === userId)) {
+      if (send(ws, msg)) delivered = true;
+      close(ws, CLOSE_CODES.normal, "matched");
+    }
+    return delivered;
+  }
+
   private async pair(): Promise<void> {
     const courseId = await this.ctx.storage.get<string>(KEY_COURSE);
     if (!courseId) return;
+    this.dropStaleSockets(Date.now());
     const entries = this.openSockets().map((ws) => this.entry(ws));
     for (const [x, y] of pairPlayers(entries, Date.now())) {
       // The longer waiter plays side a.
       const players = x.joinedAt <= y.joinedAt ? [x, y] : [y, x];
       const userIds = players.map((p) => p.userId);
+      // A socket may have closed while an earlier pairing awaited D1.
+      if (userIds.some((id) => !this.openSockets().some((w) => this.entry(w).userId === id))) continue;
+      let matchId: string;
       try {
-        const { matchId } = await createMatch(this.env, {
+        ({ matchId } = await createMatch(this.env, {
           courseId,
           mode: "ranked",
           rated: true,
           settings: RANKED_SETTINGS,
           humans: userIds,
           testMode: isTestEnv(this.env),
-        });
-        const matched: MatchedMessage = { type: "matched", serverNow: Date.now(), matchId };
-        for (const id of userIds) {
-          for (const ws of this.ctx.getWebSockets(id)) {
-            send(ws, matched);
-            close(ws, CLOSE_CODES.normal, "matched");
-          }
-        }
+        }));
       } catch (err) {
         await this.pairingFailed(err, userIds);
+        continue;
       }
+      await this.announce(matchId, userIds);
+    }
+  }
+
+  /**
+   * Tells both players, longest waiter first. If one cannot be reached, the
+   * match is cancelled at once (no player waits out the no-show for nobody)
+   * and a player not yet told stays queued with their original join time, so
+   * they are first in line.
+   */
+  private async announce(matchId: string, userIds: string[]): Promise<void> {
+    const matched: MatchedMessage = { type: "matched", serverNow: Date.now(), matchId };
+    const told: string[] = [];
+    for (const id of userIds) {
+      if (!this.deliverMatched(id, matched)) {
+        console.warn(`Matchmaker: could not tell ${id} about ${matchId}; cancelling it`);
+        try {
+          await this.env.MATCH_ROOM.getByName(matchId).cancel("cancelled");
+        } catch (err) {
+          console.error("Matchmaker: cancel after a failed delivery failed", matchId, err);
+        }
+        for (const t of told) await this.ctx.storage.delete(recentKey(t));
+        return;
+      }
+      told.push(id);
+      await this.ctx.storage.put(recentKey(id), { matchId, at: Date.now() } satisfies RecentMatch);
     }
   }
 

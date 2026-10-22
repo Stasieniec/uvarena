@@ -99,6 +99,15 @@ describe("GET /queue/ws", () => {
     expect(JSON.parse(frames[0]!)).toMatchObject({ type: "error", code: "already_in_match", matchId: "match_qbusy001" });
   });
 
+  it("sends matched, not an error, for a ranked match still waiting for this player", async () => {
+    const a = await signUp("queuewait");
+    await insertMatch({ id: "match_qwait001", player_a: a.userId, status: "active", ended_at: null, winner: null, started_at: null, created_at: Date.now() });
+    const res = await call("/api/queue/ws?course=agai", { cookie: a, headers: UPGRADE, origin: "http://localhost" });
+    const { frames, closed } = await openSocket(res);
+    expect((await closed).code).toBe(1000);
+    expect(JSON.parse(frames[0]!)).toMatchObject({ type: "matched", matchId: "match_qwait001" });
+  });
+
   it("never locks a player out of ranked with a row whose room is gone", async () => {
     await seed();
     const a = await signUp("queuestuck");

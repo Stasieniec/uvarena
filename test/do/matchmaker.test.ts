@@ -175,6 +175,60 @@ describe("Matchmaker queue", () => {
     await roomStub(running.matchId).cancel("cancelled");
   });
 
+  it("hands a socket that reconnects right after its pairing the same match", async () => {
+    const { courseId } = await seedCourse();
+    const a = await seedUser();
+    const b = await seedUser();
+    const ca = await queueSocket(courseId, a);
+    const cb = await queueSocket(courseId, b);
+    const { matchId } = await ca.waitFor("matched");
+    await cb.waitFor("matched");
+
+    // The client had already replaced the socket that got `matched`.
+    const again = await queueSocket(courseId, a);
+    expect(await again.waitFor("matched")).toMatchObject({ matchId });
+    expect((await again.waitClosed()).code).toBe(CLOSE_CODES.normal);
+
+    // Once the match is over, the queue works normally again.
+    await roomStub(matchId as string).cancel("cancelled");
+    const later = await queueSocket(courseId, a);
+    await later.waitFor("queue_status");
+    expect(later.of("matched")).toHaveLength(0);
+    later.close();
+  });
+
+  it("cancels a match a player cannot be told about, and keeps the other first in line", async () => {
+    const { courseId } = await seedCourse();
+    const gone = await seedUser();
+    const waiting = await seedUser();
+    const third = await seedUser();
+    const stub = env.MATCHMAKER.getByName(matchmakerName(courseId));
+    const cg = await queueSocket(courseId, gone, 1500);
+    await cg.waitFor("queue_status");
+    // Its client is gone, but the close has not reached the queue yet.
+    await runInDurableObject(stub, (instance) => {
+      const real = instance.deliverMatched.bind(instance);
+      instance.deliverMatched = (userId, msg) => (userId === gone ? false : real(userId, msg));
+    });
+    const cw = await queueSocket(courseId, waiting, 1500);
+    await cw.waitFor("queue_status");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(cw.of("matched")).toHaveLength(0);
+    expect(cw.closed).toBeNull();
+    const row = await env.DB.prepare("SELECT id, status FROM matches WHERE player_a = ? OR player_b = ?").bind(waiting, waiting).first<{ id: string; status: string }>();
+    expect(row?.status).toBe("cancelled");
+
+    cg.close();
+    await until(() => cw.last("queue_status")?.searching === 1, "only the waiting player left");
+    const ct = await queueSocket(courseId, third, 1500);
+    const m = await cw.waitFor("matched");
+    expect((await ct.waitFor("matched")).matchId).toBe(m.matchId);
+    // The waiting player kept their place: side a is the longer waiter.
+    const created = await matchRow(m.matchId as string);
+    expect(created).toMatchObject({ player_a: waiting, player_b: third, status: "active" });
+    await roomStub(m.matchId as string).cancel("cancelled");
+  });
+
   it("refuses a socket for another course and one without a user", async () => {
     const { courseId } = await seedCourse();
     const a = await seedUser();
