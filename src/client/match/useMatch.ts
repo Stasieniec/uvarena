@@ -46,6 +46,7 @@ export function useMatchController(createTransport: () => MatchTransport, opts: 
     const transport = createTransport();
     transportRef.current = transport;
     const pending = timers.current;
+    store.dispatch({ type: "reset" });
     transport.start({
       onMessage(msg, receivedAt) {
         optsRef.current.onServerMessage?.(msg, receivedAt);

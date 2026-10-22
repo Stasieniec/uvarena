@@ -134,7 +134,8 @@ export function MatchView({ state, actions, clock, nav }: Props) {
   const edge = usePulse(bigHit?.victim === "you" ? bigHit.view.seq : null, 900);
   const oppFlash = usePulse(bigHit?.victim === "opponent" ? bigHit.view.seq : null, 900);
 
-  const quick = state.quickFx;
+  // Quick power-up lines only belong to the question they were used on.
+  const quick = state.quickFx && state.quickFx.round === state.round && state.phase === "question" ? state.quickFx : null;
   const quickVisible = usePulse(quick ? quick.seq : null, quick?.who === "you" ? FX.quickBannerMs : FX.toastMs);
 
   const forfeitNow = useNow(clock, 500, state.opponentForfeitAt !== null);
@@ -324,7 +325,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
   const now = useNow(clock, 250, state.phase === "question");
   const question = state.question;
   const showQuestion = (state.phase === "question" || state.phase === "reveal") && question !== null;
-  const quick = state.quickFx;
+  const quick = state.quickFx && state.quickFx.round === state.round && state.phase === "question" ? state.quickFx : null;
   const toastVisible = usePulse(quick && quick.who === "opponent" ? quick.seq : null, FX.toastMs);
 
   const buttons = you.loadout.map((id): { id: PowerupId; state: PowerupButtonState } => {

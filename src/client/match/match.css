@@ -167,6 +167,15 @@
 }
 .rq-float { animation: rq-float 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
+/* The opponent's bar is at the top, so their number drops down from it. */
+@keyframes rq-float-down {
+  0% { opacity: 0; transform: translate(-50%, -8px) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, 6px) scale(1.15); }
+  30% { transform: translate(-50%, 10px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 44px) scale(1); }
+}
+.rq-float-down { animation: rq-float-down 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
 @keyframes rq-chunk {
   0% { opacity: 1; transform: translate(0, 0) rotate(0); background: #fff; }
   15% { opacity: 1; transform: translate(2px, -3px) rotate(-2deg); }
@@ -306,6 +315,7 @@
   box-shadow: inset 0 0 0 3px var(--color-hit-edge);
 }
 .rq-rm .rq-float,
+.rq-rm .rq-float-down,
 .rq-rm .rq-chunk,
 .rq-rm .rq-crumble,
 .rq-rm .rq-flame,
@@ -318,6 +328,9 @@
 }
 .rq-rm .rq-float {
   transform: translate(-50%, -24px) !important;
+}
+.rq-rm .rq-float-down {
+  transform: translate(-50%, 8px) !important;
 }
 .rq-rm .rq-crumble,
 .rq-rm .rq-crack-top,

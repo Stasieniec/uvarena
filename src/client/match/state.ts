@@ -58,6 +58,7 @@ export interface BannerState {
 
 export interface QuickFx {
   seq: number;
+  round: number;
   who: "you" | "opponent";
   powerup: QuickPowerupId;
 }
@@ -120,7 +121,9 @@ export type MatchAction =
   | { type: "local_arm"; round: number; powerup: BlindPowerupId | null }
   | { type: "local_use"; round: number; powerup: QuickPowerupId }
   | { type: "local_answer"; round: number; answer: AnswerKey }
-  | { type: "local_rematch" };
+  | { type: "local_rematch" }
+  /** A new transport starts from scratch (StrictMode remounts, a new match). */
+  | { type: "reset" };
 
 export function initialMatchState(): MatchUiState {
   return {
@@ -370,7 +373,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
         quickPending: null,
         hidden: m.powerup === "oracle" ? m.hidden : s.hidden,
         you: withUsed(s.you, m.powerup),
-        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, who: "you", powerup: m.powerup },
+        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, who: "you", powerup: m.powerup },
       };
 
     case "opponent_powerup":
@@ -378,7 +381,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
       return {
         ...s,
         opponent: withUsed(s.opponent, m.powerup),
-        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, who: "opponent", powerup: m.powerup },
+        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, who: "opponent", powerup: m.powerup },
       };
 
     case "reveal": {
@@ -475,6 +478,8 @@ export function matchReducer(s: MatchUiState, a: MatchAction): MatchUiState {
     case "local_answer":
       if (s.phase !== "question" || a.round !== s.round || s.yourAnswer) return s;
       return { ...s, yourAnswer: a.answer };
+    case "reset":
+      return initialMatchState();
     case "local_rematch":
       if (!s.rematch) return s;
       return { ...s, rematch: { ...s.rematch, you: true } };

@@ -164,7 +164,7 @@ export function QuickBanner({ fx }: { fx: QuickFx }) {
         ))}
       <div className="rq-slam flex items-center gap-3">
         <PowerupIcon id={fx.powerup} size={30} />
-        <span className="rq-display text-[min(6.6vw,30px)] font-black" style={{ color, textShadow: `0 0 16px ${color}` }}>
+        <span className="rq-display text-[min(5.4vw,25px)] font-black whitespace-nowrap" style={{ color, textShadow: `0 0 16px ${color}` }}>
           {text}
         </span>
       </div>

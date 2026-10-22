@@ -52,7 +52,7 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
   const pos: CSSProperties = placement === "below" ? { top: "100%" } : { bottom: "100%" };
   if (hit.speed && !hit.big) {
     return (
-      <div key={hit.seq} className="rq-float pointer-events-none absolute left-1/2 z-30 mt-1 mb-1 whitespace-nowrap" style={pos}>
+      <div key={hit.seq} className={`${placement === "below" ? "rq-float-down" : "rq-float"} pointer-events-none absolute left-1/2 z-30 mt-1 mb-1 whitespace-nowrap`} style={pos}>
         <span className="rounded-full bg-speed-chip/25 px-2 py-0.5 text-xs font-semibold text-speed-chip ring-1 ring-speed-chip/50">
           {`−${fmtInt(hit.amount)} speed`}
         </span>
@@ -62,7 +62,7 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
   const color = hit.zeus ? "var(--color-zeus)" : "#fff";
   const size = hit.big ? "text-5xl" : hit.amount >= 1000 ? "text-4xl" : "text-3xl";
   return (
-    <div key={hit.seq} className="rq-float pointer-events-none absolute left-1/2 z-30 whitespace-nowrap text-center" style={pos}>
+    <div key={hit.seq} className={`${placement === "below" ? "rq-float-down" : "rq-float"} pointer-events-none absolute left-1/2 z-30 whitespace-nowrap text-center`} style={pos}>
       <div
         className={`rq-display font-black ${size}`}
         style={{ color, textShadow: `0 2px 0 #000, 0 0 18px ${hit.zeus ? "var(--color-zeus)" : "var(--color-wrong)"}` }}
