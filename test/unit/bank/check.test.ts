@@ -206,7 +206,7 @@ questions:
 
 describe("check: writing rules", () => {
   it("errors on em-dashes and emoji anywhere, comments included", () => {
-    expectError(clean("  # good — bad\n" + single()), /Em-dash/, 5);
+    expectError(clean(`  # good ${String.fromCharCode(0x2014)} bad\n` + single()), /Em-dash/, 5);
     expectError(clean(single("agai-2a3b4c", { why: "Nice \u{1F600}" })), /Emoji/, 21);
   });
 
