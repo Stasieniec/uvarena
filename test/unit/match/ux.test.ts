@@ -47,7 +47,7 @@ describe("damageLine", () => {
   });
 
   it("uses no em-dash or hyphen-minus that could read as a range", () => {
-    expect(damageLine(base, SCORING)).not.toMatch(/[—-]/);
+    expect(damageLine(base, SCORING)).not.toMatch(/[\u2014-]/);
   });
 });
 
