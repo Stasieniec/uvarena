@@ -354,6 +354,8 @@ export const LIMITS = {
   nameMin: 1,
   nameMax: 50,
   passwordMin: 8,
+  /** BETTER_AUTH_SECRET length a deployed Worker requires (openssl rand -base64 32 gives 44). */
+  authSecretMin: 32,
   /** Session lifetime, refreshed daily. */
   sessionDays: 60,
   /** Avatar upload: raw JPEG, PNG or WebP, at most this many bytes. */
