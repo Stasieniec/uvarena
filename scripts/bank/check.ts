@@ -1,7 +1,7 @@
 // `check`: validates every quiz file in the vault. Errors block export;
 // warnings are listed for review.
 import { existsSync, readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import type { z } from "zod";
 import {
   COURSE_CODES,
@@ -18,7 +18,7 @@ import {
   type QuizItem,
 } from "../../src/shared/question-schema";
 import { fingerprint, type FileHeader } from "./convert";
-import { Diagnostics, type Severity } from "./diagnostics";
+import { Diagnostics, formatDiagnostic, type Severity } from "./diagnostics";
 import { findQuizFiles, lineAt, loadFile, type LoadedFile } from "./load";
 import { CLI_PATH, QUIZ_DIR } from "./paths";
 import { checkItem, contentWords, LIMITS, stripCode } from "./rules";
@@ -157,7 +157,9 @@ export function checkVault(opts: CheckOptions): CheckResult {
     return { diagnostics: diags, files, fingerprints: {} };
   }
 
-  for (const abs of findQuizFiles(opts.vault)) {
+  const quizFiles = findQuizFiles(opts.vault);
+  if (quizFiles.length === 0) diags.warn(join(opts.vault, QUIZ_DIR), 0, "No quiz files found");
+  for (const abs of quizFiles) {
     const name = basename(abs);
     if (!name.endsWith(".quiz.yaml")) {
       diags.warn(abs, 0, "Skipped: quiz files are named <lecture>.quiz.yaml");
@@ -467,4 +469,18 @@ function checkBalance(f: CheckedFile, diags: Diagnostics): void {
       }
     }
   }
+}
+
+/** Prints diagnostics and a summary line. Returns true when there are no errors anywhere in the vault. */
+export function printCheck(result: CheckResult, opts: { course: string | null; warnings: boolean }): boolean {
+  const inCourse = (file: string) => !opts.course || file.includes(`/${opts.course}/`) || !file.includes("/docs/quiz/");
+  const shown = result.diagnostics.sorted().filter((d) => inCourse(d.file) && (opts.warnings || d.severity === "error"));
+  for (const d of shown) console.log(formatDiagnostic(d));
+  const files = result.files.filter((f) => inCourse(f.file.abs));
+  const questions = files.reduce((n, f) => n + f.items.length, 0);
+  const errors = result.diagnostics.errors.filter((d) => inCourse(d.file)).length;
+  const warnings = result.diagnostics.warnings.filter((d) => inCourse(d.file)).length;
+  const scope = opts.course ? ` in ${opts.course}` : "";
+  console.log(`check: ${files.length} file(s), ${questions} question(s)${scope}: ${errors} error(s), ${warnings} warning(s)`);
+  return result.diagnostics.errors.length === 0;
 }

@@ -17,10 +17,11 @@
 //   --out <path>           export: default bank/bank.json in this repo
 //   --sql <path>           import: default bank/import.sql in this repo
 //   --dry-run              import: write the SQL and print the counts, do not execute it
+//   --persist-to <dir>     import --local: wrangler's local state folder (default .wrangler/state)
 // Formats: src/shared/question-schema.ts. Behaviour: docs/build-plan.md "Question bank".
 import { resolve } from "node:path";
-import { checkVault, type CheckResult } from "./bank/check";
-import { displayPath, formatDiagnostic } from "./bank/diagnostics";
+import { checkVault, printCheck } from "./bank/check";
+import { displayPath } from "./bank/diagnostics";
 import { assignIds } from "./bank/ids";
 import { CLI_PATH, DEFAULT_BANK_JSON, DEFAULT_FINGERPRINTS, DEFAULT_IMPORT_SQL } from "./bank/paths";
 
@@ -37,6 +38,7 @@ interface Args {
   sql: string;
   target: "local" | "remote" | null;
   dryRun: boolean;
+  persistTo: string | null;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -50,6 +52,7 @@ function parseArgs(argv: string[]): Args {
     sql: DEFAULT_IMPORT_SQL,
     target: null,
     dryRun: false,
+    persistTo: null,
   };
   const value = (i: number, flag: string) => {
     const v = argv[i + 1];
@@ -88,6 +91,10 @@ function parseArgs(argv: string[]): Args {
       case "--remote":
         args.target = "remote";
         break;
+      case "--persist-to":
+        args.persistTo = resolve(value(i, a));
+        i++;
+        break;
       case "--dry-run":
         args.dryRun = true;
         break;
@@ -112,20 +119,6 @@ function fail(message: string): never {
   process.exit(2);
 }
 
-/** Prints diagnostics and a summary line. Returns true when there are no errors. */
-export function printCheck(result: CheckResult, args: Pick<Args, "course" | "warnings">): boolean {
-  const inCourse = (file: string) => !args.course || file.includes(`/${args.course}/`) || !file.includes("/docs/quiz/");
-  const shown = result.diagnostics.sorted().filter((d) => inCourse(d.file) && (args.warnings || d.severity === "error"));
-  for (const d of shown) console.log(formatDiagnostic(d));
-  const files = result.files.filter((f) => inCourse(f.file.abs));
-  const questions = files.reduce((n, f) => n + f.items.length, 0);
-  const errors = result.diagnostics.errors.filter((d) => inCourse(d.file)).length;
-  const warnings = result.diagnostics.warnings.filter((d) => inCourse(d.file)).length;
-  const scope = args.course ? ` in ${args.course}` : "";
-  console.log(`check: ${files.length} file(s), ${questions} question(s)${scope}: ${errors} error(s), ${warnings} warning(s)`);
-  return result.diagnostics.errors.length === 0;
-}
-
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   switch (args.command) {
@@ -148,7 +141,8 @@ async function main(): Promise<void> {
       const { runExport, runImport } = await import("./bank/commands");
       if (args.command === "export") process.exit((await runExport(args)) ? 0 : 1);
       if (!args.target) fail("import needs --local or --remote");
-      process.exit((await runImport({ ...args, target: args.target })) ? 0 : 1);
+      if (args.persistTo && args.target !== "local") fail("--persist-to works with --local only");
+      process.exit((await runImport({ ...args, target: args.target, persistTo: args.persistTo ?? undefined })) ? 0 : 1);
       break;
     }
     default:
