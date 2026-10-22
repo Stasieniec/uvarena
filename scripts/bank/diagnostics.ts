@@ -47,14 +47,14 @@ export class Diagnostics {
 }
 
 /** Relative to the working directory when the file is under it, absolute otherwise, so editors can open it. */
-export function displayPath(file: string, cwd = process.cwd()): string {
+export function displayPath(file: string, cwd = process.env.INIT_CWD ?? process.cwd()): string {
   if (cwd === "/") return file;
   const rel = relative(cwd, file);
   if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) return file;
   return rel;
 }
 
-export function formatDiagnostic(d: Diagnostic, cwd = process.cwd()): string {
+export function formatDiagnostic(d: Diagnostic, cwd = process.env.INIT_CWD ?? process.cwd()): string {
   const loc = d.line > 0 ? `${displayPath(d.file, cwd)}:${d.line}` : displayPath(d.file, cwd);
   const where = d.where ? ` [${d.where}]` : "";
   return `${loc}: ${d.severity}: ${d.message}${where}`;

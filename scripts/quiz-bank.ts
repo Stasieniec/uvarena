@@ -41,6 +41,10 @@ interface Args {
   persistTo: string | null;
 }
 
+/** npm run sets the working directory to the repo; INIT_CWD is where the user typed the command. */
+const BASE = process.env.INIT_CWD ?? process.cwd();
+const abs = (p: string) => resolve(BASE, p);
+
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     command: "",
@@ -63,7 +67,7 @@ function parseArgs(argv: string[]): Args {
     const a = argv[i]!;
     switch (a) {
       case "--vault":
-        args.vault = resolve(value(i, a));
+        args.vault = abs(value(i, a));
         i++;
         break;
       case "--course":
@@ -71,15 +75,15 @@ function parseArgs(argv: string[]): Args {
         i++;
         break;
       case "--fingerprints":
-        args.fingerprints = resolve(value(i, a));
+        args.fingerprints = abs(value(i, a));
         i++;
         break;
       case "--out":
-        args.out = resolve(value(i, a));
+        args.out = abs(value(i, a));
         i++;
         break;
       case "--sql":
-        args.sql = resolve(value(i, a));
+        args.sql = abs(value(i, a));
         i++;
         break;
       case "--no-warnings":
@@ -92,7 +96,7 @@ function parseArgs(argv: string[]): Args {
         args.target = "remote";
         break;
       case "--persist-to":
-        args.persistTo = resolve(value(i, a));
+        args.persistTo = abs(value(i, a));
         i++;
         break;
       case "--dry-run":
