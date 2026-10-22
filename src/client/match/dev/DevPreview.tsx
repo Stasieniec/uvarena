@@ -7,11 +7,16 @@
 //   freeze=0                   keep running after the jump
 //   speed=2                    run the clock faster
 //   controls=1                 a small toolbar (restart, drop the connection)
+//   engine=1&bot=7&course=agai the real engine against a bot, with the fixture bank
 
-import { useCallback, useMemo, useState } from "react";
-import type { Side } from "@shared/game/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MATCH } from "@shared/game/config";
+import { createRng } from "@shared/game/rng";
+import type { BotLevel, QuestionFull, Side } from "@shared/game/types";
+import { BankFileSchema } from "@shared/question-schema";
 import { MatchView, type MatchNav } from "../MatchView";
 import { useMatchController, type MatchActions } from "../useMatch";
+import { EngineHarness, questionsFromBank } from "./engine-harness";
 import { DevHarness } from "./harness";
 import { MOMENTS, SCENARIOS, type Moment } from "./scenarios";
 import type { ClientMessage } from "@shared/protocol";
@@ -24,6 +29,7 @@ interface Config {
   freeze: boolean;
   speed: number;
   controls: boolean;
+  engine: { botLevel: BotLevel; course: string } | null;
 }
 
 function readConfig(search: string): Config | null {
@@ -39,6 +45,10 @@ function readConfig(search: string): Config | null {
     freeze: moment !== null && p.get("freeze") !== "0",
     speed: Math.min(10, Math.max(0.1, Number(p.get("speed")) || 1)),
     controls: p.get("controls") === "1",
+    engine:
+      p.get("engine") === "1"
+        ? { botLevel: Math.min(9, Math.max(-1, Number(p.get("bot") ?? 4) || 4)) as BotLevel, course: p.get("course") ?? "agai" }
+        : null,
   };
 }
 
@@ -46,6 +56,7 @@ export default function DevPreview() {
   const config = useMemo(() => readConfig(window.location.search), []);
   const [run, setRun] = useState(0);
   if (!config) return <Index />;
+  if (config.engine) return <EngineRun key={run} config={config} onRestart={() => setRun((r) => r + 1)} />;
   return <Run key={run} config={config} onRestart={() => setRun((r) => r + 1)} />;
 }
 
@@ -119,6 +130,59 @@ function Run({ config, onRestart }: { config: Config; onRestart(): void }) {
   );
 }
 
+/** The real engine in the browser against a bot, on fixture questions served by the dev server. */
+function EngineRun({ config, onRestart }: { config: Config; onRestart(): void }) {
+  const [questions, setQuestions] = useState<QuestionFull[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/test/fixtures/questions.json")
+      .then((r) => r.json())
+      .then((raw) => {
+        const all = questionsFromBank(BankFileSchema.parse(raw), config.engine!.course);
+        const rng = createRng((Date.now() & 0xffffffff) >>> 0);
+        setQuestions(rng.shuffle(all).slice(0, MATCH.questionsPerMatch));
+      })
+      .catch((e: unknown) => setError(String(e)));
+  }, [config]);
+  if (error) return <p className="p-6 text-wrong">Could not load the fixture bank: {error}</p>;
+  if (!questions) return <p className="p-6 text-muted">Loading questions.</p>;
+  return <EngineMatch questions={questions} config={config} onRestart={onRestart} />;
+}
+
+function EngineMatch({ questions, config, onRestart }: { questions: QuestionFull[]; config: Config; onRestart(): void }) {
+  const harness = useMemo(
+    () => new EngineHarness({ questions, botLevel: config.engine!.botLevel, loadout: ["zeus", "aegis", "oracle"], seed: Date.now() >>> 0 }),
+    [questions, config],
+  );
+  const createTransport = useCallback(() => harness, [harness]);
+  const { state, actions } = useMatchController(createTransport);
+  const nav = useMemo<MatchNav>(
+    () => ({
+      home: () => {
+        window.location.search = "";
+      },
+      playAgain: onRestart,
+      missed: () => {
+        window.location.search = "";
+      },
+      match: onRestart,
+    }),
+    [onRestart],
+  );
+  return (
+    <>
+      <MatchView state={state} actions={actions} clock={harness} nav={nav} />
+      {config.controls && (
+        <div className="fixed bottom-2 left-2 z-[100] flex gap-1 text-xs">
+          <button type="button" className="rounded bg-black/80 px-2 py-1 ring-1 ring-white/20" onClick={() => harness.drop(2500)}>
+            Drop 2.5 s
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function Index() {
   return (
     <div className="mx-auto max-w-[30rem] px-4 py-6 text-sm">
@@ -137,6 +201,22 @@ function Index() {
             </a>
             <a className="text-you underline" href={`?scenario=${s.id}&side=1&autoplay=1`}>
               watch as opponent
+            </a>
+          </li>
+        ))}
+      </ul>
+      <h2 className="mt-6 mb-2 font-semibold">Real engine against a bot</h2>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {[
+          ["Dummy", 0],
+          ["Icarus", 1],
+          ["Pandora", 4],
+          ["Athena", 7],
+          ["Oracle Bot", 9],
+        ].map(([name, level]) => (
+          <li key={level}>
+            <a className="text-you underline" href={`?engine=1&bot=${level}&controls=1`}>
+              {name}
             </a>
           </li>
         ))}

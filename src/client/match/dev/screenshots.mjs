@@ -20,7 +20,7 @@ const SHOTS = {
   zeus: 380,
   "zeus-them": 380,
   "zeus-bot": 380,
-  nemesis: 1000,
+  nemesis: 650,
   aegis: 600,
   "nemesis-wasted": 600,
   truefalse: 500,
@@ -65,7 +65,10 @@ for (const reduced of [false, true]) {
   for (const [moment, wait] of Object.entries(SHOTS)) {
     if (only.length && !only.includes(moment)) continue;
     if (reduced && !["zeus", "big-hit", "phoenix", "nemesis"].includes(moment)) continue;
-    await page.goto(`${base}/src/client/match/dev/screen?moment=${moment}`, { waitUntil: "networkidle" });
+    await page.goto(`${base}/src/client/match/dev/screen?moment=${moment}`, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    // Waits count from when the screen is up, so entry animations land on the same frame each run.
+    await page.waitForSelector(".rq-match");
     await page.waitForTimeout(wait);
     const file = join(out, `${moment}${reduced ? "-reduced" : ""}.png`);
     await page.screenshot({ path: file });

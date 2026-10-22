@@ -540,8 +540,8 @@ export class FakeMatchServer {
     this.deadline = this.now + this.timerMs;
     this.setPhase("question", null);
     for (const s of [0, 1] as const) {
-      // QuestionView.type (the question type) is overridden by the message type, as in the engine.
-      this.emit(s, { ...this.questionView(s), type: "question", serverNow: this.now });
+      const view = this.questionView(s);
+      this.emit(s, { ...view, type: "question", questionType: view.type, serverNow: this.now });
     }
     const round = this.round;
     for (const s of [0, 1] as const) {

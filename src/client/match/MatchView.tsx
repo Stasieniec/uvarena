@@ -135,7 +135,7 @@ export function MatchView({ state, actions, clock, nav }: Props) {
   const oppFlash = usePulse(bigHit?.victim === "opponent" ? bigHit.view.seq : null, 900);
 
   // Quick power-up lines only belong to the question they were used on.
-  const quick = state.quickFx && state.quickFx.round === state.round && state.phase === "question" ? state.quickFx : null;
+  const quick = freshQuick(state, clock);
   const quickVisible = usePulse(quick ? quick.seq : null, quick?.who === "you" ? FX.quickBannerMs : FX.toastMs);
 
   const forfeitNow = useNow(clock, 500, state.opponentForfeitAt !== null);
@@ -261,6 +261,14 @@ export function MatchView({ state, actions, clock, nav }: Props) {
   );
 }
 
+/** The quick power-up line of this question, unless it is already old (a reconnect or a late mount). */
+function freshQuick(state: MatchUiState, clock: MatchClock) {
+  const q = state.quickFx;
+  if (!q || q.round !== state.round || state.phase !== "question") return null;
+  const life = q.who === "you" ? FX.quickBannerMs : FX.toastMs;
+  return clock.now() - q.at < life ? q : null;
+}
+
 /** Length of the current phase: from the message that started it, else the configured length. */
 function phaseTotal(state: MatchUiState, fallback: number): number {
   if (state.phaseStartedAt !== null && state.phaseEndsAt !== null && state.phaseEndsAt > state.phaseStartedAt) {
@@ -325,7 +333,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
   const now = useNow(clock, 250, state.phase === "question");
   const question = state.question;
   const showQuestion = (state.phase === "question" || state.phase === "reveal") && question !== null;
-  const quick = state.quickFx && state.quickFx.round === state.round && state.phase === "question" ? state.quickFx : null;
+  const quick = freshQuick(state, clock);
   const toastVisible = usePulse(quick && quick.who === "opponent" ? quick.seq : null, FX.toastMs);
 
   const buttons = you.loadout.map((id): { id: PowerupId; state: PowerupButtonState } => {
@@ -358,6 +366,13 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
         controls={controls}
         forfeitIn={forfeitIn}
       />
+      {toastVisible && quick && (
+        <div className="pointer-events-none relative z-30 h-0">
+          <div className="absolute inset-x-0 top-0.5 flex justify-center">
+            <OpponentToast fx={quick} />
+          </div>
+        </div>
+      )}
       <RoundLine
         round={state.round}
         multiplier={question?.multiplier ?? state.multiplier}
@@ -366,11 +381,6 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
         opponentAnswered={state.phase === "question" && state.opponentAnswered}
       />
       <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-3 pt-1 pb-2">
-        {toastVisible && quick && (
-          <div className="pointer-events-none absolute inset-x-0 top-1 z-30 flex justify-center">
-            <OpponentToast fx={quick} />
-          </div>
-        )}
         {showQuestion ? (
           <>
             <QuestionCard state={state} question={question!} clock={clock} showRevealLine={step >= 4} onTick={onTick} />

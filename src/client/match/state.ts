@@ -25,7 +25,6 @@ import type {
   ServerMessage,
   SnapshotMessage,
 } from "@shared/protocol";
-import { inferQuestionType } from "./question-type";
 
 export type ConnectionStatus =
   | "idle"
@@ -59,6 +58,8 @@ export interface BannerState {
 export interface QuickFx {
   seq: number;
   round: number;
+  /** serverNow of the message, so a late render does not replay an old line. */
+  at: number;
   who: "you" | "opponent";
   powerup: QuickPowerupId;
 }
@@ -324,11 +325,11 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
 
     case "question": {
       if (stale(s, m.round)) return s;
-      const { type: _t, serverNow: _n, ...rest } = m;
+      const { type: _t, serverNow: _n, questionType, ...rest } = m;
       void _t;
       void _n;
-      // The message's own `type` hides the question type (see question-type.ts).
-      const question: QuestionView = { ...rest, type: inferQuestionType(rest) };
+      // The message tag overwrites the view's `type`; the question type travels in questionType.
+      const question: QuestionView = { ...rest, type: questionType };
       return {
         ...s,
         phase: "question",
@@ -373,7 +374,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
         quickPending: null,
         hidden: m.powerup === "oracle" ? m.hidden : s.hidden,
         you: withUsed(s.you, m.powerup),
-        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, who: "you", powerup: m.powerup },
+        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, at: m.serverNow, who: "you", powerup: m.powerup },
       };
 
     case "opponent_powerup":
@@ -381,7 +382,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
       return {
         ...s,
         opponent: withUsed(s.opponent, m.powerup),
-        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, who: "opponent", powerup: m.powerup },
+        quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, at: m.serverNow, who: "opponent", powerup: m.powerup },
       };
 
     case "reveal": {

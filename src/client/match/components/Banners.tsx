@@ -3,7 +3,7 @@
 // never over the question), the small toast when the opponent uses one, and
 // Phoenix rising during the reveal.
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { TIMING } from "@shared/game/config";
 import type { PowerupId } from "@shared/game/types";
 import type { BannerItem, PlayerView } from "@shared/protocol";
@@ -72,14 +72,19 @@ function Line({ item, small, className = "rq-slam" }: { item: BannerItem; small:
 }
 
 /** The cancelled power-up's line, cracking and falling apart before Nemesis lands. */
-function Cracked({ item, small }: { item: BannerItem; small: boolean }) {
+function Cracked({ item, small, caption }: { item: BannerItem; small: boolean; caption: ReactNode }) {
   // Two Nemeses cancel each other: both "read your plans" lines break.
   const shown: BannerItem = { ...item, outcome: item.powerup === "nemesis" ? "nemesis_hit" : "active" };
-  const inner = <Line item={shown} small={small} className="" />;
+  const inner = (
+    <>
+      {caption}
+      <Line item={shown} small={small} className="" />
+    </>
+  );
   return (
     <div className="relative">
-      <div className="rq-crack-top">{inner}</div>
-      <div className="rq-crack-bottom absolute inset-0">{inner}</div>
+      <div className="rq-crack-top flex flex-col items-center">{inner}</div>
+      <div className="rq-crack-bottom absolute inset-0 flex flex-col items-center">{inner}</div>
       <svg className="rq-crack-line pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
         <polyline points="0,55 12,47 32,60 55,44 78,58 100,46" fill="none" stroke="#fff" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
       </svg>
@@ -110,7 +115,7 @@ export function BannerOverlay({ banner, opponent }: { banner: BannerState; oppon
     <div
       key={banner.seq}
       className="rq-banner absolute inset-0 z-50 flex flex-col items-center justify-center gap-7 overflow-hidden px-4"
-      style={{ ...style, background: "radial-gradient(ellipse at center, rgba(10,17,40,0.82) 0%, rgba(4,7,18,0.96) 75%)" }}
+      style={{ ...style, background: "radial-gradient(ellipse at center, rgba(12,19,44,0.96) 0%, rgba(4,7,18,0.99) 75%)" }}
       role="status"
       aria-live="assertive"
     >
@@ -122,8 +127,7 @@ export function BannerOverlay({ banner, opponent }: { banner: BannerState; oppon
       )}
       {cancelled.map((c) => (
         <div key={`c-${c.who}`} className="flex w-full flex-col items-center">
-          <Caption who={c.who} opponentName={name} />
-          <Cracked item={c} small={small} />
+          <Cracked item={c} small={small} caption={<Caption who={c.who} opponentName={name} />} />
         </div>
       ))}
       {hits.map((h) => (
@@ -155,7 +159,7 @@ export function QuickBanner({ fx }: { fx: QuickFx }) {
       role="status"
     >
       {fx.powerup === "hermes" &&
-        [18, 34, 52, 70, 84].map((top, i) => (
+        [10, 22, 78, 90].map((top, i) => (
           <div
             key={top}
             className="rq-wind absolute left-0 h-[2px] w-2/3 rounded-full"
