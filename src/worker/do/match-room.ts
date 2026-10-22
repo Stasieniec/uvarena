@@ -14,7 +14,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { initState, matchEnd, nextDeadline, sideOf, step, view } from "../../shared/game/engine";
 import { NET } from "../../shared/game/config";
-import { planFinalization } from "../../shared/game/finalize";
+import { isCancelledReason, planFinalization } from "../../shared/game/finalize";
 import type {
   CancelReason,
   EndReason,
@@ -84,6 +84,8 @@ const EFFECT_MAX_ATTEMPTS = 15;
  * that never ping are never judged by this.
  */
 const STALE_SOCKET_MS = NET.pingIntervalMs * 2.5;
+/** Standard "going away" close code: not final, so the client reconnects if it is still there. */
+const CLOSE_GOING_AWAY = 1001;
 
 type PendingEffect =
   | { kind: "started"; attempts: number }
@@ -299,6 +301,8 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
 
   private async finalize(state: MatchState): Promise<MatchState> {
     if (state.finalized) return state;
+    // Cancelled matches have no rows to plan; they only close the matches row.
+    if (state.result && isCancelledReason(state.result.reason)) return this.markCancelled(state, state.result.reason);
     const now = Date.now();
     let plan = await this.ctx.storage.get<FinalizationPlan>(KEY_PLAN);
     if (!plan || plan.matchId !== state.matchId) {
@@ -365,9 +369,11 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
       return;
     }
     const times: number[] = [];
-    const next = this.engine.nextDeadline(state);
-    if (next !== null) times.push(next);
     const effects = await this.loadEffects();
+    const next = this.engine.nextDeadline(state);
+    // Cleanup waits for pending effects; their retry time drives the alarm until then.
+    const cleanupBlocked = effects.length > 0 && state.cleanupAt !== null && next !== null && next >= state.cleanupAt;
+    if (next !== null && !cleanupBlocked) times.push(next);
     if (effects.length > 0) times.push(this.retryAt ?? Date.now());
     if (times.length === 0) {
       await this.ctx.storage.deleteAlarm();
@@ -540,7 +546,7 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
     for (const ws of this.ctx.getWebSockets()) {
       const lastPing = this.ctx.getWebSocketAutoResponseTimestamp(ws);
       if (lastPing === null || now - lastPing.getTime() <= STALE_SOCKET_MS) continue;
-      safeClose(ws, CLOSE_CODES.normal + 1, "connection timed out");
+      safeClose(ws, CLOSE_GOING_AWAY, "connection timed out");
       const { userId } = ws.deserializeAttachment() as MatchSocketAttachment;
       const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && s.readyState === WebSocket.OPEN);
       if (others.length > 0) continue;

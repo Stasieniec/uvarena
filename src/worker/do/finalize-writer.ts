@@ -9,7 +9,8 @@
 
 import { and, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
-import { ELO, PAIR_CAP } from "../../shared/game/config";
+import { ELO } from "../../shared/game/config";
+import { pairCapDay } from "../../shared/game/finalize";
 import type {
   FinalizationContext,
   FinalizationPlan,
@@ -39,32 +40,6 @@ export function humanIds(state: MatchState): string[] {
     if (p && p.kind === "human" && p.userId) ids.push(p.userId);
   }
   return ids;
-}
-
-/** UTC offset of a time zone at an instant, in ms (local wall clock minus UTC). */
-function zoneOffsetMs(at: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).formatToParts(new Date(at));
-  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
-  const wall = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
-  return wall - Math.floor(at / 1000) * 1000;
-}
-
-/** Epoch ms of local midnight in `timeZone` on the calendar day that contains `now`. */
-export function startOfDay(now: number, timeZone: string): number {
-  const offsetNow = zoneOffsetMs(now, timeZone);
-  const localMidnight = Math.floor((now + offsetNow) / DAY_MS) * DAY_MS;
-  // On a DST change day the offset at midnight differs from the offset now.
-  const offsetAtMidnight = zoneOffsetMs(localMidnight - offsetNow, timeZone);
-  return localMidnight - offsetAtMidnight;
 }
 
 /** Reads rating rows, player_course rows, 30-day recent answers and the pair count for a finished match. */
@@ -117,7 +92,7 @@ export async function loadFinalizationContext(db: D1Database, state: MatchState,
 
   const [a, b] = users;
   if (state.rated && a && b) {
-    const dayStart = startOfDay(now, PAIR_CAP.timeZone);
+    const day = pairCapDay(now);
     const [row] = await orm
       .select({ n: sql<number>`count(*)` })
       .from(matches)
@@ -126,7 +101,8 @@ export async function loadFinalizationContext(db: D1Database, state: MatchState,
           eq(matches.status, "finished"),
           eq(matches.rated, true),
           ne(matches.id, state.matchId),
-          gte(matches.endedAt, dayStart),
+          gte(matches.endedAt, day.start),
+          lt(matches.endedAt, day.end),
           or(
             and(eq(matches.playerA, a), eq(matches.playerB, b)),
             and(eq(matches.playerA, b), eq(matches.playerB, a)),
