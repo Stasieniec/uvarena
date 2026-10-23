@@ -23,6 +23,7 @@
     "smoke:ui": "tsx scripts/smoke-ui.ts",
     "e2e:server": "wrangler d1 migrations apply DB --local && vite build && vite preview",
     "bank": "tsx scripts/quiz-bank.ts",
+    "deploy": "tsx scripts/deploy.ts",
     "lint:copy": "tsx scripts/lint-copy.ts"
   },
   "dependencies": {
