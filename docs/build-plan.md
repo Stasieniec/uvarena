@@ -694,29 +694,53 @@ A 30-question fixture (`test/fixtures/questions.json`, mixed types, known keys) 
 
 ## Deploy
 
-From this container, after the integration tests pass:
+Live at https://uvarena.swasilewski.com since 2026-10-23. Deploy from the repo root of this container:
 
 ```bash
 export CLOUDFLARE_API_TOKEN=placeholder          # the proxy injects the real token
 export CLOUDFLARE_ACCOUNT_ID=2b601c6ade78558b75079f4a71ac23c8
+npm run deploy
+```
 
-npx wrangler d1 create uvarena --location weur  # put database_id into wrangler.jsonc
+Why not `wrangler deploy`: the container's proxy puts the account token on every request to `*.cloudflare.com`, which overwrites the short-lived JWT that the Workers static asset upload uses, so `POST .../workers/assets/upload` answers 401. Plain API calls (script upload, D1, R2) work. So production serves the SPA from the R2 bucket `uvarena-static` instead of Workers static assets:
+
+- `scripts/deploy.ts` runs `vite build`, uploads every changed file in `dist/client/` to `uvarena-static` (compared by MD5 against the bucket listing, `index.html` last, `_headers` and dot files skipped, old hashed chunks kept for clients still on the previous version), writes `dist/uvarena/wrangler.deploy.json` (the generated config without `assets`, plus the `STATIC` R2 binding) and runs `wrangler deploy --config` on it.
+- If the Worker does not exist or has no `BETTER_AUTH_SECRET`, it generates one with `openssl rand` into a umask-077 temp file (set `DEPLOY_SECRETS_DIR` to the session scratchpad in the cloud container), passes it with `--secrets-file` and deletes it. The value is never printed.
+- It does not trust wrangler's exit code (wrangler can fail on `/workers/routes` after a good upload): it checks through the API that the Worker was updated, has the `STATIC` binding and the secret, and that the custom domain `uvarena.swasilewski.com` points at it, attaching the domain if it is missing.
+- With `STATIC` bound, `src/worker/index.ts` sends every non-`/api` request to `src/worker/static.ts`: content type by extension, ETag and `If-None-Match`, `public, max-age=31536000, immutable` under `/assets/`, `no-cache` elsewhere, `index.html` for unknown app routes, a real 404 for missing `/assets/*` and known file types, HEAD, and the security headers parsed from `public/_headers` at build time (in production `_headers` itself is not applied by anything else). Local dev, `vite preview` and the tests have no `STATIC` binding and keep using static assets unchanged.
+
+One-time setup, done on 2026-10-23 (for a fresh account):
+
+```bash
+npx wrangler d1 create uvarena --location weur  # database_id into wrangler.jsonc
 npx wrangler r2 bucket create uvarena-avatars
+npx wrangler r2 bucket create uvarena-static
 npx wrangler d1 migrations apply DB --remote
+```
 
-npm run build                                    # vite build writes dist/ and the deploy redirect
-# The auth secret ships with the first version, so the custom domain never
-# serves a Worker without it (the Worker also answers 503 until it is set).
-umask 077
-printf '{"BETTER_AUTH_SECRET":"%s"}' "$(openssl rand -base64 32)" > /tmp/uvarena-secrets.json
-npx wrangler deploy --secrets-file /tmp/uvarena-secrets.json   # creates the Worker, DOs and custom domain
-rm /tmp/uvarena-secrets.json
-# later, once Stas has the Google client:
+After a deploy, or whenever the bank changes:
+
+```bash
+git -C ../university-vault pull
+npm run bank -- import --remote --vault ../university-vault   # commit bank/fingerprints.json if it changed
+npx wrangler d1 migrations apply DB --remote                   # when migrations/ gained a file, before npm run deploy
+```
+
+Checks against production:
+
+```bash
+curl -sS https://uvarena.swasilewski.com/api/health           # {"ok":true}
+curl -sSI https://uvarena.swasilewski.com/profile              # 200 text/html, no-cache, CSP
+npm run smoke -- --url https://uvarena.swasilewski.com --production
+```
+
+The production smoke run signs up two `zz_smoke_*` users, plays a ranked Agentic AI match over the queue and match sockets to the end, checks ratings, history, missed questions and the leaderboard, then plays and wins a match against the first ladder bot (about two minutes at real timers). It leaves those users behind: delete them and their rows afterwards (answers, match_rounds, match_finalizations and matches of their matches; question_reports, missed_questions, ratings, player_course, user_prefs, session, account, user), and reset question stats (`rating = start_rating, rating_n = 0, attempts = 0, correct = 0`) only while no real player exists yet.
+
+Google sign-in, once Stas has the client:
+
+```bash
 printf %s "$GOOGLE_CLIENT_ID"     | npx wrangler secret put GOOGLE_CLIENT_ID
 printf %s "$GOOGLE_CLIENT_SECRET" | npx wrangler secret put GOOGLE_CLIENT_SECRET
-
-npm run bank -- import --remote --vault ../university-vault
-curl -sS https://uvarena.swasilewski.com/api/health
 ```
 
 Gotchas, all from the architecture report or checked today:
@@ -731,7 +755,7 @@ Gotchas, all from the architecture report or checked today:
 - Playwright exactly 1.56.1; `PLAYWRIGHT_BROWSERS_PATH` and `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` are already set.
 - Better Auth needs `baseURL` set, or Google returns `redirect_uri_mismatch`.
 - The custom domain needs no existing record on the hostname (none exists for `uvarena`). Zone SSL mode Flexible does not affect a Worker custom domain.
-- `wrangler deploy` after `vite build` picks up the generated config through `.wrangler/deploy/config.json`; run it from the repo root.
+- Plain `wrangler deploy` after `vite build` picks up the generated config through `.wrangler/deploy/config.json`, but from this container it fails at the asset upload; use `npm run deploy`.
 - Email: the `send_email` binding only delivers to arbitrary addresses after the domain is onboarded; before that, `emailEnabled` is false in `/config`.
 
 ## Work packages

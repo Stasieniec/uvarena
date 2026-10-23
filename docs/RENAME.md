@@ -12,9 +12,10 @@ Do the rename **before the first deploy**. After it, the D1 database, R2 bucket 
 | `wrangler.jsonc` | custom domain route `pattern` | `uvarena.swasilewski.com` |
 | `wrangler.jsonc` | D1 `database_name` | `uvarena` |
 | `wrangler.jsonc` | R2 `bucket_name` | `uvarena-avatars` |
-| `wrangler.jsonc` | `vars.APP_URL` | `https://ragequiz.swasilewski.com` |
+| `wrangler.jsonc` | `vars.APP_URL` | `https://uvarena.swasilewski.com` |
 | `wrangler.jsonc` | the comment on line 1 that names it | |
-| `public/_headers` | `connect-src` host in the Content-Security-Policy | `wss://ragequiz.swasilewski.com` |
+| `public/_headers` | `connect-src` host in the Content-Security-Policy | `wss://uvarena.swasilewski.com` |
+| `scripts/deploy.ts` | `STATIC_BUCKET`, the R2 bucket production serves the SPA from | `uvarena-static` |
 | `index.html` | `<title>` (the app also sets `document.title` from `APP_NAME`) | `uvarena` |
 | `package.json` | `name` | `uvarena` |
 | `package-lock.json` | `name`, twice at the top; regenerate with `npm install` after editing `package.json` | `uvarena` |

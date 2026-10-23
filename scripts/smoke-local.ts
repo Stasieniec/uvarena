@@ -13,6 +13,11 @@
 // (--local-upstream keeps request URLs on localhost; without it wrangler uses
 // the production route's hostname and test mode stays off.)
 //
+// Against production (no test mode, real timers): the ranked match and a bot
+// match against the first ladder bot only, with users named zz_smoke_*:
+//   npm run smoke -- --url https://uvarena.swasilewski.com --production
+// Then delete those users (docs/build-plan.md, Deploy).
+//
 // It signs up fresh users each run, so it can be re-run against the same
 // local database. Every server frame and API response is validated against
 // the contract schemas. It knows the right answers from bank/bank.json (the
@@ -63,6 +68,7 @@ function argValue(name: string): string | undefined {
 
 const BASE = (argValue("--url") ?? process.env.SMOKE_URL ?? "http://localhost:5210").replace(/\/$/, "");
 const WS_BASE = BASE.replace(/^http/, "ws");
+const PRODUCTION = process.argv.includes("--production");
 const BANK_PATH = resolve(import.meta.dirname, "..", "bank", "bank.json");
 const MATCH_TIMEOUT_MS = 240_000;
 
@@ -150,7 +156,7 @@ async function api<S extends z.ZodType>(schema: S, method: string, path: string,
 }
 
 async function signUp(prefix: string): Promise<User> {
-  const username = `${prefix}${Math.random().toString(36).slice(2, 8)}`;
+  const username = `${PRODUCTION ? "zz_smoke_" : ""}${prefix}${Math.random().toString(36).slice(2, 8)}`;
   const res = await fetch(`${BASE}/api/auth/sign-up/email`, {
     method: "POST",
     headers: { Origin: BASE, "Content-Type": "application/json" },
@@ -576,7 +582,8 @@ async function replacedSocket(a: User): Promise<void> {
 async function main(): Promise<void> {
   console.log(`Smoke run against ${BASE}`);
   const config = await http("GET", "/api/config", null);
-  must(config.status === 200 && config.json.testMode === true, "dev server up, test mode on");
+  if (PRODUCTION) must(config.status === 200 && config.json.testMode === false, "server up, test mode off");
+  else must(config.status === 200 && config.json.testMode === true, "dev server up, test mode on");
   const unauth = await http("GET", "/api/me", null);
   check(unauth.status === 401, "/me needs a session");
 
@@ -585,7 +592,14 @@ async function main(): Promise<void> {
   const me = await api(MeResponseSchema, "GET", "/api/me", a);
   check(me.user.username === a.username && !me.needsOnboarding && me.activeMatchId === null, "signed up, no onboarding, no running match");
 
+  console.log(`users: ${a.username} ${a.userId}, ${b.username} ${b.userId}`);
+
   await rankedMatch(a, b);
+  if (PRODUCTION) {
+    await botMatch(a, 1);
+    console.log(failures === 0 ? "\nProduction smoke run passed." : `\nProduction smoke run: ${failures} check(s) failed.`);
+    process.exit(failures === 0 ? 0 : 1);
+  }
   await privateMatch(a, b);
   await botMatch(a, "echo");
   await botMatch(a, 1);
