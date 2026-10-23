@@ -13,19 +13,19 @@ describe("test mode gate", () => {
     const local = new Request("http://localhost:4173/api/test/seed");
     expect(isTestMode(env, local)).toBe(true);
     expect(isTestMode({ ...env, TEST_MODE: undefined }, local)).toBe(false);
-    expect(isTestMode(env, new Request("https://ragequiz.swasilewski.com/api/test/seed"))).toBe(false);
-    expect(isTestMode({ ...env, APP_URL: "https://ragequiz.swasilewski.com" }, local)).toBe(false);
+    expect(isTestMode(env, new Request("https://uvarena.swasilewski.com/api/test/seed"))).toBe(false);
+    expect(isTestMode({ ...env, APP_URL: "https://uvarena.swasilewski.com" }, local)).toBe(false);
   });
 
   it("isTestEnv (DOs, ranked time scale, test seams) needs TEST_MODE=1 and a localhost APP_URL", () => {
     expect(isTestEnv(env)).toBe(true);
     expect(isTestEnv({ ...env, TEST_MODE: undefined })).toBe(false);
     // A stray TEST_MODE on the deployed Worker must not shorten ranked matches.
-    expect(isTestEnv({ ...env, APP_URL: "https://ragequiz.swasilewski.com" })).toBe(false);
+    expect(isTestEnv({ ...env, APP_URL: "https://uvarena.swasilewski.com" })).toBe(false);
   });
 
   it("refuses the test routes without test mode", async () => {
-    expect((await call("/api/test/seed", { method: "POST", base: "http://ragequiz.example" })).status).toBe(404);
+    expect((await call("/api/test/seed", { method: "POST", base: "http://uvarena.example" })).status).toBe(404);
     const req = new Request("http://localhost/api/test/reset", { method: "POST" });
     const res = await worker.fetch(req, { ...env, TEST_MODE: "0" }, createExecutionContext());
     expect(res.status).toBe(404);
@@ -63,10 +63,10 @@ describe("helpers", () => {
   });
 
   it("allows any localhost origin only while APP_URL is local", () => {
-    const prod = { ...env, APP_URL: "https://ragequiz.swasilewski.com" };
-    expect(isAllowedOriginValue("https://ragequiz.swasilewski.com", prod)).toBe(true);
+    const prod = { ...env, APP_URL: "https://uvarena.swasilewski.com" };
+    expect(isAllowedOriginValue("https://uvarena.swasilewski.com", prod)).toBe(true);
     expect(isAllowedOriginValue("http://localhost:5173", prod)).toBe(false);
-    expect(isAllowedOriginValue("https://ragequiz.swasilewski.com.evil.example", prod)).toBe(false);
+    expect(isAllowedOriginValue("https://uvarena.swasilewski.com.evil.example", prod)).toBe(false);
     expect(isAllowedOriginValue("http://localhost:4173", env)).toBe(true);
     expect(isAllowedOriginValue("http://127.0.0.1:5173", env)).toBe(true);
     expect(isAllowedOriginValue("https://localhost:5173", env)).toBe(false);

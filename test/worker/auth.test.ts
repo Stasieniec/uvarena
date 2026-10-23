@@ -12,7 +12,7 @@ describe("config", () => {
   });
 
   it("is not test mode for a request to another host", async () => {
-    const body = await json(await call("/api/config", { base: "http://ragequiz.example" }));
+    const body = await json(await call("/api/config", { base: "http://uvarena.example" }));
     expect(body.testMode).toBe(false);
   });
 });

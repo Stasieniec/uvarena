@@ -7,7 +7,7 @@
 //   npm run smoke -- --url http://localhost:5210
 //
 // Or against the production bundle in workerd:
-//   npm run build && cp .dev.vars dist/ragequiz/.dev.vars   (with APP_URL=http://localhost:5211)
+//   npm run build && cp .dev.vars dist/uvarena/.dev.vars   (with APP_URL=http://localhost:5211)
 //   npx wrangler dev --port 5211 --local-upstream localhost:5211
 //   npm run smoke -- --url http://localhost:5211
 // (--local-upstream keeps request URLs on localhost; without it wrangler uses

@@ -1,6 +1,6 @@
-# Ragequiz: build plan
+# uvarena: build plan
 
-For the orchestrator and the coding subagents. The player-facing rules are in `design.md` next to this file; where the two disagree, `design.md` plus Stas's decisions win, and this file gets fixed. Working name `ragequiz` is used for the subdomain, repo, Worker, D1 database and R2 bucket. If Stas picks another name, replace it everywhere before the first deploy (Durable Object class names do not contain it, so nothing permanent depends on it).
+For the orchestrator and the coding subagents. The player-facing rules are in `design.md` next to this file; where the two disagree, `design.md` plus Stas's decisions win, and this file gets fixed. Working name `uvarena` is used for the subdomain, repo, Worker, D1 database and R2 bucket. If Stas picks another name, replace it everywhere before the first deploy (Durable Object class names do not contain it, so nothing permanent depends on it).
 
 Sources: `../research/architecture.md`, `../research/game-mechanics.md`, `../research/questions-and-courses.md`. Versions below were checked with `npm view` on 2026-10-22 in this container (Node 22.22.0).
 
@@ -53,7 +53,7 @@ Fonts: Cinzel (display) and Inter (UI) from Google Fonts. Sound: synthesised wit
 One package, deliberately: the Cloudflare React template keeps client and Worker side by side, and workspaces add build wiring that agents break. Shared code is a folder with a path alias `@shared/*`.
 
 ```
-ragequiz/
+uvarena/
   package.json  package-lock.json
   wrangler.jsonc  vite.config.ts  drizzle.config.ts
   vitest.unit.config.ts         # Node: engine, ratings, bank tool
@@ -114,24 +114,24 @@ ragequiz/
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ragequiz",
+  "name": "uvarena",
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-10-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [{ "pattern": "ragequiz.swasilewski.com", "custom_domain": true }],
+  "routes": [{ "pattern": "uvarena.swasilewski.com", "custom_domain": true }],
   "observability": { "enabled": true },
   "assets": { "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "ragequiz", "database_id": "<from d1 create>", "migrations_dir": "migrations" }],
-  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "ragequiz-avatars" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "uvarena", "database_id": "<from d1 create>", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "uvarena-avatars" }],
   "durable_objects": { "bindings": [
     { "name": "MATCH_ROOM", "class_name": "MatchRoom" },
     { "name": "MATCHMAKER", "class_name": "Matchmaker" } ] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom", "Matchmaker"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["noreply@swasilewski.com"] }],
   "ratelimits": [{ "name": "AUTH_LIMITER", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }],
-  "vars": { "APP_URL": "https://ragequiz.swasilewski.com", "NOTES_URL": "https://notes.swasilewski.com" }
+  "vars": { "APP_URL": "https://uvarena.swasilewski.com", "NOTES_URL": "https://notes.swasilewski.com" }
 }
 ```
 
@@ -700,23 +700,23 @@ From this container, after the integration tests pass:
 export CLOUDFLARE_API_TOKEN=placeholder          # the proxy injects the real token
 export CLOUDFLARE_ACCOUNT_ID=2b601c6ade78558b75079f4a71ac23c8
 
-npx wrangler d1 create ragequiz --location weur  # put database_id into wrangler.jsonc
-npx wrangler r2 bucket create ragequiz-avatars
+npx wrangler d1 create uvarena --location weur  # put database_id into wrangler.jsonc
+npx wrangler r2 bucket create uvarena-avatars
 npx wrangler d1 migrations apply DB --remote
 
 npm run build                                    # vite build writes dist/ and the deploy redirect
 # The auth secret ships with the first version, so the custom domain never
 # serves a Worker without it (the Worker also answers 503 until it is set).
 umask 077
-printf '{"BETTER_AUTH_SECRET":"%s"}' "$(openssl rand -base64 32)" > /tmp/ragequiz-secrets.json
-npx wrangler deploy --secrets-file /tmp/ragequiz-secrets.json   # creates the Worker, DOs and custom domain
-rm /tmp/ragequiz-secrets.json
+printf '{"BETTER_AUTH_SECRET":"%s"}' "$(openssl rand -base64 32)" > /tmp/uvarena-secrets.json
+npx wrangler deploy --secrets-file /tmp/uvarena-secrets.json   # creates the Worker, DOs and custom domain
+rm /tmp/uvarena-secrets.json
 # later, once Stas has the Google client:
 printf %s "$GOOGLE_CLIENT_ID"     | npx wrangler secret put GOOGLE_CLIENT_ID
 printf %s "$GOOGLE_CLIENT_SECRET" | npx wrangler secret put GOOGLE_CLIENT_SECRET
 
 npm run bank -- import --remote --vault ../university-vault
-curl -sS https://ragequiz.swasilewski.com/api/health
+curl -sS https://uvarena.swasilewski.com/api/health
 ```
 
 Gotchas, all from the architecture report or checked today:
@@ -730,7 +730,7 @@ Gotchas, all from the architecture report or checked today:
 - The Workers test package is `@cloudflare/vitest-plugin` (renamed from `vitest-pool-workers` on 2026-08-19); `defineWorkersConfig` and `SELF` are the old API. Vitest 4.1.x.
 - Playwright exactly 1.56.1; `PLAYWRIGHT_BROWSERS_PATH` and `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` are already set.
 - Better Auth needs `baseURL` set, or Google returns `redirect_uri_mismatch`.
-- The custom domain needs no existing record on the hostname (none exists for `ragequiz`). Zone SSL mode Flexible does not affect a Worker custom domain.
+- The custom domain needs no existing record on the hostname (none exists for `uvarena`). Zone SSL mode Flexible does not affect a Worker custom domain.
 - `wrangler deploy` after `vite build` picks up the generated config through `.wrangler/deploy/config.json`; run it from the repo root.
 - Email: the `send_email` binding only delivers to arbitrary addresses after the domain is onboarded; before that, `emailEnabled` is false in `/config`.
 
@@ -820,13 +820,13 @@ Rules for every package: work in your own git worktree on a local branch named a
 
 ## What Stas does by hand
 
-1. **Approve the design and the decisions** in `design.md`, including the name. Everything named `ragequiz` here follows his pick.
+1. **Approve the design and the decisions** in `design.md`, including the name. Everything named `uvarena` here follows his pick.
 2. **Google OAuth client** (only he can):
-   1. https://console.cloud.google.com, create a project (for example "Ragequiz").
+   1. https://console.cloud.google.com, create a project (for example "uvarena").
    2. Google Auth Platform, Branding: app name, support email, developer contact, authorised domain `swasilewski.com`. No logo, so no brand verification.
    3. Audience: External, then **Publish app** (in Testing, only listed test users can sign in and consent expires after 7 days).
    4. Data access: scopes `openid`, `userinfo.email`, `userinfo.profile`.
-   5. Clients, Create client, Web application. Origins `https://ragequiz.swasilewski.com` and `http://localhost:5173`. Redirect URIs `https://ragequiz.swasilewski.com/api/auth/callback/google` and `http://localhost:5173/api/auth/callback/google`.
+   5. Clients, Create client, Web application. Origins `https://uvarena.swasilewski.com` and `http://localhost:5173`. Redirect URIs `https://uvarena.swasilewski.com/api/auth/callback/google` and `http://localhost:5173/api/auth/callback/google`.
    6. Copy the client secret on the creation screen (it is shown once), and hand both values over or run the two `wrangler secret put` commands.
 3. **Email sending domain**: Cloudflare dashboard, Compute, Email Service, Email Sending, Onboard Domain, `swasilewski.com`, then check status after 5 to 15 minutes. He has given blanket permission for Cloudflare resources on this project, so an agent may try the zone-level API first and only hand this over if it fails.
 4. **Confirm** the notes site does not publish the vault's `docs/` folder (or let an agent check `university-vault-site/sync.sh` once that repo is attached).

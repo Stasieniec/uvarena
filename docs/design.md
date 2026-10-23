@@ -1,6 +1,6 @@
-# Ragequiz: game design
+# uvarena: game design
 
-Working name Ragequiz, pending your pick below. Written 2026-10-22 for you to approve or change before anything is built.
+Working name uvarena, pending your pick below. Written 2026-10-22 for you to approve or change before anything is built.
 
 ## What it is
 
@@ -16,7 +16,7 @@ A match takes about 3 to 5 minutes.
 
 Each name was checked with a web search on 2026-10-22.
 
-**Ragequiz** (ragequiz.swasilewski.com, repo `ragequiz`). Rage-quitting costs you rating here, so the name doubles as the warning label. No product found with this name.
+**uvarena** (uvarena.swasilewski.com, repo `uvarena`). Rage-quitting costs you rating here, so the name doubles as the warning label. No product found with this name.
 
 **Olympass** (olympass.swasilewski.com, repo `olympass`). Mount Olympus, where Zeus lives, plus this year's actual goal: passing. No product found.
 
@@ -30,7 +30,7 @@ Each name was checked with a web search on 2026-10-22.
 
 **Elo Hell** (elohell.swasilewski.com, repo `elo-hell`). Where you end up when the class learns faster than you. A small 2019 indie game on Steam already uses the name.
 
-**My pick: Ragequiz.** Short, says "competitive" in one word, no collision found. Olympass is the runner-up if you want the Greek theme to run through the name too.
+**My pick: uvarena.** Short, says "competitive" in one word, no collision found. Olympass is the runner-up if you want the Greek theme to run through the name too.
 
 ## First visit and sign-up
 
@@ -95,7 +95,7 @@ Ranked always uses all questions of the course, and always counts for the ranked
 ### Private match with a friend
 
 1. Tap **Duel a friend**, then **Create**. Settings: lectures (all by default), power-ups on or off, rated on or off.
-2. You get a 6-character code in large letters (no 0, O, 1 or I, so nobody misreads it) and a **Share** button that sends a link, for example `ragequiz.swasilewski.com/join/K7Q4MX`.
+2. You get a 6-character code in large letters (no 0, O, 1 or I, so nobody misreads it) and a **Share** button that sends a link, for example `uvarena.swasilewski.com/join/K7Q4MX`.
 3. Your friend opens the link or taps **Duel a friend**, then **Join**, and types the code. Not signed in yet? They sign in and land back in the lobby.
 4. Both players see each other in the lobby and tap **Ready**. Then the match intro.
 5. A lobby nobody joins expires after 15 minutes.
@@ -366,7 +366,7 @@ Built later, in rough order of value:
 
 ## Decisions for you
 
-**Name.** Ragequiz, Olympass, Cram Royale, uvarena, Duelingo, ExamGuessr or Elo Hell. My pick: **Ragequiz**.
+**Name.** uvarena, Olympass, Cram Royale, uvarena, Duelingo, ExamGuessr or Elo Hell. My pick: **uvarena**.
 
 **Private matches: rated or unrated?** (a) Rated by default with standard settings, unrated with any custom setting, at most 5 rated games per pair per day. (b) Unrated by default with a "rated" switch. My pick: **(a)**. Most games in a class this size will be friends challenging friends; with (b) almost everyone stays provisional all course.
 
