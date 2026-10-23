@@ -14,6 +14,8 @@ export interface AppBindings {
   DB: D1Database;
   /** Avatars at avatars/<userId>/<random>.jpg. */
   AVATARS: R2Bucket;
+  /** Production only: the client build, uploaded by `npm run deploy`. Absent locally (Static Assets serve the SPA). */
+  STATIC?: R2Bucket;
   MATCH_ROOM: DurableObjectNamespace<MatchRoom>;
   MATCHMAKER: DurableObjectNamespace<Matchmaker>;
   /** Delivers to arbitrary addresses only once the domain is onboarded. Failures are logged, never thrown. */

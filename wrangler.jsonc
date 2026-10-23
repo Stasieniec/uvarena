@@ -19,9 +19,9 @@
     {
       "binding": "DB",
       "database_name": "uvarena",
-      // Placeholder. Replace with the id printed by `wrangler d1 create` at deploy time.
-      // Local dev and tests key their local database on this value, so it must stay a valid UUID.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // The production database (created 2026-10-23). Local dev and tests key
+      // their local database on this value too.
+      "database_id": "1de23168-cc8f-487f-ad57-f94837f2f9ea",
       "migrations_dir": "migrations"
     }
   ],

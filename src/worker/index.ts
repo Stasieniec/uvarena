@@ -1,6 +1,8 @@
 // Worker entry: the Hono app under /api plus the Durable Object classes.
-// Static assets (the SPA) are served by the assets binding; only /api/* runs
-// the Worker first (wrangler.jsonc run_worker_first).
+// Locally the SPA is served by Workers Static Assets and only /api/* runs the
+// Worker first (wrangler.jsonc run_worker_first). The production deploy has
+// no assets and a STATIC R2 bucket instead (scripts/deploy.ts), so there every
+// other path is served from R2 by serveStatic.
 //
 // Order matters: public routes and Better Auth come before the session
 // middleware; every app route that needs a user says so with requireUser.
@@ -29,6 +31,7 @@ import { queueRoutes } from "./routes/queue";
 import { reportsRoutes } from "./routes/reports";
 import { testRoutes } from "./routes/test";
 import { usersRoutes } from "./routes/users";
+import { serveStatic } from "./static";
 
 export { Matchmaker } from "./do/matchmaker";
 export { MatchRoom } from "./do/match-room";
@@ -117,6 +120,13 @@ app.onError((err, c) => {
   return c.json<ApiError>(errorBody("internal", "Internal error"), 500);
 });
 
+function isApiPath(pathname: string): boolean {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
+
 export default {
-  fetch: app.fetch,
+  fetch(request: Request, env: HonoEnv["Bindings"], ctx: ExecutionContext) {
+    if (env.STATIC && !isApiPath(new URL(request.url).pathname)) return serveStatic(request, env.STATIC);
+    return app.fetch(request, env, ctx);
+  },
 } satisfies ExportedHandler<HonoEnv["Bindings"]>;
