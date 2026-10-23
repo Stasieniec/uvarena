@@ -155,8 +155,8 @@ function MissedCard({ count }: { count: number }) {
   return (
     <Link to="/missed" className="flex min-h-tap items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition hover:border-muted/60">
       <MissedIcon className="text-wrong" />
-      <span className="flex-1 text-sm font-semibold">Missed questions</span>
-      <span className="text-sm text-muted tabular-nums">{count === 0 ? "None to review" : `${count} to review`}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">Missed questions</span>
+      <span className="shrink-0 text-sm text-muted tabular-nums">{count === 0 ? "None to review" : `${count} to review`}</span>
       <ChevronRightIcon size={18} className="text-muted" />
     </Link>
   );
@@ -226,9 +226,13 @@ export function Home() {
             Recent matches
           </SectionTitle>
           {home.data.recentMatches.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted">
-              No matches yet. <BotIcon size={16} className="inline align-[-3px]" /> A bot is a good place to start.
-            </p>
+            <div className="mb-4 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted">
+              <p>No matches yet. A bot is a good place to start.</p>
+              <Link to="/bots" className={buttonClass("bot", "px-5")}>
+                <BotIcon size={18} />
+                Play a bot
+              </Link>
+            </div>
           ) : (
             <div className="flex flex-col gap-2">
               {home.data.recentMatches.map((m) => (

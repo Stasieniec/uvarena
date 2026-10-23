@@ -12,7 +12,13 @@ import { Button, FormError, TextField } from "../components/ui";
 import { safeNext, withNext } from "./guards";
 import { validateSignUp, type SignUpErrors } from "../lib/validate";
 
-function AuthLayout({ title, children, footer }: { title: string; children: ReactNode; footer: ReactNode }) {
+/** "Log in to join the duel" when the visitor arrived from a /join/CODE link. */
+function joinHint(next: string, verb: string): string | null {
+  const m = /^\/join\/([A-Za-z0-9]+)/.exec(next);
+  return m ? `${verb} to join the duel. Code ${m[1]!.toUpperCase()}.` : null;
+}
+
+function AuthLayout({ title, children, footer, hint }: { title: string; children: ReactNode; footer: ReactNode; hint?: string | null }) {
   return (
     <main className="flex min-h-dvh flex-col px-4 pt-2 pb-8">
       <div className="flex min-h-14 items-center">
@@ -22,7 +28,8 @@ function AuthLayout({ title, children, footer }: { title: string; children: Reac
         <span className="font-display text-lg font-bold text-zeus">{APP_NAME}</span>
       </div>
       <div className="mx-auto flex w-full flex-1 flex-col px-2 pt-4">
-        <h1 className="font-display mb-6 text-3xl font-bold">{title}</h1>
+        <h1 className={`font-display text-3xl font-bold ${hint ? "mb-2" : "mb-6"}`}>{title}</h1>
+        {hint ? <p className="mb-6 text-sm font-medium text-ranked-gold">{hint}</p> : null}
         {children}
         <div className="mt-6 text-center text-sm text-muted">{footer}</div>
       </div>
@@ -120,6 +127,7 @@ export function SignUp() {
   return (
     <AuthLayout
       title="Sign up"
+      hint={joinHint(next, "Sign up")}
       footer={
         <>
           Have an account?{" "}
@@ -196,6 +204,7 @@ export function LogIn() {
   return (
     <AuthLayout
       title="Log in"
+      hint={joinHint(next, "Log in")}
       footer={
         <>
           New here?{" "}

@@ -2,6 +2,8 @@
 // with their Ready state, and the Ready button.
 
 import { useState } from "react";
+import { MATCH } from "@shared/game/config";
+import { useCourses } from "../../lib/queries";
 import type { MatchUiState } from "../state";
 import { Avatar } from "./Avatar";
 import { CheckIcon } from "./icons";
@@ -9,7 +11,9 @@ import { CheckIcon } from "./icons";
 export function LobbyView({ state, onReady, onHome }: { state: MatchUiState; onReady(): void; onHome(): void }) {
   const lobby = state.lobby;
   const [copied, setCopied] = useState(false);
+  const courses = useCourses();
   if (!lobby) return null;
+  const course = courses.data?.courses.find((c) => c.id === state.courseId);
   const code = lobby.code ?? state.joinCode;
   // The lobby frame has no "you" flag; match on the snapshot's name, host first otherwise.
   const meIdx = Math.max(0, state.you ? lobby.players.findIndex((p) => p.name === state.you!.name) : 0);
@@ -42,6 +46,8 @@ export function LobbyView({ state, onReady, onHome }: { state: MatchUiState; onR
       <div className="text-center text-xs font-bold tracking-[0.25em] text-ranked-gold uppercase">
         {lobby.rated ? "Rated" : "Unrated"}
       </div>
+      {course && <div className="mt-1 text-center text-sm font-semibold text-text/85">{course.title}</div>}
+      {meIdx > 0 && lobby.players[0] && <div className="mt-1 text-center text-sm text-muted">{lobby.players[0].name} invited you.</div>}
       <div className="mt-8 text-center">
         <div className="text-sm text-muted">Join code</div>
         <div className="mt-2 font-mono text-[min(13vw,56px)] font-bold tracking-[0.18em] text-text select-all">{code ?? "------"}</div>
@@ -70,7 +76,9 @@ export function LobbyView({ state, onReady, onHome }: { state: MatchUiState; onR
           </div>
         ))}
         {lobby.players.length < 2 && (
-          <div className="rq-pulse rounded-xl border border-dashed border-border px-3 py-3 text-center text-sm text-muted">Waiting for your friend</div>
+          <div className="rq-pulse rounded-xl border border-dashed border-border px-3 py-3 text-center text-sm text-muted">
+            Waiting for your friend. The lobby closes after {Math.round(MATCH.lobbyTtlMs / 60000)} minutes if nobody joins.
+          </div>
         )}
       </div>
       <div className="mt-auto flex flex-col gap-2.5 pt-6">

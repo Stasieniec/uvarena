@@ -68,3 +68,54 @@ export function avatarHue(name: string): number {
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return AVATAR_HUES[h % AVATAR_HUES.length]!;
 }
+
+/** The reveal fields the damage line needs. */
+export interface DamageFacts {
+  yourCorrect: boolean;
+  opponentCorrect: boolean;
+  yourScore: number;
+  opponentScore: number;
+  multiplier: number;
+  damageToYou: number;
+  damageToOpponent: number;
+  capped: boolean;
+  zeus: "you" | "opponent" | null;
+  aegis: "you" | "opponent" | null;
+}
+
+export interface DamageCaps {
+  zeusFactor: number;
+  roundCap: number;
+  zeusRoundCap: number;
+}
+
+/**
+ * One short line that accounts for the round's damage, for the reveal:
+ * "You 900 · Them 0 · x2 = 1,800". Zeus, the cap and Aegis appear only when
+ * they changed the number. Null when there is nothing worth saying.
+ */
+export function damageLine(r: DamageFacts, caps: DamageCaps): string | null {
+  const toThem = r.damageToOpponent > 0;
+  const toYou = r.damageToYou > 0;
+  const scores = `You ${fmtInt(r.yourScore)} · Them ${fmtInt(r.opponentScore)}`;
+  if (!toThem && !toYou) {
+    if (!r.yourCorrect && !r.opponentCorrect) return "Both wrong. No damage.";
+    if (r.yourScore === r.opponentScore) return `${scores} · No damage`;
+    return null;
+  }
+  const attacker = toThem ? "you" : "opponent";
+  const gap = Math.abs(r.yourScore - r.opponentScore);
+  const zeus = r.zeus === attacker;
+  const victim = toThem ? "opponent" : "you";
+  const dealt = toThem ? r.damageToOpponent : r.damageToYou;
+  const uncapped = gap * r.multiplier * (zeus ? caps.zeusFactor : 1);
+  let line = `${scores} · ${fmtMultiplier(r.multiplier)}${zeus ? ` · Zeus x${caps.zeusFactor}` : ""} = ${fmtInt(uncapped)}`;
+  if (r.capped) line += `, capped at ${fmtInt(zeus ? caps.zeusRoundCap : caps.roundCap)}`;
+  if (r.aegis === victim) line += `, Aegis halves it to ${fmtInt(dealt)}`;
+  return line;
+}
+
+/** Damage a wrong answer can cost at this multiplier: a perfect score against zero, capped. */
+export function worstHit(multiplier: number, maxScore: number, roundCap: number): number {
+  return Math.min(roundCap, maxScore * multiplier);
+}

@@ -245,6 +245,12 @@ export const SnapshotMessageSchema = z.object({
   rematch: RematchStateSchema.nullable(),
   /** When the disconnected opponent forfeits; null while connected. */
   opponentForfeitAt: epochMs.nullable(),
+  /**
+   * Lobby only: when the match is cancelled because a player never connected
+   * (ranked and bot matches waiting for both sides; a private lobby once the
+   * friend joined). Null otherwise. Optional so older servers still parse.
+   */
+  noShowAt: epochMs.nullable().optional(),
 });
 
 export const LobbyMessageSchema = z.object({

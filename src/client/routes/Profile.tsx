@@ -1,6 +1,5 @@
 // Profiles (own and public): ratings and stats per course, accuracy per
 // lecture, head-to-head on someone else's profile, recent matches.
-import { useState } from "react";
 import { Link, useParams } from "react-router";
 import type { UserProfileResponse } from "@shared/api-schemas";
 import { ELO } from "@shared/game/config";
@@ -11,7 +10,8 @@ import { Page } from "../components/AppShell";
 import { Avatar } from "../components/Avatar";
 import { GearIcon } from "../components/icons";
 import { MatchRow } from "../components/MatchRow";
-import { EmptyState, ErrorState, LoadingBlocks, PageHeader, Pills, SectionTitle, Skeleton, buttonClass, cx } from "../components/ui";
+import { CourseSwitch } from "../components/CourseSwitch";
+import { EmptyState, ErrorState, LoadingBlocks, PageHeader, SectionTitle, Skeleton, buttonClass, cx } from "../components/ui";
 
 type CourseStats = UserProfileResponse["courses"][number];
 
@@ -108,8 +108,8 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
   );
 }
 
-function RecentMatches({ username, isSelf }: { username: string; isSelf: boolean }) {
-  const matches = useUserMatches(username, null);
+function RecentMatches({ username, isSelf, courseId }: { username: string; isSelf: boolean; courseId: string | null }) {
+  const matches = useUserMatches(username, courseId);
   const items = matches.data?.pages[0]?.items.slice(0, PROFILE_RECENT) ?? [];
   const all = isSelf ? "/history" : `/history?user=${encodeURIComponent(username)}`;
   return (
@@ -144,8 +144,8 @@ function RecentMatches({ username, isSelf }: { username: string; isSelf: boolean
 
 function ProfileView({ username }: { username: string }) {
   const profile = useUserProfile(username);
-  const { courseId, courses } = useCurrentCourse();
-  const [picked, setPicked] = useState<string | null>(null);
+  // One course selection app-wide: the switch here is the same one Home and the leaderboard use.
+  const { courseId, course } = useCurrentCourse();
 
   if (profile.isPending) {
     return (
@@ -166,9 +166,7 @@ function ProfileView({ username }: { username: string }) {
   const data = profile.data;
   const user = data.user;
   const statsCourses = data.courses;
-  const shownId = picked ?? (statsCourses.some((c) => c.courseId === courseId) ? courseId : (statsCourses[0]?.courseId ?? null));
-  const shown = statsCourses.find((c) => c.courseId === shownId) ?? null;
-  const titleOf = (id: string) => courses.find((c) => c.id === id)?.shortTitle ?? id.toUpperCase();
+  const shown = statsCourses.find((c) => c.courseId === courseId) ?? null;
   const h2h = data.headToHead;
 
   return (
@@ -189,7 +187,9 @@ function ProfileView({ username }: { username: string }) {
         ) : null}
       </div>
 
-      {h2h ? (
+      {h2h && h2h.wins + h2h.losses + h2h.draws === 0 ? (
+        <p className="rounded-2xl border border-border bg-surface px-4 py-3 text-center text-sm text-muted">No duels between you two yet.</p>
+      ) : h2h ? (
         <div className="flex items-center justify-center gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
           <span className="text-sm text-muted">You</span>
           <span className="font-display text-2xl font-bold tabular-nums">
@@ -202,12 +202,10 @@ function ProfileView({ username }: { username: string }) {
         </div>
       ) : null}
 
-      {statsCourses.length > 1 ? (
-        <Pills label="Course" options={statsCourses.map((c) => ({ value: c.courseId, label: titleOf(c.courseId) }))} value={shownId} onChange={setPicked} />
-      ) : null}
-      {shown ? <CourseBlock stats={shown} /> : <EmptyState title="No games yet" />}
+      <CourseSwitch />
+      {shown ? <CourseBlock stats={shown} /> : <EmptyState title={`No games in ${course?.shortTitle ?? "this course"} yet`} />}
 
-      <RecentMatches username={user.username} isSelf={data.isSelf} />
+      <RecentMatches username={user.username} isSelf={data.isSelf} courseId={courseId} />
     </div>
   );
 }

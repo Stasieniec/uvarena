@@ -53,7 +53,7 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
   if (hit.speed && !hit.big) {
     return (
       <div key={hit.seq} className={`${placement === "below" ? "rq-float-down" : "rq-float"} pointer-events-none absolute left-1/2 z-30 mt-1 mb-1 whitespace-nowrap`} style={pos}>
-        <span className="rounded-full bg-speed-chip/25 px-2 py-0.5 text-xs font-semibold text-speed-chip ring-1 ring-speed-chip/50">
+        <span className="rounded-full bg-black/80 px-2 py-0.5 text-xs font-semibold text-speed-chip tabular-nums ring-1 ring-speed-chip/50">
           {`−${fmtInt(hit.amount)} speed`}
         </span>
       </div>
@@ -61,11 +61,16 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
   }
   const color = hit.zeus ? "var(--color-zeus)" : "#fff";
   const size = hit.big ? "text-5xl" : hit.amount >= 1000 ? "text-4xl" : "text-3xl";
+  const victimColor = placement === "above" ? "var(--color-wrong)" : "var(--color-you)";
   return (
-    <div key={hit.seq} className={`${placement === "below" ? "rq-float-down" : "rq-float"} pointer-events-none absolute left-1/2 z-30 whitespace-nowrap text-center`} style={pos}>
+    <div
+      key={hit.seq}
+      className={`${placement === "below" ? "rq-float-down" : "rq-float"} pointer-events-none absolute left-1/2 z-30 rounded-2xl bg-black/75 px-3 py-1 text-center whitespace-nowrap ring-1 ring-white/10`}
+      style={pos}
+    >
       <div
-        className={`rq-display font-black ${size}`}
-        style={{ color, textShadow: `0 2px 0 #000, 0 0 18px ${hit.zeus ? "var(--color-zeus)" : "var(--color-wrong)"}` }}
+        className={`rq-display leading-tight font-black tabular-nums ${size}`}
+        style={{ color, textShadow: `0 2px 0 #000, 0 0 18px ${hit.zeus ? "var(--color-zeus)" : victimColor}` }}
       >
         {`−${fmtInt(hit.amount)}`}
       </div>
@@ -111,11 +116,11 @@ export function OpponentStrip({ player, hp, hit, hitFlash, controls, forfeitIn }
   const shownHp = useCountTo(hp, 450);
   const rating = fmtShownRating(player.rating);
   return (
-    <div className="relative px-3 pt-[max(env(safe-area-inset-top),10px)] pb-2">
+    <div className="relative z-30 px-3 pt-[max(env(safe-area-inset-top),10px)] pb-2">
       {hitFlash && <div key={hit?.seq} className="rq-edge" style={{ position: "absolute" }} />}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Avatar name={player.name} url={player.avatarUrl} size={42} ring="var(--color-opponent)" bot={player.kind === "bot"} />
+          <Avatar name={player.name} url={player.avatarUrl} userId={player.userId} size={42} ring="var(--color-opponent)" bot={player.kind === "bot"} />
           {!player.connected && (
             <span className="absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full bg-muted ring-2 ring-bg" aria-label="Disconnected" />
           )}
@@ -159,7 +164,7 @@ interface YourStripProps {
 export function YourStrip({ player, hp, hit, buttons, onTap }: YourStripProps) {
   const shownHp = useCountTo(hp, 450);
   return (
-    <div className="relative px-3 pt-2 pb-[max(env(safe-area-inset-bottom),10px)]">
+    <div className="relative z-30 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),10px)]">
       <div className="relative mb-1 flex items-baseline justify-between text-sm">
         <span className="font-semibold text-you">You</span>
         <span className="font-bold text-you tabular-nums">{fmtInt(shownHp)}</span>
@@ -186,7 +191,7 @@ function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButt
   const label =
     state === "armed" ? "Armed" : state === "used" || state === "spent" ? "Used" : state === "pending" ? "..." : POWERUP_KIND_LABEL[id];
   const cls = [
-    "relative flex h-14 items-center gap-2 rounded-xl px-2.5 text-left ring-1 transition-[transform,opacity] duration-150",
+    "relative flex h-14 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left ring-1 transition-[transform,opacity] duration-150",
     tappable ? "active:scale-95 bg-surface-2 ring-white/15" : "bg-surface ring-white/5",
     state === "armable" || state === "usable" ? "rq-glow" : "",
     state === "armed" ? "rq-armed bg-[color-mix(in_srgb,var(--color-zeus)_16%,var(--color-surface-2))]" : "",
@@ -204,7 +209,7 @@ function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButt
       aria-pressed={state === "armed"}
       aria-label={`${POWERUP_NAMES[id]}: ${POWERUP_HINTS[id]}${dim ? " Used." : ""}`}
     >
-      <PowerupIcon id={id} size={26} />
+      <PowerupIcon id={id} size={24} />
       <span className="min-w-0 leading-tight">
         <span className={`block truncate text-[13px] font-semibold ${dim ? "line-through" : ""}`}>{POWERUP_NAMES[id]}</span>
         <span className={`block text-[11px] ${state === "armed" ? "font-semibold text-zeus" : "text-muted"}`}>{label}</span>

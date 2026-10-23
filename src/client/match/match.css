@@ -9,7 +9,6 @@
 .rq-match {
   --rq-you: var(--color-you);
   --rq-opp: var(--color-opponent);
-  font-feature-settings: "tnum" 1;
 }
 
 .rq-display {
@@ -161,20 +160,22 @@
 
 @keyframes rq-float {
   0% { opacity: 0; transform: translate(-50%, 8px) scale(0.6); }
-  15% { opacity: 1; transform: translate(-50%, -6px) scale(1.15); }
-  30% { transform: translate(-50%, -12px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -64px) scale(1); }
+  12% { opacity: 1; transform: translate(-50%, -6px) scale(1.2); }
+  25% { transform: translate(-50%, -10px) scale(1); }
+  75% { opacity: 1; transform: translate(-50%, -26px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -48px) scale(1); }
 }
-.rq-float { animation: rq-float 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.rq-float { animation: rq-float 2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 /* The opponent's bar is at the top, so their number drops down from it. */
 @keyframes rq-float-down {
   0% { opacity: 0; transform: translate(-50%, -8px) scale(0.6); }
-  15% { opacity: 1; transform: translate(-50%, 6px) scale(1.15); }
-  30% { transform: translate(-50%, 10px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, 44px) scale(1); }
+  12% { opacity: 1; transform: translate(-50%, 6px) scale(1.2); }
+  25% { transform: translate(-50%, 8px) scale(1); }
+  75% { opacity: 1; transform: translate(-50%, 18px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 34px) scale(1); }
 }
-.rq-float-down { animation: rq-float-down 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.rq-float-down { animation: rq-float-down 2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 @keyframes rq-chunk {
   0% { opacity: 1; transform: translate(0, 0) rotate(0); background: #fff; }
@@ -350,4 +351,50 @@
 /* The surrender ring fills over the hold time, also with reduced motion (it is a progress bar, not motion). */
 .rq-match .rq-hold {
   transition-duration: 1000ms !important;
+}
+
+/* Late-round multiplier badge: it glows harder as the stakes rise. */
+@keyframes rq-heat {
+  0%, 100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--rq-glow) 50%, transparent); }
+  50% { box-shadow: 0 0 16px 3px color-mix(in srgb, var(--rq-glow) 80%, transparent); }
+}
+.rq-heat { animation: rq-heat 1.2s ease-in-out infinite; }
+.rq-rm .rq-heat { animation: none !important; box-shadow: 0 0 10px 1px color-mix(in srgb, var(--rq-glow) 60%, transparent); }
+
+/* ---------- knockout ---------- */
+
+/* The final hit plays in slow motion: the chunk and the number hang in the air. */
+.rq-slowmo .rq-chunk { animation-duration: 1.8s; }
+.rq-slowmo .rq-float,
+.rq-slowmo .rq-float-down { animation-duration: 3s; }
+
+@keyframes rq-ko-dim {
+  0%, 25% { opacity: 0; }
+  45% { opacity: 1; }
+  100% { opacity: 1; }
+}
+.rq-ko { animation: rq-ko-dim 1.6s ease-out both; }
+
+@keyframes rq-ko-word {
+  0%, 30% { opacity: 0; transform: scale(3); filter: blur(8px); }
+  48% { opacity: 1; transform: scale(0.9); filter: blur(0); }
+  60% { transform: scale(1.06); }
+  72%, 100% { opacity: 1; transform: scale(1); }
+}
+.rq-ko-word { animation: rq-ko-word 1.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+
+@keyframes rq-ko-sub {
+  0%, 60% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: none; }
+}
+.rq-ko-sub { animation: rq-ko-sub 1.8s ease-out both; }
+
+.rq-rm .rq-ko,
+.rq-rm .rq-ko-word,
+.rq-rm .rq-ko-sub {
+  animation-name: rq-fade-in !important;
+  animation-duration: 600ms !important;
+  animation-delay: 400ms !important;
+  transform: none !important;
+  filter: none !important;
 }

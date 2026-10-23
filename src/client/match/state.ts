@@ -113,6 +113,8 @@ export interface MatchUiState {
   result: MatchEndPayload | null;
   rematch: RematchState | null;
   opponentForfeitAt: number | null;
+  /** Lobby: when the match is cancelled if a player has still not connected. */
+  noShowAt: number | null;
   error: { seq: number; code: MatchErrorCode; message: string } | null;
 }
 
@@ -164,6 +166,7 @@ export function initialMatchState(): MatchUiState {
     result: null,
     rematch: null,
     opponentForfeitAt: null,
+    noShowAt: null,
     error: null,
   };
 }
@@ -247,6 +250,7 @@ function fromSnapshot(s: MatchUiState, m: SnapshotMessage): MatchUiState {
     result: m.result,
     rematch: m.rematch,
     opponentForfeitAt: m.opponentForfeitAt,
+    noShowAt: m.noShowAt ?? null,
   };
 }
 
@@ -283,6 +287,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
         mode: m.mode,
         rated: m.rated,
         lobby: null,
+        noShowAt: null,
       };
 
     case "arming":

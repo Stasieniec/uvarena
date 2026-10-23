@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { avatarHue, initials } from "../format";
+import { hueFor, initials } from "../../lib/format";
 
 interface AvatarProps {
   name: string;
@@ -7,33 +7,48 @@ interface AvatarProps {
   size: number;
   ring: string;
   bot?: boolean;
+  /** Seeds the colour, so a player has the same circle here as everywhere else in the app. */
+  userId?: string | null;
 }
 
-/** The player's picture, or initials on a coloured circle until they add one. */
-export function Avatar({ name, url, size, ring, bot }: AvatarProps) {
+/**
+ * The player's picture, or initials on a coloured circle until they add one.
+ * Same rule as the app's Avatar: the first two letters of the username on a
+ * colour from the user id; bots are a blue disc with their first letter.
+ */
+export function Avatar({ name, url, size, ring, bot, userId }: AvatarProps) {
   const [broken, setBroken] = useState(false);
-  const hue = avatarHue(name);
   const style = {
     width: size,
     height: size,
     boxShadow: `0 0 0 2px ${ring}`,
-    fontSize: Math.round(size * 0.38),
   };
   if (url && !broken) {
     return <img src={url} alt="" onError={() => setBroken(true)} className="shrink-0 rounded-full object-cover" style={style} />;
   }
+  if (bot) {
+    return (
+      <div
+        aria-hidden
+        className="flex shrink-0 items-center justify-center rounded-full font-display font-bold text-white"
+        style={{ ...style, background: "radial-gradient(circle at 30% 25%, #60a5fa, #1d4ed8 70%)", fontSize: Math.round(size * 0.42) }}
+      >
+        {name.slice(0, 1)}
+      </div>
+    );
+  }
+  const hue = hueFor(userId ?? name);
   return (
     <div
       aria-hidden
       className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
       style={{
         ...style,
-        background: bot
-          ? "linear-gradient(145deg, var(--color-bot), #1e3a8a)"
-          : `linear-gradient(145deg, hsl(${hue} 60% 46%), hsl(${hue} 55% 30%))`,
+        background: `linear-gradient(140deg, hsl(${hue} 65% 48%), hsl(${(hue + 40) % 360} 60% 32%))`,
+        fontSize: Math.max(10, Math.round(size * 0.38)),
       }}
     >
-      {initials(name)}
+      {initials(null, null, name)}
     </div>
   );
 }

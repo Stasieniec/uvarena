@@ -21,6 +21,15 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
   }, [open]);
 
   const full = draft.length >= POWERUPS.loadoutSize;
+  const [nudge, setNudge] = useState(false);
+  const tap = (id: PowerupId) => {
+    if (!draft.includes(id) && full) {
+      setNudge(true);
+      return;
+    }
+    setNudge(false);
+    setDraft((d) => toggleLoadout(d, id));
+  };
   const save = () => {
     if (!isCompleteLoadout(draft)) return;
     update.mutate({ loadout: draft }, { onSuccess: onClose });
@@ -28,8 +37,13 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
 
   return (
     <Sheet open={open} onClose={onClose} title="Power-ups">
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-1 text-sm text-muted">
         Pick {POWERUPS.loadoutSize}. Each works once per match. Your opponent sees your picks at the start.
+      </p>
+      <p className="mb-3 text-xs leading-snug text-muted">
+        <span className="font-semibold text-text/80">Blind:</span> arm before you see the question.{" "}
+        <span className="font-semibold text-text/80">Quick:</span> use after.{" "}
+        <span className="font-semibold text-text/80">Passive:</span> works on its own.
       </p>
       <ul className="flex flex-col gap-2">
         {POWERUP_ORDER.map((id) => {
@@ -42,7 +56,7 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
                 type="button"
                 role="checkbox"
                 aria-checked={on}
-                onClick={() => setDraft((d) => toggleLoadout(d, id))}
+                onClick={() => tap(id)}
                 className={cx(
                   "flex min-h-tap w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition",
                   on ? "border-you bg-you/10" : "border-border bg-bg/40 hover:border-muted/60",
@@ -68,9 +82,16 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
         })}
       </ul>
       <FormError message={update.error ? errorMessage(update.error) : null} />
-      <Button className="mt-4 w-full" onClick={save} disabled={!isCompleteLoadout(draft)} loading={update.isPending}>
-        {draft.length < POWERUPS.loadoutSize ? `Pick ${POWERUPS.loadoutSize - draft.length} more` : "Save"}
-      </Button>
+      <div className="sticky bottom-0 -mx-4 mt-3 bg-surface px-4 pt-2 pb-1 shadow-[0_-12px_16px_-8px_var(--color-surface)]">
+        {nudge ? (
+          <p className="mb-2 text-center text-sm text-zeus" role="status">
+            Pick {POWERUPS.loadoutSize}. Drop one first.
+          </p>
+        ) : null}
+        <Button className="w-full" onClick={save} disabled={!isCompleteLoadout(draft)} loading={update.isPending}>
+          {draft.length < POWERUPS.loadoutSize ? `Pick ${POWERUPS.loadoutSize - draft.length} more` : "Save"}
+        </Button>
+      </div>
     </Sheet>
   );
 }
