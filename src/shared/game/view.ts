@@ -337,6 +337,7 @@ function matchEndPayload(state: MatchState, side: Side): MatchEndPayload {
     rounds: state.rounds.length,
     ranked: summary?.ranked ?? null,
     bot: summary?.bot ?? null,
+    botRatingSteps: summary?.bot ? (summary.botRatingSteps ?? []) : [],
     pairCapped: summary?.pairCapped ?? false,
     summary: {
       correct: mine.filter((s) => s.correct).length,

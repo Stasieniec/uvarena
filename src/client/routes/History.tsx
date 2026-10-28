@@ -1,19 +1,70 @@
-// Match history (yours, or another player's with ?user=) and one match round by round.
+// Match history (yours, or another player's with ?user=), grouped by day, and
+// one match round by round: multiplier, power-ups, damage coloured by whose
+// HP it hit, both answers with their times. Tap a round for the options and
+// the explanation.
 import { useState } from "react";
-import { useParams, useSearchParams } from "react-router";
-import type { MatchDetailResponse } from "@shared/api-schemas";
+import { Link, useParams, useSearchParams } from "react-router";
+import type { MatchDetailResponse, MatchSummary } from "@shared/api-schemas";
 import type { PowerupId } from "@shared/game/types";
-import { answerIds } from "../lib/answers";
+import { FALSE_ID, TRUE_ID, answerIds } from "../lib/answers";
 import { useCurrentCourse } from "../lib/course";
-import { formatDate, formatDelta, formatNumber, formatRating, formatSeconds } from "../lib/format";
+import { formatNumber, formatSeconds } from "../lib/format";
 import { useMatchDetail, useMeData, useUserMatches } from "../lib/queries";
-import { Page } from "../components/AppShell";
-import { Avatar, BotAvatar } from "../components/Avatar";
-import { CheckIcon, ChevronDownIcon, XIcon } from "../components/icons";
-import { MatchRow, modeLabel } from "../components/MatchRow";
-import { PowerupIcon, powerupInfo } from "../components/powerups";
-import { OptionList, QuestionText, markOptions, optionRows } from "../components/QuestionView";
-import { Button, EmptyState, ErrorState, LoadingBlocks, PageHeader, Pills, cx } from "../components/ui";
+import { Body, Header, Icon, LoadingPlates, Quiet, Screen, SelectChip, damage, dayLabel, secondaryClass, signed, whenLabel } from "../components/after/ui";
+import { powerupInfo } from "../components/powerups";
+import { OptionList, QuestionText, markOptions, optionRows, plainPreview } from "../components/QuestionView";
+import { ErrorState, cx } from "../components/ui";
+
+type ModeFilter = "all" | "ranked" | "bot" | "private";
+
+const MODE_OPTIONS: { value: ModeFilter; label: string }[] = [
+  { value: "all", label: "All modes" },
+  { value: "ranked", label: "Ranked" },
+  { value: "bot", label: "Bot" },
+  { value: "private", label: "Friend" },
+];
+
+const RESULT_WORD: Record<MatchSummary["result"], string> = { win: "Won", loss: "Lost", draw: "Drawn", void: "Void" };
+
+const REASON_NOTE: Partial<Record<MatchSummary["endReason"], string>> = {
+  surrender: "surrendered",
+  abandon: "left early",
+};
+
+function modeLine(m: Pick<MatchSummary, "mode" | "rated" | "roundsPlayed" | "endReason">, course?: string): string {
+  const parts: string[] = [];
+  if (m.mode === "ranked") parts.push("Ranked");
+  else if (m.mode === "bot") parts.push("Bot");
+  else parts.push("Private", m.rated ? "rated" : "unrated");
+  if (m.mode !== "private") parts.push(m.roundsPlayed === 1 ? "1 round" : `${m.roundsPlayed} rounds`);
+  const note = REASON_NOTE[m.endReason];
+  if (note) parts.push(note);
+  if (course) parts.push(course);
+  return parts.join(" · ");
+}
+
+function HistoryRow({ match, last, course }: { match: MatchSummary; last: boolean; course?: string }) {
+  const name = match.opponent ? match.opponent.displayUsername : (match.bot?.name ?? "Bot");
+  const won = match.result === "win";
+  return (
+    <li>
+      <Link
+        to={`/matches/${match.id}`}
+        className={cx("grid h-14 grid-cols-[minmax(0,1fr)_48px_56px_16px] items-center gap-x-2", !last && "border-b border-line")}
+      >
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-base leading-5 font-semibold">{name}</span>
+          <span className="truncate text-sm leading-5 text-muted">{modeLine(match, course)}</span>
+        </span>
+        <span className={cx("text-sm", won ? "text-text" : "text-muted")}>{RESULT_WORD[match.result]}</span>
+        <span className={cx("text-right font-display text-[22px] font-bold", (match.ratingChange ?? 0) < 0 && "text-muted")}>
+          {match.ratingChange !== null ? signed(match.ratingChange) : <span className="text-muted">·</span>}
+        </span>
+        <Icon name="right" size={16} stroke={2} className="text-muted" />
+      </Link>
+    </li>
+  );
+}
 
 export function History() {
   const me = useMeData();
@@ -22,37 +73,65 @@ export function History() {
   const isSelf = !params.get("user") || params.get("user")?.toLowerCase() === me.user.username?.toLowerCase();
   const { courses } = useCurrentCourse();
   const [course, setCourse] = useState<string>("all");
+  const [mode, setMode] = useState<ModeFilter>("all");
   const list = useUserMatches(username, course === "all" ? null : course);
-  const items = list.data?.pages.flatMap((p) => p.items) ?? [];
-  const titleOf = (id: string) => courses.find((c) => c.id === id)?.shortTitle;
+  const all = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const items = mode === "all" ? all : all.filter((m) => m.mode === mode);
+  const titleOf = (id: string) => (course === "all" && courses.length > 1 ? courses.find((c) => c.id === id)?.shortTitle : undefined);
+
+  // Group by day, newest first (the API already sorts by end time).
+  const groups: { day: string; items: MatchSummary[] }[] = [];
+  for (const m of items) {
+    const day = dayLabel(m.endedAt);
+    const g = groups[groups.length - 1];
+    if (g && g.day === day) g.items.push(m);
+    else groups.push({ day, items: [m] });
+  }
 
   return (
-    <Page>
-      <PageHeader title={isSelf ? "Match history" : `${username}'s matches`} back />
-      {courses.length > 1 ? (
-        <div className="mb-4">
-          <Pills label="Course" options={[{ value: "all", label: "All" }, ...courses.map((c) => ({ value: c.id, label: c.shortTitle }))]} value={course} onChange={setCourse} />
-        </div>
-      ) : null}
-      {list.isPending ? (
-        <LoadingBlocks count={5} />
-      ) : list.error ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState title="No matches yet" />
-      ) : (
-        <div className="flex flex-col gap-2">
-          {items.map((m) => (
-            <MatchRow key={m.id} match={m} courseLabel={course === "all" ? titleOf(m.courseId) : undefined} />
-          ))}
-          {list.hasNextPage ? (
-            <Button variant="secondary" className="mt-2" onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage}>
-              Load more
-            </Button>
-          ) : null}
-        </div>
-      )}
-    </Page>
+    <Screen>
+      <Header
+        title={isSelf ? "Match history" : `${username}'s matches`}
+        big
+        back
+        right={<SelectChip label="Mode" value={mode} options={MODE_OPTIONS} onChange={setMode} className="max-w-[9.5rem] shrink-0" />}
+      />
+      <Body className="pb-4">
+        {courses.length > 1 ? (
+          <SelectChip
+            label="Course"
+            value={course}
+            options={[{ value: "all", label: "All courses" }, ...courses.map((c) => ({ value: c.id, label: c.shortTitle }))]}
+            onChange={setCourse}
+            className="self-start"
+          />
+        ) : null}
+        {list.isPending ? (
+          <LoadingPlates className="mt-3" count={6} height={56} />
+        ) : list.error ? (
+          <ErrorState className="mt-3" error={list.error} onRetry={() => void list.refetch()} />
+        ) : (
+          <>
+            {items.length === 0 && !list.hasNextPage ? <Quiet>{all.length === 0 ? "No matches yet." : "No matches in this mode yet."}</Quiet> : null}
+            {groups.map((g) => (
+              <section key={g.day}>
+                <h2 className="m-0 mt-3 mb-0.5 text-sm leading-5 font-medium text-muted">{g.day}</h2>
+                <ul className="m-0 list-none p-0">
+                  {g.items.map((m, i) => (
+                    <HistoryRow key={m.id} match={m} last={i === g.items.length - 1} course={titleOf(m.courseId)} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+            {list.hasNextPage ? (
+              <button type="button" className={cx(secondaryClass, "mt-4 h-12 w-full")} onClick={() => void list.fetchNextPage()} disabled={list.isFetchingNextPage}>
+                {list.isFetchingNextPage ? "Loading" : "Load more"}
+              </button>
+            ) : null}
+          </>
+        )}
+      </Body>
+    </Screen>
   );
 }
 
@@ -64,103 +143,103 @@ function playerName(p: Player): string {
   return p.user?.displayUsername ?? p.bot?.name ?? "Player";
 }
 
-function PlayerAvatar({ p, size, you }: { p: Player; size: number; you: boolean }) {
-  if (p.user) return <Avatar user={p.user} size={size} ring={you ? "var(--color-you)" : "var(--color-opponent)"} />;
-  return <BotAvatar name={p.bot?.name ?? "Bot"} size={size} />;
-}
-
-const REASON: Record<MatchDetailResponse["endReason"], string> = {
-  hp: "Knockout",
-  rounds: "Decided on HP after the last round",
-  surrender: "Surrendered",
-  abandon: "Left the match",
-  void: "Void: both disconnected",
-  no_show: "Cancelled: nobody showed up",
-  expired: "Lobby expired",
-  cancelled: "Cancelled",
+const REASON: Partial<Record<MatchDetailResponse["endReason"], string>> = {
+  rounds: "Decided on HP after the last round.",
+  surrender: "Ended by a surrender.",
+  abandon: "Ended when a player left.",
+  void: "Void: both disconnected.",
 };
 
-function SideLine({ side, color, name }: { side: RoundSide; color: string; name: string }) {
-  const used: PowerupId[] = [];
-  if (side.armed) used.push(side.armed);
-  if (side.quick) used.push(side.quick);
+const POWERUP_ICON: Record<PowerupId, "bibi" | "shield" | "fifty" | "fast"> = { bibi: "bibi", shield: "shield", fifty: "fifty", fast: "fast" };
+
+/** The text of an answer: option texts joined, True or False, or nothing. */
+function answerText(round: Round, side: RoundSide): string | null {
+  const ids = answerIds(side.answer);
+  if (ids.length === 0) return null;
+  if (round.question.type === "truefalse") return ids[0] === TRUE_ID ? "True" : ids[0] === FALSE_ID ? "False" : null;
+  const texts = ids.map((id) => round.question.options.find((o) => o.id === id)?.text).filter((t): t is string => !!t);
+  return texts.length > 0 ? texts.join(", ") : null;
+}
+
+function AnswerLine({ round, side, name, who }: { round: Round; side: RoundSide; name: string; who: "you" | "opponent" }) {
+  const text = answerText(round, side);
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <span className="size-2 shrink-0 rounded-xs" style={{ background: color }} aria-hidden />
-      <span className="sr-only">{name}:</span>
-      {side.answer === null ? (
-        <span className="text-xs text-muted">no answer</span>
-      ) : side.correct ? (
-        <CheckIcon size={16} className="shrink-0 text-correct" />
-      ) : (
-        <XIcon size={16} className="shrink-0 text-wrong" />
-      )}
-      {side.ms !== null ? <span className="text-xs text-muted tabular-nums">{formatSeconds(side.ms)}</span> : null}
-      {used.map((p) => (
-        <span key={p} title={powerupInfo(p).name}>
-          <PowerupIcon id={p} size={16} />
-        </span>
-      ))}
-    </div>
+    <span className="grid grid-cols-[64px_18px_minmax(0,1fr)_auto] items-center gap-x-1.5 text-sm leading-5">
+      <span className={cx("truncate font-display text-sm font-bold tracking-[0.04em] uppercase", who === "you" ? "text-you" : "text-opponent")}>{name}</span>
+      {side.correct ? <Icon name="check" size={14} stroke={2.6} label="right" /> : <Icon name="x" size={14} stroke={2.6} label="wrong" className="text-wrong" />}
+      <span className={cx("truncate", !side.correct && "text-muted")}>{text ?? "No answer"}</span>
+      <span className="text-muted">{side.ms !== null ? formatSeconds(side.ms) : ""}</span>
+    </span>
   );
 }
 
-function powerupNotes(side: RoundSide, name: string): string[] {
-  const out: string[] = [];
-  if (side.armed) out.push(`${name} armed ${powerupInfo(side.armed).name}.`);
-  if (side.quick) out.push(`${name} used ${powerupInfo(side.quick).name}.`);
+function powerupNotes(mine: RoundSide, theirs: RoundSide, myName: string, theirName: string): { id: PowerupId; text: string }[] {
+  const out: { id: PowerupId; text: string }[] = [];
+  const add = (id: PowerupId | null, who: string) => {
+    if (id) out.push({ id, text: `${powerupInfo(id).name}, ${who}` });
+  };
+  add(mine.armed, myName);
+  add(theirs.armed, theirName);
+  add(mine.quick, myName);
+  add(theirs.quick, theirName);
   return out;
 }
 
-function RoundCard({ round, mine, theirs, myName, theirName }: { round: Round; mine: RoundSide; theirs: RoundSide; myName: string; theirName: string }) {
+function RoundItem({ round, mine, theirs, myName, theirName, last }: { round: Round; mine: RoundSide; theirs: RoundSide; myName: string; theirName: string; last: boolean }) {
   const [open, setOpen] = useState(false);
   const q = round.question;
-  const dmgToMe = mine.damageTaken;
-  const dmgToThem = theirs.damageTaken;
   const keyIds = answerIds(q.key);
   const myIds = answerIds(mine.answer);
   const rows = optionRows(q);
-  const notes = [...powerupNotes(mine, myName), ...powerupNotes(theirs, theirName)];
+  const notes = powerupNotes(mine, theirs, myName, theirName);
+  // Damage takes the colour of the player whose HP it hit.
+  const hit =
+    theirs.damageTaken > 0
+      ? { n: theirs.damageTaken, cls: "text-opponent", to: theirName }
+      : mine.damageTaken > 0
+        ? { n: mine.damageTaken, cls: "text-you", to: myName }
+        : null;
   return (
-    <li className="rounded-2xl border border-border bg-surface">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex min-h-tap w-full items-start gap-3 px-3 py-3 text-left">
-        <span className="flex w-10 shrink-0 flex-col items-center">
-          <span className="font-display text-lg font-bold">{round.round}</span>
-          <span className="text-[11px] text-muted">x{round.multiplier}</span>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm">{q.prompt ?? q.statement}</span>
-          <span className="mt-1 grid grid-cols-2 gap-2">
-            <SideLine side={mine} color="var(--color-you)" name={myName} />
-            <SideLine side={theirs} color="var(--color-opponent)" name={theirName} />
+    <li className={cx("flex flex-col gap-1.5 py-3", !last && "border-b border-line")}>
+      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="font-display text-lg leading-[22px] font-bold">Round {round.round}</span>
+        <span className="font-display text-base font-bold text-muted">x{Number.isInteger(round.multiplier) ? round.multiplier : round.multiplier.toFixed(1)}</span>
+        {notes.map((n) => (
+          <span key={n.text} className="flex items-center gap-1 text-[13px] leading-[18px] text-muted">
+            <Icon name={POWERUP_ICON[n.id]} size={13} stroke={2} />
+            {n.text}
           </span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-1">
-          {dmgToThem > 0 ? (
-            <span className="rounded-md bg-you/15 px-1.5 py-0.5 text-xs font-bold whitespace-nowrap text-you tabular-nums">Hit {formatNumber(dmgToThem)}</span>
-          ) : dmgToMe > 0 ? (
-            <span className="rounded-md bg-opponent/15 px-1.5 py-0.5 text-xs font-bold whitespace-nowrap text-opponent tabular-nums">Took {formatNumber(dmgToMe)}</span>
-          ) : (
-            <span className="text-xs text-muted">no damage</span>
-          )}
-          <ChevronDownIcon size={16} className={cx("text-muted transition", open && "rotate-180")} />
-        </span>
+        ))}
+        <span className="flex-1" />
+        {hit ? (
+          <span className={cx("font-display text-xl font-bold", hit.cls)} aria-label={`${damage(hit.n)} to ${hit.to}`}>
+            {damage(hit.n)}
+          </span>
+        ) : (
+          <span className="font-display text-xl font-bold text-muted" aria-label="No damage">
+            0
+          </span>
+        )}
+      </span>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className={cx("text-left text-[15px] leading-[21px]", !open && "line-clamp-2")}>
+        {plainPreview(q.prompt ?? q.statement ?? "")}
       </button>
+      <AnswerLine round={round} side={mine} name={myName} who="you" />
+      <AnswerLine round={round} side={theirs} name={theirName} who="opponent" />
       {open ? (
-        <div className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-4">
-          <QuestionText question={q} fill={q.type === "cloze" ? (rows.find((r) => keyIds.includes(r.id))?.text ?? null) : null} />
+        <div className="mt-2 flex flex-col gap-3">
+          {q.type === "truefalse" || (q.prompt ?? "").includes("|") ? <QuestionText question={q} variant="plain" /> : null}
           <OptionList
             question={q}
             marks={markOptions(rows, keyIds, myIds, q.type === "multi")}
             pickedLabel={myIds}
             otherPicks={answerIds(theirs.answer)}
-            otherLabel={`${theirName}'s answer`}
+            otherLabel={theirName}
           />
-          <p className="text-sm leading-relaxed text-muted">{q.why}</p>
-          <p className="text-xs text-muted">
+          <p className="m-0 text-[15px] leading-[22px]">{q.why}</p>
+          <p className="m-0 text-sm leading-5 text-muted">
             HP after: <span className="text-you">{formatNumber(mine.hpAfter)}</span> · <span className="text-opponent">{formatNumber(theirs.hpAfter)}</span>
           </p>
-          {notes.length > 0 ? <p className="text-xs text-muted">{notes.join(" ")}</p> : null}
         </div>
       ) : null}
     </li>
@@ -171,19 +250,33 @@ export function MatchDetail() {
   const { id = "" } = useParams();
   const me = useMeData();
   const match = useMatchDetail(id);
+  const data = match.data;
+  let title = "Match";
+  if (data) {
+    const meFirst = data.players[1].user?.id === me.user.id ? [data.players[1], data.players[0]] : data.players;
+    title = `${playerName(meFirst[0]!)} vs ${playerName(meFirst[1]!)}`;
+  }
 
   return (
-    <Page>
-      <PageHeader title="Match" back />
-      {match.isPending ? (
-        <LoadingBlocks count={5} />
-      ) : match.error ? (
-        <ErrorState error={match.error} onRetry={() => void match.refetch()} />
-      ) : (
-        <MatchDetailBody data={match.data} meId={me.user.id} />
-      )}
-    </Page>
+    <Screen>
+      <Header title={title} back />
+      <Body className="pb-4">
+        {match.isPending ? (
+          <LoadingPlates count={5} height={96} />
+        ) : match.error ? (
+          <ErrorState error={match.error} onRetry={() => void match.refetch()} />
+        ) : (
+          <MatchDetailBody data={match.data} meId={me.user.id} />
+        )}
+      </Body>
+    </Screen>
   );
+}
+
+function modeWord(d: MatchDetailResponse): string {
+  if (d.mode === "ranked") return "Ranked";
+  if (d.mode === "bot") return "Bot match";
+  return d.rated ? "Private · rated" : "Private · unrated";
 }
 
 function MatchDetailBody({ data, meId }: { data: MatchDetailResponse; meId: string }) {
@@ -192,56 +285,58 @@ function MatchDetailBody({ data, meId }: { data: MatchDetailResponse; meId: stri
   const theirs = data.players[1 - myIndex]!;
   const iPlayed = mine.user?.id === meId;
   const mySide = mine.side;
-  const result =
-    data.status === "void" || data.winner === null ? "Void" : data.winner === "draw" ? "Draw" : data.winner === mySide ? (iPlayed ? "Win" : `${playerName(mine)} won`) : iPlayed ? "Loss" : `${playerName(theirs)} won`;
-  const resultTone = result === "Win" ? "text-correct" : result === "Loss" ? "text-wrong" : "text-muted";
+  const myName = playerName(mine);
+  const theirName = playerName(theirs);
+
+  let word: string;
+  if (data.status === "void" || data.winner === null) word = "VOID";
+  else if (data.winner === "draw") word = "DRAW";
+  else if (iPlayed) word = data.winner === mySide ? "VICTORY" : "DEFEAT";
+  else word = `${data.winner === mySide ? myName : theirName} won`;
   const delta = mine.ratingBefore !== null && mine.ratingAfter !== null ? mine.ratingAfter - mine.ratingBefore : null;
+  const reason = REASON[data.endReason];
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="rounded-3xl border border-border bg-surface p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center">
-            <PlayerAvatar p={mine} size={56} you />
-            <span className="w-full truncate text-sm font-semibold">{playerName(mine)}</span>
-            <span className="text-xs text-you tabular-nums">{formatNumber(mine.hpEnd)} HP</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className={cx("font-display text-3xl font-black", resultTone)}>{result.length <= 4 ? result.toUpperCase() : result}</span>
-            {delta !== null ? (
-              <span className="text-sm text-muted tabular-nums">
-                {formatRating(mine.ratingBefore, false)} to {formatRating(mine.ratingAfter, false)} ({formatDelta(delta)})
-              </span>
-            ) : null}
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center">
-            <PlayerAvatar p={theirs} size={56} you={false} />
-            <span className="w-full truncate text-sm font-semibold">{playerName(theirs)}</span>
-            <span className="text-xs text-opponent tabular-nums">{formatNumber(theirs.hpEnd)} HP</span>
-          </div>
-        </div>
-        <p className="mt-3 text-center text-xs text-muted">
-          {modeLabel(data)} · {REASON[data.endReason]} · {data.roundsPlayed} rounds · {formatDate(data.endedAt)}
-          {data.pairCapped ? " · daily rated limit reached, no rating change" : ""}
+    <>
+      <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+        <span className="flex min-w-0 flex-col">
+          <span className={cx("truncate font-display font-bold italic", iPlayed || word.length <= 7 ? "text-[32px] leading-[34px]" : "text-2xl leading-[34px] not-italic")}>{word}</span>
+          <span className="truncate text-sm leading-5 text-muted">
+            {modeWord(data)} · {data.roundsPlayed === 1 ? "1 round" : `${data.roundsPlayed} rounds`} · {whenLabel(data.endedAt)}
+          </span>
+        </span>
+        <span className="flex shrink-0 flex-col items-end">
+          {delta !== null ? <span className="font-display text-[32px] leading-[34px] font-bold">{signed(delta)}</span> : null}
+          <span className="text-sm leading-5 text-muted">
+            <span className="text-you">{formatNumber(mine.hpEnd)}</span> · <span className="text-opponent">{formatNumber(theirs.hpEnd)}</span> HP
+          </span>
+        </span>
+      </div>
+      {reason || data.pairCapped ? (
+        <p className="m-0 border-b border-line py-2.5 text-sm leading-5 text-muted">
+          {reason}
+          {reason && data.pairCapped ? " " : ""}
+          {data.pairCapped ? "Daily rated limit for this pair reached: no rating change." : ""}
         </p>
-      </section>
+      ) : null}
 
       {data.rounds.length === 0 ? (
-        <EmptyState title={data.roundsHidden ? "Round detail is only visible to the two players." : "No rounds played"} />
+        <Quiet>{data.roundsHidden ? "Round detail is only visible to the two players." : "No rounds played."}</Quiet>
       ) : (
-        <ol className="flex flex-col gap-2">
-          {data.rounds.map((r) => (
-            <RoundCard
+        <ol className="m-0 flex list-none flex-col p-0">
+          {data.rounds.map((r, i) => (
+            <RoundItem
               key={r.round}
               round={r}
               mine={mySide === "a" ? r.a : r.b}
               theirs={mySide === "a" ? r.b : r.a}
-              myName={iPlayed ? "You" : playerName(mine)}
-              theirName={playerName(theirs)}
+              myName={myName}
+              theirName={theirName}
+              last={i === data.rounds.length - 1}
             />
           ))}
         </ol>
       )}
-    </div>
+    </>
   );
 }

@@ -158,6 +158,12 @@ export const MatchEndPayloadSchema = z.object({
   rounds: z.number().int(),
   ranked: RatingChangeSchema.nullable(),
   bot: RatingChangeSchema.nullable(),
+  /**
+   * Bot matches: how far each answer moved the shown bot rating, one integer
+   * per round in order (0 where it did not move). Sums to the rounded change
+   * in `bot`. Empty or absent for every other match (optional, additive).
+   */
+  botRatingSteps: z.array(z.number().int()).optional(),
   pairCapped: z.boolean(),
   summary: MatchEndSummarySchema,
   missedCount: z.number().int(),

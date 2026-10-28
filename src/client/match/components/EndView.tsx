@@ -106,6 +106,72 @@ function RatingCard({ label, change, note, big = 64 }: { label: string; change: 
   );
 }
 
+/** Height of the per-answer bars: the line sits where the biggest gain and the biggest loss both fit. */
+const STEP_AREA_PX = 44;
+/** With no loss, the gains get this much and the line keeps a 16 px foot under it. */
+const STEP_UP_ONLY_PX = 28;
+
+/** One bar per answer: up in text colour above the line, down in faint below it, the change under each. */
+function StepBars({ steps }: { steps: number[] }) {
+  const up = Math.max(0, ...steps);
+  const down = Math.max(0, ...steps.map((v) => -v));
+  // One scale for both directions, so a bar's height always means the same rating change.
+  const scale = down === 0 ? STEP_UP_ONLY_PX / Math.max(1, up) : STEP_AREA_PX / (up + down);
+  const upPx = down === 0 ? STEP_UP_ONLY_PX : Math.round(up * scale);
+  const downPx = STEP_AREA_PX - upPx;
+  const px = (v: number) => Math.max(v === 0 ? 0 : 2, Math.round(Math.abs(v) * scale));
+  const labels = steps.length <= 14;
+  return (
+    <div
+      role="img"
+      aria-label={`Rating change per answer: ${steps.map(fmtSigned).join(", ")}`}
+      className="mt-2.5 grid"
+      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`, columnGap: steps.length > 14 ? 3 : 6 }}
+    >
+      {steps.map((v, i) => (
+        <div key={i} className="flex min-w-0 flex-col items-center gap-1">
+          <div className="flex w-full flex-col gap-1">
+            <div className="flex w-full items-end" style={{ height: upPx }}>
+              <span className="w-full bg-text" style={{ height: v > 0 ? px(v) : 0 }} />
+            </div>
+            <div className="flex w-full items-start border-t border-faint" style={{ height: downPx }}>
+              <span className="w-full bg-faint" style={{ height: v < 0 ? px(v) : 0 }} />
+            </div>
+          </div>
+          {labels && <span className={`rq-display text-sm leading-4 font-semibold ${v < 0 ? "text-muted" : "text-text"}`}>{fmtSigned(v)}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The bot rating with a bar per answer (bot matches finalized with steps). */
+function BotStepsCard({ change, steps }: { change: RatingChange; steps: number[] }) {
+  const shown = useCountTo(change.after, FX.ratingCountMs, change.before);
+  const q = change.provisional;
+  return (
+    <section aria-label="Bot rating" className="plate px-4 pt-3.5 pb-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col">
+          <span className="text-sm leading-5 text-muted">Bot rating, per answer</span>
+          <span className="rq-display flex items-center gap-1.5 text-2xl leading-7 font-semibold whitespace-nowrap">
+            {fmtRating(change.before, q)}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="to">
+              <path d="M5 12h14" />
+              <path d="m13 6 6 6-6 6" />
+            </svg>
+            {fmtRating(change.after, q)}
+          </span>
+        </div>
+        <span className="rq-display text-[56px] leading-[56px] font-bold" aria-label={`Change ${fmtSigned(Math.round(change.after) - Math.round(change.before))}`}>
+          {fmtSigned(Math.round(shown) - Math.round(change.before))}
+        </span>
+      </div>
+      <StepBars steps={steps} />
+    </section>
+  );
+}
+
 function UnlockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
@@ -237,7 +303,8 @@ export function EndView(props: Props) {
 
       <div className={`${bot ? "mt-6" : "mt-8"} flex flex-col gap-4`}>
         {result.ranked && <RatingCard label="Ranked rating" change={result.ranked} />}
-        {result.bot && (
+        {result.bot && result.botRatingSteps && result.botRatingSteps.length > 0 && <BotStepsCard change={result.bot} steps={result.botRatingSteps} />}
+        {result.bot && !result.botRatingSteps?.length && (
           <RatingCard label="Bot rating" big={56} change={result.bot} note={`Bot rating follows your answers, not the result. ${s.correct} of ${result.rounds} right.`} />
         )}
         {next && <NextBotCard next={next} pending={props.fightPending ?? false} error={props.fightError ?? null} />}

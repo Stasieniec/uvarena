@@ -67,6 +67,20 @@ describe("knockout", () => {
     };
     expect(matchEnd(finalized, 1, d.now).ranked).toEqual({ before: 1500, after: 1488, provisional: false });
     expect(view(finalized, 0, d.now).result?.ranked?.after).toBe(1512);
+    // Steps travel only with a bot rating change.
+    expect(matchEnd(finalized, 0, d.now).botRatingSteps).toEqual([]);
+    const botFinal: MatchState = {
+      ...finalized,
+      endSummaries: [
+        { ranked: null, bot: { before: 1500, after: 1507.6, provisional: true }, botRatingSteps: [8], pairCapped: false, missedCount: 0 },
+        { ranked: null, bot: null, pairCapped: false, missedCount: 1 },
+      ],
+    };
+    expect(matchEnd(botFinal, 0, d.now).botRatingSteps).toEqual([8]);
+    expect(matchEnd(botFinal, 1, d.now).botRatingSteps).toEqual([]);
+    // A state finalized before the field existed still sends a valid payload.
+    const legacy: MatchState = { ...botFinal, endSummaries: [{ ranked: null, bot: { before: 1500, after: 1507.6, provisional: true }, pairCapped: false, missedCount: 0 }, botFinal.endSummaries![1]] };
+    expect(matchEnd(legacy, 0, d.now).botRatingSteps).toEqual([]);
   });
 });
 
