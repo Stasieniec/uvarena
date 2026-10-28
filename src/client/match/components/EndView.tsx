@@ -106,31 +106,39 @@ function RatingCard({ label, change, note, big = 64 }: { label: string; change: 
   );
 }
 
-const STEP_UP_PX = 28;
-const STEP_DOWN_PX = 16;
+/** Height of the per-answer bars: the line sits where the biggest gain and the biggest loss both fit. */
+const STEP_AREA_PX = 44;
+/** With no loss, the gains get this much and the line keeps a 16 px foot under it. */
+const STEP_UP_ONLY_PX = 28;
 
 /** One bar per answer: up in text colour above the line, down in faint below it, the change under each. */
 function StepBars({ steps }: { steps: number[] }) {
-  const biggest = Math.max(1, ...steps.map((v) => Math.abs(v)));
-  const px = (v: number) => Math.round((Math.abs(v) / biggest) * STEP_UP_PX);
+  const up = Math.max(0, ...steps);
+  const down = Math.max(0, ...steps.map((v) => -v));
+  // One scale for both directions, so a bar's height always means the same rating change.
+  const scale = down === 0 ? STEP_UP_ONLY_PX / Math.max(1, up) : STEP_AREA_PX / (up + down);
+  const upPx = down === 0 ? STEP_UP_ONLY_PX : Math.round(up * scale);
+  const downPx = STEP_AREA_PX - upPx;
+  const px = (v: number) => Math.max(v === 0 ? 0 : 2, Math.round(Math.abs(v) * scale));
+  const labels = steps.length <= 14;
   return (
     <div
       role="img"
       aria-label={`Rating change per answer: ${steps.map(fmtSigned).join(", ")}`}
-      className="mt-2.5 grid gap-1.5"
+      className="mt-2.5 grid"
       style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`, columnGap: steps.length > 14 ? 3 : 6 }}
     >
       {steps.map((v, i) => (
         <div key={i} className="flex min-w-0 flex-col items-center gap-1">
-          <div className="flex w-full items-end" style={{ height: STEP_UP_PX }}>
-            <span className="w-full bg-text" style={{ height: v > 0 ? px(v) : 0 }} />
+          <div className="flex w-full flex-col gap-1">
+            <div className="flex w-full items-end" style={{ height: upPx }}>
+              <span className="w-full bg-text" style={{ height: v > 0 ? px(v) : 0 }} />
+            </div>
+            <div className="flex w-full items-start border-t border-faint" style={{ height: downPx }}>
+              <span className="w-full bg-faint" style={{ height: v < 0 ? px(v) : 0 }} />
+            </div>
           </div>
-          <div className="flex w-full items-start border-t border-faint" style={{ height: STEP_DOWN_PX }}>
-            <span className="w-full bg-faint" style={{ height: v < 0 ? Math.min(STEP_DOWN_PX, px(v)) : 0 }} />
-          </div>
-          {steps.length <= 14 && (
-            <span className={`rq-display text-sm leading-4 font-semibold ${v < 0 ? "text-muted" : "text-text"}`}>{fmtSigned(v)}</span>
-          )}
+          {labels && <span className={`rq-display text-sm leading-4 font-semibold ${v < 0 ? "text-muted" : "text-text"}`}>{fmtSigned(v)}</span>}
         </div>
       ))}
     </div>
