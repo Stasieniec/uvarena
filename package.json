@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "smoke": "tsx scripts/smoke-local.ts",
     "smoke:ui": "tsx scripts/smoke-ui.ts",
+    "cleanup:smoke": "tsx scripts/cleanup-smoke.ts",
     "e2e:server": "wrangler d1 migrations apply DB --local && vite build && vite preview",
     "bank": "tsx scripts/quiz-bank.ts",
     "deploy": "tsx scripts/deploy.ts",

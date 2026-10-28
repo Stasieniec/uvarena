@@ -736,7 +736,7 @@ curl -sSI https://uvarena.swasilewski.com/profile              # 200 text/html, 
 npm run smoke -- --url https://uvarena.swasilewski.com --production
 ```
 
-The production smoke run signs up two `zz_smoke_*` users, plays a ranked Agentic AI match over the queue and match sockets to the end, checks ratings, history, missed questions and the leaderboard, then plays and wins a match against the first ladder bot (about two minutes at real timers). It leaves those users behind: delete them and their rows afterwards (answers, match_rounds, match_finalizations and matches of their matches; question_reports, missed_questions, ratings, player_course, user_prefs, session, account, user), and reset question stats (`rating = start_rating, rating_n = 0, attempts = 0, correct = 0`) only while no real player exists yet.
+The production smoke run signs up two `zz_smoke_*` users, plays a ranked Agentic AI match over the queue and match sockets to the end, checks ratings, history, missed questions and the leaderboard, then plays and wins a match against the first ladder bot (about two minutes at real timers). It leaves those users behind: `npm run cleanup:smoke -- --remote` deletes them and every row that references them (scripts/cleanup-smoke.ts; `--dry-run` only counts). Add `--reset-question-ratings` to also reset question stats (`rating = start_rating, rating_n = 0, attempts = 0, correct = 0`); the script does that only while every user is a smoke user. Match and queue sockets can drop in transit (code 1006); the smoke clients reconnect like the app and print a note for each drop.
 
 Google sign-in, once Stas has the client:
 

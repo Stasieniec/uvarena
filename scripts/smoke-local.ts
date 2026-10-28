@@ -16,7 +16,7 @@
 // Against production (no test mode, real timers): the ranked match and a bot
 // match against the first ladder bot only, with users named zz_smoke_*:
 //   npm run smoke -- --url https://uvarena.swasilewski.com --production
-// Then delete those users (docs/build-plan.md, Deploy).
+// Then delete those users and their rows: npm run cleanup:smoke -- --remote
 //
 // It signs up fresh users each run, so it can be re-run against the same
 // local database. Every server frame and API response is validated against
