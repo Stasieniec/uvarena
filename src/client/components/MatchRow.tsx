@@ -45,7 +45,7 @@ export function MatchRow({ match, courseLabel }: { match: MatchSummary; courseLa
         </span>
       </span>
       <span className="flex flex-col items-end gap-1">
-        <span className={cx("rounded-md px-2 py-0.5 text-xs font-bold tracking-wide uppercase", RESULT_CLASS[match.result])}>{RESULT_LABEL[match.result]}</span>
+        <span className={cx("rounded-xs px-2 py-0.5 text-sm font-semibold", RESULT_CLASS[match.result])}>{RESULT_LABEL[match.result]}</span>
         {match.ratingChange !== null ? (
           <span className={cx("text-sm font-semibold tabular-nums", match.ratingChange > 0 ? "text-correct" : match.ratingChange < 0 ? "text-wrong" : "text-muted")}>
             {formatDelta(match.ratingChange)}

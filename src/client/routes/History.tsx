@@ -86,7 +86,7 @@ function SideLine({ side, color, name }: { side: RoundSide; color: string; name:
   if (side.quick) used.push(side.quick);
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <span className="size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden />
+      <span className="size-2 shrink-0 rounded-xs" style={{ background: color }} aria-hidden />
       <span className="sr-only">{name}:</span>
       {side.answer === null ? (
         <span className="text-xs text-muted">no answer</span>

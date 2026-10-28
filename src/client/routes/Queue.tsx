@@ -93,9 +93,8 @@ export function Queue() {
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-ranked/15 to-transparent" />
       <div className="relative text-center">
-        <p className="text-xs font-semibold tracking-[0.2em] text-ranked-gold uppercase">Ranked</p>
+        <p className="text-sm font-semibold text-muted">Ranked</p>
         <p className="mt-1 truncate text-sm text-muted">{course?.title ?? ""}</p>
       </div>
 
@@ -116,12 +115,12 @@ export function Queue() {
             <div className="relative flex size-44 items-center justify-center">
               {state.kind !== "found" ? (
                 <>
-                  <span className="search-ring absolute inset-0 rounded-full border-2 border-ranked/50" />
-                  <span className="search-ring search-ring-2 absolute inset-0 rounded-full border-2 border-ranked-gold/40" />
-                  <span className="search-ring search-ring-3 absolute inset-0 rounded-full border-2 border-ranked/40" />
+                  <span className="search-ring absolute inset-0 rounded-sm border-2 border-ranked/50" />
+                  <span className="search-ring search-ring-2 absolute inset-0 rounded-sm border-2 border-ranked-gold/40" />
+                  <span className="search-ring search-ring-3 absolute inset-0 rounded-sm border-2 border-ranked/40" />
                 </>
               ) : null}
-              <span className="pop-in flex size-28 items-center justify-center rounded-full border border-ranked-gold/40 bg-gradient-to-b from-[#4a1822] to-surface shadow-[0_0_40px] shadow-ranked/30">
+              <span className="pop-in flex size-28 items-center justify-center rounded-sm border border-ranked-gold/40 bg-surface">
                 <SwordsIcon size={48} className="text-ranked-gold" />
               </span>
             </div>

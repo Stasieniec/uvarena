@@ -68,7 +68,7 @@ function GoogleButton({ next }: { next: string }) {
         Continue with Google
       </Button>
       <FormError message={error} />
-      <div className="my-5 flex items-center gap-3 text-xs text-muted uppercase">
+      <div className="my-5 flex items-center gap-3 text-sm text-muted">
         <span className="h-px flex-1 bg-border" />
         or
         <span className="h-px flex-1 bg-border" />

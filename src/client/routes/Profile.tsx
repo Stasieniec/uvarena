@@ -22,7 +22,7 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
   return (
     <div className="rounded-xl bg-bg/50 px-3 py-2">
       <p className={cx("truncate text-xl font-bold tabular-nums", tone)}>{value}</p>
-      <p className="text-[11px] tracking-wide text-muted uppercase">{label}</p>
+      <p className="text-[11px] text-muted">{label}</p>
     </div>
   );
 }
@@ -41,13 +41,13 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border border-ranked/30 bg-gradient-to-br from-[#2a1420] to-surface p-3">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-ranked-gold uppercase">Ranked</p>
+        <div className="rounded-2xl border border-ranked/30 bg-surface p-3">
+          <p className="text-[11px] font-semibold text-muted">Ranked</p>
           <p className="font-display text-3xl font-black tabular-nums text-text">{formatRating(r.rating, r.provisional)}</p>
         </div>
-        <div className="rounded-2xl border border-bot/30 bg-gradient-to-br from-[#0f2350] to-surface p-3">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-[#93c5fd] uppercase">Bot</p>
-          <p className="font-display text-3xl font-black tabular-nums text-[#bfdbfe]">{formatRating(b.rating, b.provisional, ELO.startBotRating)}</p>
+        <div className="rounded-2xl border border-bot/30 bg-surface p-3">
+          <p className="text-[11px] font-semibold text-muted">Bot</p>
+          <p className="font-display text-3xl font-black tabular-nums text-text">{formatRating(b.rating, b.provisional, ELO.startBotRating)}</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
         <div className="grid grid-cols-3 gap-2">
           <Stat label="Played" value={b.played} />
           <Stat label="Won" value={b.won} tone="text-correct" />
-          <Stat label="Strongest beaten" value={strongest ?? "None"} tone={strongest ? "text-[#bfdbfe] text-base" : "text-muted text-base"} />
+          <Stat label="Strongest beaten" value={strongest ?? "None"} tone={strongest ? "text-text text-base" : "text-muted text-base"} />
         </div>
         {casualPlayed > 0 ? (
           <p className="mt-2 text-xs text-muted">
@@ -96,8 +96,8 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
                     {a.correct}/{a.answers} · <span className="font-semibold text-text">{p}%</span>
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-bg" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={`${a.title} accuracy`}>
-                  <div className={cx("h-full rounded-full", accuracyTone(p))} style={{ width: `${p}%` }} />
+                <div className="h-2 overflow-hidden rounded-xs bg-bg" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={`${a.title} accuracy`}>
+                  <div className={cx("h-full", accuracyTone(p))} style={{ width: `${p}%` }} />
                 </div>
               </li>
             );

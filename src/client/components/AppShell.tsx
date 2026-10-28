@@ -54,7 +54,7 @@ export function BackToMatchBar() {
   return (
     <Link
       to={`/match/${id}`}
-      className="sticky top-0 z-30 -mx-4 mb-2 flex min-h-tap items-center justify-center gap-2 bg-ranked px-4 text-sm font-semibold text-white shadow-lg shadow-ranked/30"
+      className="sticky top-0 z-30 -mx-4 mb-2 flex min-h-tap items-center justify-center gap-2 bg-ranked px-4 text-sm font-semibold text-bg"
     >
       <SwordsIcon size={18} />
       Back to your match

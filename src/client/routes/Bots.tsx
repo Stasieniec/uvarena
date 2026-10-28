@@ -39,7 +39,7 @@ export function Bots() {
 
   return (
     <Page>
-      <PageHeader title={<span className="text-[#93c5fd]">Bot match</span>} back="/" />
+      <PageHeader title={<span className="text-muted">Bot match</span>} back="/" />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted">{course?.shortTitle}</span>
         <span className="flex-1" />
@@ -67,7 +67,7 @@ export function Bots() {
             type="button"
             onClick={() => start.mutate("echo")}
             disabled={start.isPending}
-            className="relative mb-5 flex min-h-24 w-full items-center gap-4 overflow-hidden rounded-3xl border border-bot/50 bg-gradient-to-br from-[#14306e] to-surface px-4 py-4 text-left transition hover:border-bot disabled:opacity-70"
+            className="relative mb-5 flex min-h-24 w-full items-center gap-4 overflow-hidden rounded-3xl border border-bot/50 bg-surface px-4 py-4 text-left transition hover:border-bot disabled:opacity-70"
           >
             <span className="relative">
               <BotAvatar name={bots.data.echo.name} size={56} />
@@ -81,13 +81,13 @@ export function Bots() {
             <span className="text-right">
               {/* Echo plays at your bot rating, so show that number (the same one as below). */}
               {home.data ? (
-                <span className="block text-lg font-semibold tabular-nums text-[#bfdbfe]">
+                <span className="block text-lg font-semibold tabular-nums text-text">
                   {formatRating(home.data.bot.rating, home.data.bot.provisional, ELO.startBotRating)}
                 </span>
               ) : null}
               <span className="block text-[11px] text-muted">your level</span>
             </span>
-            {pending === "echo" ? <Spinner size={20} className="text-[#93c5fd]" /> : null}
+            {pending === "echo" ? <Spinner size={20} className="text-muted" /> : null}
           </button>
 
           <ol className="flex flex-col gap-2">
@@ -115,9 +115,9 @@ export function Bots() {
                       <span className={cx("block text-sm leading-snug", locked ? "text-muted/60" : "text-muted")}>{b.line}</span>
                     </span>
                     <span className="flex flex-col items-end gap-1">
-                      <span className={cx("text-sm font-semibold tabular-nums", locked ? "text-muted/60" : "text-[#bfdbfe]")}>{Math.round(b.rating)}</span>
+                      <span className={cx("text-sm font-semibold tabular-nums", locked ? "text-muted/60" : "text-text")}>{Math.round(b.rating)}</span>
                       {pending === b.level ? (
-                        <Spinner size={16} className="text-[#93c5fd]" />
+                        <Spinner size={16} className="text-muted" />
                       ) : locked ? (
                         <LockIcon size={16} className="text-muted/60" />
                       ) : b.beaten ? (

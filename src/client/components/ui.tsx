@@ -10,19 +10,22 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 
 export type ButtonVariant = "primary" | "ranked" | "bot" | "secondary" | "ghost" | "danger" | "gold" | "google";
 
+// Broadcast buttons: the primary action is a yellow plate with the offset frame
+// (one per screen); everything else is a plate with a darker bottom edge that
+// drops when pressed. Ranked, gold and primary are all the primary action now.
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-you text-bg hover:brightness-110 active:brightness-95 font-semibold",
-  ranked: "bg-ranked text-white font-semibold shadow-[0_0_0_1px_rgb(232_185_73/0.3)_inset] hover:brightness-110",
-  bot: "bg-bot text-white font-semibold hover:brightness-110",
-  gold: "bg-gold text-bg font-semibold hover:brightness-110",
-  secondary: "bg-surface-2 text-text border border-border hover:border-muted/60",
-  ghost: "bg-transparent text-text hover:bg-surface-2",
-  google: "bg-white text-[#1f1f1f] font-medium hover:bg-white/90",
-  danger: "bg-transparent text-wrong border border-wrong/50 hover:bg-wrong/10",
+  primary: "btn-primary text-xl",
+  ranked: "btn-primary text-xl",
+  gold: "btn-primary text-xl",
+  bot: "plate press text-text font-semibold",
+  secondary: "plate press text-text font-semibold",
+  ghost: "bg-transparent text-text font-semibold hover:bg-surface",
+  google: "bg-white text-[#1f1f1f] font-medium shadow-[0_3px_0_#8c939e] press",
+  danger: "bg-transparent text-wrong font-semibold shadow-[inset_0_0_0_1px_var(--color-wrong)]",
 };
 
 export const buttonBase =
-  "inline-flex min-h-tap items-center justify-center gap-2 rounded-xl px-5 text-center text-base leading-tight transition select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-tap items-center justify-center gap-2 rounded-sm px-5 text-center text-base leading-tight select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed disabled:opacity-50";
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string): string {
   return cx(buttonBase, VARIANTS[variant], extra);
@@ -57,7 +60,7 @@ export function Spinner({ size = 24, className }: { size?: number; className?: s
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx("rounded-2xl border border-border bg-surface p-4", className)}>{children}</section>;
+  return <section className={cx("rounded-sm bg-surface p-4", className)}>{children}</section>;
 }
 
 export function Skeleton({ className }: { className?: string }) {
@@ -155,7 +158,7 @@ export function Pills<T extends string>({
   label: string;
   tone?: "you" | "ranked" | "bot";
 }) {
-  const active = tone === "ranked" ? "bg-ranked-gold text-bg" : tone === "bot" ? "bg-bot text-white" : "bg-you text-bg";
+  const active = tone === "ranked" ? "bg-ranked-gold text-bg" : tone === "bot" ? "bg-bot text-bg" : "bg-you text-bg";
   return (
     <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-2xl border border-border bg-surface p-1">
       {options.map((o) => {
@@ -186,7 +189,7 @@ export function Chip({ children, onClick, active, className }: { children: React
       type="button"
       onClick={onClick}
       className={cx(
-        "inline-flex min-h-tap max-w-full items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition",
+        "inline-flex min-h-tap max-w-full items-center gap-1.5 rounded-sm border px-4 text-sm font-medium transition",
         active ? "border-you/60 bg-you/10 text-you" : "border-border bg-surface text-text hover:border-muted/60",
         className,
       )}
@@ -226,8 +229,8 @@ export function Switch({
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span className="h-8 w-14 rounded-full bg-surface-2 ring-1 ring-border transition peer-checked:bg-you peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
-        <span className="absolute left-1 size-6 rounded-full bg-text shadow transition peer-checked:translate-x-6 peer-checked:bg-bg" />
+        <span className="h-8 w-14 rounded-sm bg-surface-2 ring-1 ring-border transition peer-checked:bg-you peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
+        <span className="absolute left-1 size-6 rounded-xs bg-text transition peer-checked:translate-x-6 peer-checked:bg-bg" />
       </span>
     </label>
   );
@@ -257,7 +260,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
       <div
         ref={panel}
         tabIndex={-1}
-        className="sheet-panel relative flex max-h-[88dvh] w-full max-w-column flex-col rounded-t-3xl border border-b-0 border-border bg-surface pb-[env(safe-area-inset-bottom)] outline-none"
+        className="sheet-panel relative flex max-h-[88dvh] w-full max-w-column flex-col rounded-t-sm border border-b-0 border-border bg-surface pb-[env(safe-area-inset-bottom)] outline-none"
       >
         <div className="flex items-center gap-2 px-4 pt-3 pb-1">
           <h2 className="flex-1 text-lg font-semibold">{title}</h2>
@@ -275,7 +278,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 export function Toast({ message, action, onAction }: { message: string; action?: string; onAction?: () => void }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4" role="status" aria-live="polite">
-      <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-2xl border border-border bg-surface-2 py-1 pr-1 pl-4 shadow-xl shadow-black/40">
+      <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-2xl border border-border bg-surface-2 py-1 pr-1 pl-4 ">
         <span className="flex-1 text-sm">{message}</span>
         {action ? (
           <button type="button" onClick={onAction} className="min-h-tap rounded-xl px-4 text-sm font-semibold text-you hover:bg-you/10">
@@ -335,7 +338,7 @@ export function FormError({ message }: { message: string | null }) {
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div className="mt-6 mb-2 flex items-center justify-between gap-2">
-      <h2 className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">{children}</h2>
+      <h2 className="text-base font-semibold text-text">{children}</h2>
       {right}
     </div>
   );

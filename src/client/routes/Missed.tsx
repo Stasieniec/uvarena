@@ -100,7 +100,7 @@ export function MissedList() {
                         </span>
                       </span>
                       <span className="line-clamp-3 mt-1 block leading-snug">{it.preview}</span>
-                      <span className="mt-1 block text-[11px] tracking-wide text-muted uppercase">{TYPE_LABEL[it.type]}</span>
+                      <span className="mt-1 block text-[11px] text-muted">{TYPE_LABEL[it.type]}</span>
                     </span>
                     <ChevronRightIcon size={18} className="mt-1 shrink-0 text-muted" />
                   </Link>
@@ -172,8 +172,8 @@ export function MissedRun() {
         back={back}
       />
       {ids.length > 0 && !done ? (
-        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-          <div className="h-full rounded-full bg-you transition-all" style={{ width: `${(index / ids.length) * 100}%` }} />
+        <div className="mb-4 h-1.5 overflow-hidden rounded-xs bg-surface-2" aria-hidden>
+          <div className="h-full bg-you transition-all" style={{ width: `${(index / ids.length) * 100}%` }} />
         </div>
       ) : null}
       {course === "" ? (

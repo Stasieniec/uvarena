@@ -68,11 +68,11 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
                     <span className="font-display font-bold">{info.name}</span>
-                    <span className="text-[11px] font-semibold tracking-wider text-muted uppercase">{info.kind}</span>
+                    <span className="text-[11px] font-semibold text-muted">{info.kind}</span>
                   </span>
                   <span className="block text-sm leading-snug text-muted">{info.effect}</span>
                 </span>
-                <span className={cx("flex size-6 shrink-0 items-center justify-center rounded-full border", on ? "border-you bg-you text-bg" : "border-border")}>
+                <span className={cx("flex size-6 shrink-0 items-center justify-center rounded-xs border", on ? "border-you bg-you text-bg" : "border-border")}>
                   {on ? <CheckIcon size={14} /> : null}
                 </span>
               </button>

@@ -40,7 +40,7 @@ export function Avatar({ user, size = 40, className, ring }: { user: AvatarUser;
       className={cx("inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white select-none", className)}
       style={{
         ...style,
-        background: `linear-gradient(140deg, hsl(${hue} 65% 48%), hsl(${(hue + 40) % 360} 60% 32%))`,
+        background: `hsl(${hue} 55% 40%)`,
         fontSize: Math.max(10, Math.round(size * 0.38)),
       }}
     >
@@ -59,7 +59,7 @@ export function BotAvatar({ name, size = 40, className }: { name: string; size?:
       style={{
         width: size,
         height: size,
-        background: "radial-gradient(circle at 30% 25%, #60a5fa, #1d4ed8 70%)",
+        background: "#2a2f37",
         fontSize: Math.round(size * 0.42),
       }}
     >

@@ -122,7 +122,7 @@ export function OptionList({
               <span className={cx("min-w-0 flex-1", tf && "text-center text-lg font-semibold")}>{emphasiseNot(r.text)}</span>
             )}
             <span className="flex shrink-0 items-center gap-1.5">
-              {otherPicks?.includes(r.id) ? <span className="size-2.5 rounded-full bg-opponent" title={otherLabel} aria-label={otherLabel} /> : null}
+              {otherPicks?.includes(r.id) ? <span className="size-2.5 rounded-xs bg-opponent" title={otherLabel} aria-label={otherLabel} /> : null}
               {mark === "correct" || mark === "correct-unpicked" ? <CheckIcon size={18} className="text-correct" /> : null}
               {mark === "wrong" ? <XIcon size={18} className="text-wrong" /> : null}
             </span>

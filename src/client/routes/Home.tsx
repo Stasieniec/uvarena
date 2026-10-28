@@ -65,11 +65,10 @@ function HomeHeader() {
 function RankedCard({ home }: { home: HomeResponse }) {
   const others = Math.max(0, home.searching);
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-ranked/35 bg-gradient-to-br from-[#2a1420] via-surface to-surface p-4">
-      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-ranked/10 blur-3xl" />
+    <section className="relative overflow-hidden rounded-3xl border border-ranked/35 bg-surface p-4">
       <div className="relative flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-ranked-gold uppercase">Ranked</p>
+          <p className="text-sm font-semibold text-muted">Ranked</p>
           <p className="font-display mt-1 text-5xl font-black tabular-nums text-text" aria-label={`Ranked rating ${formatRating(home.ranked.rating, home.ranked.provisional)}`}>
             {formatRating(home.ranked.rating, home.ranked.provisional)}
           </p>
@@ -89,7 +88,7 @@ function RankedCard({ home }: { home: HomeResponse }) {
         </Link>
       </div>
       <p className="relative mt-3 flex items-center gap-2 text-sm text-muted">
-        <span className={cx("size-2 rounded-full", others > 0 ? "bg-correct shadow-[0_0_8px] shadow-correct" : "bg-muted/50")} />
+        <span className={cx("size-2 rounded-xs", others > 0 ? "bg-correct" : "bg-muted/50")} />
         {others === 0 ? "Nobody searching right now" : `${others} searching now`}
       </p>
     </section>
@@ -100,12 +99,11 @@ function BotCard({ home }: { home: HomeResponse }) {
   const provisional = home.bot.provisional;
   const next = home.nextBot;
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-bot/30 bg-gradient-to-br from-[#0f2350] via-surface to-surface p-4">
-      <div className="pointer-events-none absolute -bottom-16 -left-10 size-44 rounded-full bg-bot/20 blur-3xl" />
+    <section className="relative overflow-hidden rounded-3xl border border-bot/30 bg-surface p-4">
       <div className="relative flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-[0.18em] text-[#93c5fd] uppercase">Bot match</p>
-          <p className="font-display mt-1 text-3xl font-bold tabular-nums text-[#bfdbfe]">{formatRating(home.bot.rating, provisional, ELO.startBotRating)}</p>
+          <p className="text-sm font-semibold text-muted">Bot match</p>
+          <p className="font-display mt-1 text-3xl font-bold tabular-nums text-text">{formatRating(home.bot.rating, provisional, ELO.startBotRating)}</p>
           <p className="mt-1 truncate text-sm text-muted">
             {next ? (
               <>

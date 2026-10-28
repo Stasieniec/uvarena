@@ -92,7 +92,7 @@ function WhyWrong({ data, pickedIds, rows }: { data: { key: AnswerKey; optionWhy
   if (items.length === 0) return null;
   return (
     <section className="rounded-2xl border border-wrong/30 bg-wrong/5 p-4">
-      <h3 className="mb-2 text-xs font-semibold tracking-[0.14em] text-wrong uppercase">Why your pick was wrong</h3>
+      <h3 className="mb-2 text-sm font-semibold text-wrong">Why your pick was wrong</h3>
       <ul className="flex flex-col gap-3">
         {items.map((x) => (
           <li key={x.id}>
@@ -221,7 +221,7 @@ export function MissedFlow({
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4">
-        {q.type === "multi" ? <p className="mb-2 text-xs font-semibold tracking-wider text-gold uppercase">Select all that apply</p> : null}
+        {q.type === "multi" ? <p className="mb-2 text-sm font-semibold text-gold">Select all that apply</p> : null}
         <QuestionText question={q} fill={fill} />
       </div>
 
@@ -269,7 +269,7 @@ export function MissedFlow({
           ) : null}
 
           <section className="rounded-2xl border border-correct/30 bg-correct/5 p-4">
-            <h3 className="mb-2 text-xs font-semibold tracking-[0.14em] text-correct uppercase">Explanation</h3>
+            <h3 className="mb-2 text-sm font-semibold text-correct">Explanation</h3>
             <p className="leading-relaxed whitespace-pre-line">{revealed.result.why}</p>
           </section>
 
