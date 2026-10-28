@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import type { QuestionPublic } from "@shared/api-schemas";
 import { FALSE_ID, TRUE_ID } from "../lib/answers";
 import { parseBlocks, parseInline, type InlineToken } from "../match/prompt";
+import { splitTables } from "./after/prompt-text";
 import { Icon, NameTag } from "./after/ui";
 import { cx } from "./ui";
 
@@ -51,6 +52,8 @@ function Inline({ tokens, fill }: { tokens: InlineToken[]; fill?: string | null 
   });
 }
 
+export { plainPreview } from "./after/prompt-text";
+
 /** Splits text so every standalone NOT is bold red (kept for callers that only need that). */
 export function emphasiseNot(text: string): ReactNode[] {
   return text.split(/\b(NOT)\b/).map((part, i) =>
@@ -78,7 +81,7 @@ export function QuestionText({
   variant?: "card" | "plain";
 }) {
   const text = question.type === "truefalse" ? (question.statement ?? question.prompt ?? "") : (question.prompt ?? question.statement ?? "");
-  const blocks = parseBlocks(text);
+  const segments = splitTables(text);
   const long = text.length > 200;
   const size =
     variant === "plain"
@@ -90,20 +93,60 @@ export function QuestionText({
         : long
           ? "text-xl leading-7"
           : "text-[22px] leading-[30px]";
+  let first = true;
   return (
     <div role="heading" aria-level={2} className={cx("m-0 font-medium text-pretty", size)}>
-      {blocks.map((b, i) =>
-        b.kind === "code" ? (
-          <pre key={i} className="my-2 overflow-x-auto rounded-xs bg-plate-dim p-2.5 font-mono text-[13px] leading-snug whitespace-pre-wrap">
-            {b.text}
-          </pre>
+      {segments.map((seg, si) =>
+        seg.kind === "table" ? (
+          <Table key={si} rows={seg.rows} />
         ) : (
-          <p key={i} className={cx("m-0", i > 0 && "mt-2")}>
-            <Inline tokens={b.inline} fill={fill} />
-          </p>
+          parseBlocks(seg.text).map((b, i) => {
+            const gap = !first;
+            first = false;
+            return b.kind === "code" ? (
+              <pre key={`${si}-${i}`} className="my-2 overflow-x-auto rounded-xs bg-plate-dim p-2.5 font-mono text-[13px] leading-snug whitespace-pre-wrap">
+                {b.text}
+              </pre>
+            ) : (
+              <p key={`${si}-${i}`} className={cx("m-0 whitespace-pre-line", gap && "mt-2")}>
+                <Inline tokens={b.inline} fill={fill} />
+              </p>
+            );
+          })
         ),
       )}
     </div>
+  );
+}
+
+/** A small payoff-style table: first row and first column as headers. */
+function Table({ rows }: { rows: string[][] }) {
+  const [head, ...body] = rows;
+  return (
+    <table className="my-2 border-collapse font-display text-xl leading-7">
+      {head ? (
+        <thead>
+          <tr>
+            {head.map((c, i) => (
+              <th key={i} className="border border-line px-3 py-1 text-center font-bold text-muted">
+                <Inline tokens={parseInline(c)} />
+              </th>
+            ))}
+          </tr>
+        </thead>
+      ) : null}
+      <tbody>
+        {body.map((r, ri) => (
+          <tr key={ri}>
+            {r.map((c, i) => (
+              <td key={i} className={cx("border border-line px-3 py-1 text-center", i === 0 ? "font-bold text-muted" : "font-semibold")}>
+                <Inline tokens={parseInline(c)} />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

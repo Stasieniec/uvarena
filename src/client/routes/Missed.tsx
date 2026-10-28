@@ -12,6 +12,7 @@ import { Body, Header, Icon, LoadingPlates, Primary, PrimaryLink, Quiet, Screen,
 import { CourseSwitch } from "../components/CourseSwitch";
 import { LectureSingleChip } from "../components/LectureFilter";
 import { MissedFlow } from "../components/MissedFlow";
+import { plainPreview } from "../components/QuestionView";
 import { ErrorState, cx } from "../components/ui";
 
 export function runUrl(course: string, lecture: string | null): string {
@@ -90,7 +91,7 @@ export function MissedList() {
                           missed {it.timesMissed}x · {formatAgo(it.lastMissedAt)}
                         </span>
                       </span>
-                      <span className="line-clamp-3 text-base leading-[22px]">{it.preview}</span>
+                      <span className="line-clamp-3 text-base leading-[22px]">{plainPreview(it.preview)}</span>
                     </Link>
                   </li>
                 ))}

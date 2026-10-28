@@ -12,7 +12,7 @@ import { formatNumber, formatSeconds } from "../lib/format";
 import { useMatchDetail, useMeData, useUserMatches } from "../lib/queries";
 import { Body, Header, Icon, LoadingPlates, Quiet, Screen, SelectChip, damage, dayLabel, secondaryClass, signed, whenLabel } from "../components/after/ui";
 import { powerupInfo } from "../components/powerups";
-import { OptionList, QuestionText, markOptions, optionRows } from "../components/QuestionView";
+import { OptionList, QuestionText, markOptions, optionRows, plainPreview } from "../components/QuestionView";
 import { ErrorState, cx } from "../components/ui";
 
 type ModeFilter = "all" | "ranked" | "bot" | "private";
@@ -222,13 +222,13 @@ function RoundItem({ round, mine, theirs, myName, theirName, last }: { round: Ro
         )}
       </span>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className={cx("text-left text-[15px] leading-[21px]", !open && "line-clamp-2")}>
-        {q.prompt ?? q.statement}
+        {plainPreview(q.prompt ?? q.statement ?? "")}
       </button>
       <AnswerLine round={round} side={mine} name={myName} who="you" />
       <AnswerLine round={round} side={theirs} name={theirName} who="opponent" />
       {open ? (
         <div className="mt-2 flex flex-col gap-3">
-          {q.type === "truefalse" ? <QuestionText question={q} variant="plain" /> : null}
+          {q.type === "truefalse" || (q.prompt ?? "").includes("|") ? <QuestionText question={q} variant="plain" /> : null}
           <OptionList
             question={q}
             marks={markOptions(rows, keyIds, myIds, q.type === "multi")}
