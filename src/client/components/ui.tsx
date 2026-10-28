@@ -30,6 +30,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   danger: `${TEXT} bg-transparent text-wrong shadow-[inset_0_0_0_1px_var(--color-wrong)]`,
 };
 const FRAMED = new Set<ButtonVariant>(["primary", "ranked", "gold"]);
+// Written out whole so Tailwind generates it: a framed button's full width minus its 3 px margins.
+const FRAMED_FULL = "w-[calc(100%-6px)]";
 
 export const buttonBase =
   "inline-flex items-center justify-center gap-2 rounded-sm px-5 text-center select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed";
@@ -46,7 +48,7 @@ function family(cls: string): string | null {
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string): string {
   // The primary's 3 px margin would push a full-width button over the edge.
-  const fixed = FRAMED.has(variant) && extra && !/(^|\s)m-0(?=\s|$)/.test(extra) ? extra.replace(/(^|\s)w-full(?=\s|$)/, "$1w-[calc(100%-6px)]") : extra;
+  const fixed = FRAMED.has(variant) && extra && !/(^|\s)m-0(?=\s|$)/.test(extra) ? extra.replace(/(^|\s)w-full(?=\s|$)/, `$1${FRAMED_FULL}`) : extra;
   // A caller's size, padding or line height replaces the default instead of fighting it in the cascade.
   const overridden = new Set((fixed ?? "").split(/\s+/).map(family).filter(Boolean));
   const keep = (classes: string) =>
