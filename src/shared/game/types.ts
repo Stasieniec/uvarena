@@ -350,6 +350,13 @@ export interface RatingChange {
 export interface SideEndSummary {
   ranked: RatingChange | null;
   bot: RatingChange | null;
+  /**
+   * Bot matches: how far each answer moved the shown (rounded) bot rating, one
+   * entry per round in order, 0 where it did not move (50:50, a repeat). The
+   * entries sum to round(bot.after) - round(bot.before). Absent otherwise, and
+   * in states finalized before the field existed.
+   */
+  botRatingSteps?: number[];
   pairCapped: boolean;
   /** Questions this side missed in the match (added to or reopened in Missed). */
   missedCount: number;

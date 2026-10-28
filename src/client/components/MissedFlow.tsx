@@ -1,6 +1,8 @@
 // One missed question: the question with nothing marked, then Retry (untimed)
-// or Just show me, then the answer view with the explanation, why your pick
-// was wrong, the notes link, and Mark as learned with a 5 second undo.
+// or Just show me, then the answer view: the right answer filled, your pick
+// outlined red with YOU, Why and Why not, Read in the notes, and Mark as
+// learned with a 5 second undo. A "Retry these" run starts straight in the
+// untimed retry.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MissedAnswerResponse, MissedQuestionResponse, MissedRetryResponse, MissedStatus } from "@shared/api-schemas";
@@ -10,9 +12,9 @@ import { apiRequest, errorMessage } from "../lib/api";
 import { answerIds, buildAnswer, isRenderable, stableOrder, togglePick } from "../lib/answers";
 import { formatAgo } from "../lib/format";
 import { qk } from "../lib/queries";
-import { ExternalIcon, FlagIcon } from "./icons";
+import { Icon } from "./after/ui";
 import { OptionList, QuestionText, markOptions, optionRows, type OptionMark } from "./QuestionView";
-import { Button, FormError, Sheet, Toast, cx } from "./ui";
+import { FormError, Primary, Sheet, Toast, cx, secondaryClass, textButtonClass } from "./ui";
 
 /** How long the Undo after "Marked as learned" stays up. */
 export const UNDO_MS = 5000;
@@ -29,8 +31,15 @@ function useInvalidateMissed() {
   };
 }
 
+const REASONS = [
+  { v: "wrong_answer", l: "The answer is wrong" },
+  { v: "ambiguous", l: "More than one answer fits" },
+  { v: "typo", l: "Typo or formatting" },
+  { v: "other", l: "Something else" },
+] as const;
+
 function ReportSheet({ open, onClose, questionId }: { open: boolean; onClose: () => void; questionId: string }) {
-  const [reason, setReason] = useState<"wrong_answer" | "ambiguous" | "typo" | "other">("wrong_answer");
+  const [reason, setReason] = useState<(typeof REASONS)[number]["v"]>("wrong_answer");
   const [note, setNote] = useState("");
   const send = useMutation({
     mutationFn: () => apiRequest("report", { params: { id: questionId }, body: { reason, note: note.trim() || undefined } }),
@@ -39,31 +48,28 @@ function ReportSheet({ open, onClose, questionId }: { open: boolean; onClose: ()
     if (open) send.reset();
     // Reset only when the sheet opens.
   }, [open]);
-  const reasons = [
-    { v: "wrong_answer", l: "The answer is wrong" },
-    { v: "ambiguous", l: "More than one answer fits" },
-    { v: "typo", l: "Typo or formatting" },
-    { v: "other", l: "Something else" },
-  ] as const;
   return (
     <Sheet open={open} onClose={onClose} title="Report this question">
       {send.isSuccess ? (
         <div className="flex flex-col gap-4 py-2">
-          <p className="text-muted">Thanks. It goes on the list for the next batch.</p>
-          <Button variant="secondary" onClick={onClose}>
+          <p className="m-0 text-[15px] leading-[22px] text-muted">Thanks. It goes on the list for the next batch.</p>
+          <button type="button" className={cx(secondaryClass, "h-12")} onClick={onClose}>
             Close
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {reasons.map((r) => (
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Reason">
+          {REASONS.map((r) => (
             <button
               key={r.v}
               type="button"
               role="radio"
               aria-checked={reason === r.v}
               onClick={() => setReason(r.v)}
-              className={cx("flex min-h-tap items-center rounded-xl border px-4 text-left", reason === r.v ? "border-you bg-you/10" : "border-border")}
+              className={cx(
+                "flex min-h-12 items-center rounded-xs px-4 text-left text-base",
+                reason === r.v ? "bg-plate font-semibold shadow-[inset_0_0_0_2px_var(--color-text)]" : "shadow-[inset_0_0_0_1px_var(--color-line)]",
+              )}
             >
               {r.l}
             </button>
@@ -72,36 +78,46 @@ function ReportSheet({ open, onClose, questionId }: { open: boolean; onClose: ()
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, LIMITS.reportNoteMax))}
             placeholder="What is wrong? (optional)"
+            aria-label="What is wrong"
             rows={3}
-            className="mt-2 w-full rounded-xl border border-border bg-bg px-4 py-3 text-base focus:border-you/60 focus:outline-none"
+            className="mt-2 w-full rounded-xs bg-plate px-3 py-3 text-base shadow-[inset_0_0_0_1px_var(--color-line)] outline-none placeholder:text-muted focus:shadow-[inset_0_0_0_2px_var(--color-text)]"
           />
           <FormError message={send.error ? errorMessage(send.error) : null} />
-          <Button className="mt-2" onClick={() => send.mutate()} loading={send.isPending}>
+          <Primary className="mt-2" height={52} onClick={() => send.mutate()} busy={send.isPending}>
             Send report
-          </Button>
+          </Primary>
         </div>
       )}
     </Sheet>
   );
 }
 
-function WhyWrong({ data, pickedIds, rows }: { data: { key: AnswerKey; optionWhy: Record<string, string> }; pickedIds: string[]; rows: { id: string; text: string }[] }) {
+/** "Why not Reward": the bank's reason for each wrong option you picked. */
+function WhyNot({ data, pickedIds, rows }: { data: { key: AnswerKey; optionWhy: Record<string, string> }; pickedIds: string[]; rows: { id: string; text: string }[] }) {
   const keyIds = answerIds(data.key);
-  const wrongPicks = pickedIds.filter((id) => !keyIds.includes(id));
-  const items = wrongPicks.map((id) => ({ id, text: rows.find((r) => r.id === id)?.text ?? id, why: data.optionWhy[id] })).filter((x) => x.why);
-  if (items.length === 0) return null;
+  const items = pickedIds
+    .filter((id) => !keyIds.includes(id))
+    .map((id) => ({ id, text: rows.find((r) => r.id === id)?.text ?? id, why: data.optionWhy[id] }))
+    .filter((x) => x.why);
   return (
-    <section className="rounded-2xl border border-wrong/30 bg-wrong/5 p-4">
-      <h3 className="mb-2 text-xs font-semibold tracking-[0.14em] text-wrong uppercase">Why your pick was wrong</h3>
-      <ul className="flex flex-col gap-3">
-        {items.map((x) => (
-          <li key={x.id}>
-            <p className="text-sm font-semibold">{x.text}</p>
-            <p className="text-sm text-muted">{x.why}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <>
+      {items.map((x) => (
+        <section key={x.id} className="flex flex-col gap-1">
+          <h3 className="m-0 text-[15px] leading-5 font-semibold">Why not {x.text}</h3>
+          <p className="m-0 text-[15px] leading-[22px]">{x.why}</p>
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** Lecture on the left, a short note on the right, 14 muted. */
+function MetaLine({ lecture, right }: { lecture: string; right: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3 text-sm leading-5 text-muted">
+      <span className="min-w-0 truncate">{lecture}</span>
+      <span className="flex shrink-0 items-center gap-1.5">{right}</span>
+    </div>
   );
 }
 
@@ -109,32 +125,35 @@ export function MissedFlow({
   data,
   footer,
   onAnswered,
+  startInRetry = false,
 }: {
   data: MissedQuestionResponse;
-  /** Extra actions under the answer view (Next in a "Retry these" run). */
+  /** The primary action under the answer view in a "Retry these" run (Next or Finish). */
   footer?: ReactNode;
   /** Called once per question when the answer view opens. */
   onAnswered?: (correct: boolean | null) => void;
+  /** Skip the first view and go straight to the untimed retry ("Retry these"). */
+  startInRetry?: boolean;
 }) {
   const q = data.question;
   const invalidate = useInvalidateMissed();
-  const [stage, setStage] = useState<"ask" | "retry">("ask");
+  const [stage, setStage] = useState<"ask" | "retry">(startInRetry ? "retry" : "ask");
   const [picked, setPicked] = useState<string[]>([]);
   const [revealed, setRevealed] = useState<Revealed | null>(null);
   const [status, setStatus] = useState<MissedStatus>(data.status);
   const [undo, setUndo] = useState<{ previous: MissedStatus } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const answerView = useRef<HTMLDivElement>(null);
+  const top = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => clearTimeout(undoTimer.current), []);
 
-  // Bring the answer view into sight once it opens; the options above stay marked.
+  // The answer view replaces the question view: start it from the top.
   useEffect(() => {
     if (!revealed) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    answerView.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    const el = top.current;
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, [revealed]);
 
   const showUndo = (previous: MissedStatus) => {
@@ -190,129 +209,156 @@ export function MissedFlow({
   const firstOrder = useRef<{ id: string; order: string[] } | null>(null);
   if (firstOrder.current?.id !== q.id) firstOrder.current = { id: q.id, order: q.options.map((o) => o.id) };
   const rows = stableOrder(optionRows(q), firstOrder.current.order);
+  const question = { ...q, options: q.type === "truefalse" ? q.options : rows };
 
   if (!isRenderable(q.type)) {
-    return <p className="rounded-2xl border border-border bg-surface p-4 text-muted">This question type cannot be shown here yet.</p>;
-  }
-
-  // Marks: nothing in "ask", picks in "retry", the full key after reveal.
-  let marks: Record<string, OptionMark> = {};
-  let pickedIds: string[] = [];
-  let fill: string | null = null;
-  if (revealed) {
-    const keyIds = answerIds(revealed.result.key);
-    pickedIds = revealed.mode === "retry" ? answerIds(revealed.picked) : answerIds(revealed.result.lastAnswer);
-    marks = markOptions(rows, keyIds, pickedIds, q.type === "multi");
-    if (q.type === "cloze") fill = rows.find((r) => keyIds.includes(r.id))?.text ?? null;
-  } else if (stage === "retry") {
-    for (const id of picked) marks[id] = "picked";
+    return <p className="m-0 py-6 text-[15px] text-muted">This question type cannot be shown here yet.</p>;
   }
 
   const error = retry.error ?? show.error ?? setStatusMut.error;
+  const missedLine = `missed ${data.timesMissed}x`;
+  const justShowMe = (
+    <button type="button" className={textButtonClass} onClick={() => show.mutate()} disabled={show.isPending}>
+      Just show me
+    </button>
+  );
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 text-xs text-muted">
-        <span className="truncate font-medium text-text/80">{q.lectureTitle}</span>
-        <span>·</span>
-        <span className="shrink-0">
-          missed {data.timesMissed}x · {formatAgo(data.lastMissedAt)}
-        </span>
-      </div>
+  // Answer view.
+  if (revealed) {
+    const keyIds = answerIds(revealed.result.key);
+    const pickedIds = revealed.mode === "retry" ? answerIds(revealed.picked) : answerIds(revealed.result.lastAnswer);
+    const marks = markOptions(rows, keyIds, pickedIds, q.type === "multi");
+    const learnedAction =
+      status === "open" ? (
+        footer ? (
+          <button type="button" className={cx(secondaryClass, "h-12 w-full")} onClick={() => setStatusMut.mutate("learned")} disabled={setStatusMut.isPending}>
+            <Icon name="check" size={18} stroke={2.4} />
+            Mark as learned
+          </button>
+        ) : (
+          <Primary onClick={() => setStatusMut.mutate("learned")} busy={setStatusMut.isPending}>
+            <Icon name="check" size={20} stroke={2.4} />
+            Mark as learned
+          </Primary>
+        )
+      ) : !undo ? (
+        <button type="button" className={cx(textButtonClass, "w-full")} onClick={() => setStatusMut.mutate("open")} disabled={setStatusMut.isPending}>
+          Move back to To review
+        </button>
+      ) : null;
 
-      <div className="rounded-2xl border border-border bg-surface p-4">
-        {q.type === "multi" ? <p className="mb-2 text-xs font-semibold tracking-wider text-gold uppercase">Select all that apply</p> : null}
-        <QuestionText question={q} fill={fill} />
-      </div>
+    return (
+      <div ref={top} className="flex flex-1 scroll-mt-14 flex-col gap-3.5">
+        <MetaLine lecture={q.lectureTitle} right={missedLine} />
+        <QuestionText question={q} variant="plain" />
+        <OptionList question={question} marks={marks} pickedLabel={pickedIds} />
 
-      <OptionList
-        question={{ ...q, options: q.type === "truefalse" ? q.options : rows }}
-        marks={marks}
-        onPick={stage === "retry" && !revealed ? onPick : undefined}
-        disabled={retry.isPending}
-        pickedLabel={revealed ? pickedIds : undefined}
-      />
+        {revealed.mode === "retry" ? (
+          <p className={cx("m-0 font-display text-2xl leading-7 font-bold", revealed.result.correct ? "text-text" : "text-wrong")}>
+            {revealed.result.correct ? "Right." : "Still wrong."}
+          </p>
+        ) : revealed.result.lastAnswer === null ? (
+          <p className="m-0 text-sm leading-5 text-muted">In the match, the timer ran out.</p>
+        ) : null}
 
-      {!revealed && stage === "ask" ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={() => setStage("retry")}>Retry</Button>
-          <Button variant="secondary" onClick={() => show.mutate()} loading={show.isPending}>
-            Just show me
-          </Button>
-        </div>
-      ) : null}
+        <section className="flex flex-col gap-1">
+          <h3 className="m-0 text-[15px] leading-5 font-semibold">Why</h3>
+          <p className="m-0 text-[15px] leading-[22px] whitespace-pre-line">{revealed.result.why}</p>
+        </section>
+        <WhyNot data={revealed.result} pickedIds={pickedIds} rows={rows} />
 
-      {!revealed && stage === "retry" ? (
+        {revealed.result.noteUrl ? (
+          <a href={revealed.result.noteUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 items-center gap-2 self-start text-base font-semibold text-text">
+            <Icon name="book" size={18} />
+            Read in the notes
+            <Icon name="ext" size={14} stroke={2} className="text-muted" />
+          </a>
+        ) : null}
+
+        <FormError message={error ? errorMessage(error) : null} />
+        <span className="min-h-2 flex-1" />
         <div className="flex flex-col gap-2">
-          <p className="text-center text-sm text-muted">Untimed. Nothing here touches your rating.</p>
-          {q.type === "multi" ? (
-            <Button onClick={() => submit(picked)} disabled={picked.length === 0} loading={retry.isPending}>
-              Lock in
-            </Button>
-          ) : null}
-          <Button variant="ghost" onClick={() => show.mutate()} loading={show.isPending}>
-            Just show me
-          </Button>
-        </div>
-      ) : null}
-
-      <FormError message={error ? errorMessage(error) : null} />
-
-      {revealed ? (
-        <div ref={answerView} className="pop-in flex scroll-mt-16 flex-col gap-4">
-          {revealed.mode === "retry" ? (
-            <p className={cx("font-display text-2xl font-bold", revealed.result.correct ? "text-correct" : "text-wrong")}>
-              {revealed.result.correct ? "Right." : "Still wrong."}
-            </p>
-          ) : revealed.result.lastAnswer === null ? (
-            <p className="text-sm text-muted">In the match, the timer ran out.</p>
-          ) : null}
-
-          <section className="rounded-2xl border border-correct/30 bg-correct/5 p-4">
-            <h3 className="mb-2 text-xs font-semibold tracking-[0.14em] text-correct uppercase">Explanation</h3>
-            <p className="leading-relaxed whitespace-pre-line">{revealed.result.why}</p>
-          </section>
-
-          <WhyWrong data={revealed.result} pickedIds={pickedIds} rows={rows} />
-
-          {revealed.result.noteUrl ? (
-            <a href={revealed.result.noteUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-tap items-center justify-center gap-2 rounded-xl border border-border px-4 font-medium text-you hover:bg-you/5">
-              Read in the notes
-              <ExternalIcon size={18} />
-            </a>
-          ) : null}
-
-          {status === "open" ? (
-            <Button variant="secondary" onClick={() => setStatusMut.mutate("learned")} loading={setStatusMut.isPending}>
-              Mark as learned
-            </Button>
-          ) : !undo ? (
-            <Button variant="ghost" onClick={() => setStatusMut.mutate("open")} loading={setStatusMut.isPending}>
-              Move back to To review
-            </Button>
-          ) : null}
-
+          {/* Undo sits where the button was, so it never covers Next. */}
+          {undo ? (
+            <Toast
+              placement="inline"
+              message="Marked as learned"
+              action="Undo"
+              onAction={() => {
+                clearTimeout(undoTimer.current);
+                setUndo(null);
+                setStatusMut.mutate(undo.previous);
+              }}
+            />
+          ) : (
+            learnedAction
+          )}
           {footer}
-
-          <button type="button" onClick={() => setReportOpen(true)} className="flex min-h-tap items-center justify-center gap-2 text-sm text-muted hover:text-text">
-            <FlagIcon size={16} />
+          <button type="button" onClick={() => setReportOpen(true)} className="flex h-11 items-center justify-center gap-2 text-sm text-muted hover:text-text">
+            <Icon name="flag" size={16} />
             Report this question
           </button>
         </div>
-      ) : null}
 
-      {undo ? (
-        <Toast
-          message="Marked as learned"
-          action="Undo"
-          onAction={() => {
-            clearTimeout(undoTimer.current);
-            setUndo(null);
-            setStatusMut.mutate(undo.previous);
-          }}
-        />
-      ) : null}
-      <ReportSheet open={reportOpen} onClose={() => setReportOpen(false)} questionId={q.id} />
+        <ReportSheet open={reportOpen} onClose={() => setReportOpen(false)} questionId={q.id} />
+      </div>
+    );
+  }
+
+  // Question view: first look ("ask") or the untimed retry.
+  const retrying = stage === "retry";
+  const marks: Record<string, OptionMark> = {};
+  if (retrying) for (const id of picked) marks[id] = "picked";
+
+  return (
+    <div ref={top} className="flex flex-1 flex-col gap-4">
+      {retrying ? <span className="flex-1" /> : null}
+      <MetaLine
+        lecture={q.lectureTitle}
+        right={
+          retrying ? (
+            <>
+              <Icon name="clock" size={14} />
+              Untimed
+            </>
+          ) : (
+            `${missedLine} · ${formatAgo(data.lastMissedAt)}`
+          )
+        }
+      />
+      <section aria-label="Question" className="shrink-0 overflow-hidden rounded-[3px] bg-plate px-4 py-[18px]">
+        {q.type === "multi" ? <p className="m-0 mb-2 text-[15px] leading-5 font-semibold">Select all that apply</p> : null}
+        <QuestionText question={q} />
+      </section>
+      <OptionList question={question} marks={marks} onPick={retrying ? onPick : undefined} disabled={retry.isPending} tall={retrying} />
+      <FormError message={error ? errorMessage(error) : null} />
+
+      {retrying ? (
+        <>
+          {q.type === "multi" ? (
+            <Primary height={52} onClick={() => submit(picked)} disabled={picked.length === 0} busy={retry.isPending}>
+              Lock in
+            </Primary>
+          ) : null}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm leading-5 text-muted">Ratings do not move here.</span>
+            {justShowMe}
+          </div>
+        </>
+      ) : (
+        <>
+          <span className="flex-1" />
+          <div className="flex flex-col gap-1">
+            <Primary onClick={() => setStage("retry")}>
+              <Icon name="retry" size={20} stroke={2.4} />
+              Retry
+            </Primary>
+            <button type="button" className={cx(textButtonClass, "w-full")} onClick={() => show.mutate()} disabled={show.isPending}>
+              Just show me
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

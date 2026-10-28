@@ -45,20 +45,26 @@ export function createAppRouter(): ReturnType<typeof createBrowserRouter> {
               children: [
                 { path: "match/:id", element: <MatchRoute /> },
                 { path: "queue", element: <Queue /> },
-                { path: "missed/run", element: <AppShell><MissedRun /></AppShell> },
                 {
-                  element: <AppShell />,
+                  // Sub-screens with their own Back: no bottom bar, as on the boards.
+                  element: <AppShell nav={false} />,
                   children: [
                     { path: "bots", element: <Bots /> },
                     { path: "friend", element: <Friend /> },
-                    { path: "leaderboard", element: <Leaderboard /> },
-                    { path: "missed", element: <MissedList /> },
+                    { path: "missed/run", element: <MissedRun /> },
                     { path: "missed/:questionId", element: <MissedQuestion /> },
-                    { path: "profile", element: <MyProfile /> },
                     { path: "u/:username", element: <PublicProfile /> },
-                    { path: "history", element: <History /> },
                     { path: "matches/:id", element: <MatchDetail /> },
                     { path: "settings", element: <Settings /> },
+                  ],
+                },
+                {
+                  element: <AppShell />,
+                  children: [
+                    { path: "leaderboard", element: <Leaderboard /> },
+                    { path: "missed", element: <MissedList /> },
+                    { path: "profile", element: <MyProfile /> },
+                    { path: "history", element: <History /> },
                   ],
                 },
               ],

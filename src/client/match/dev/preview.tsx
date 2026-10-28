@@ -3,11 +3,16 @@
 // http://localhost:<port>/src/client/match/dev/screen.html?moment=bibi
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router";
 import "../../styles.css";
+import "../../components/app.css";
 import DevPreview from "./DevPreview";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <DevPreview />
+    {/* Shared pieces (the lobby header) link with the router; a memory router keeps them on this page. */}
+    <MemoryRouter>
+      <DevPreview />
+    </MemoryRouter>
   </StrictMode>,
 );

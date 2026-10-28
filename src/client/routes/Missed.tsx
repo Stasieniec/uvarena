@@ -8,14 +8,12 @@ import { apiRequest } from "../lib/api";
 import { useCurrentCourse } from "../lib/course";
 import { formatAgo } from "../lib/format";
 import { useMissedList, useMissedQuestion } from "../lib/queries";
-import { Page } from "../components/AppShell";
+import { Body, Icon, Screen } from "../components/after/ui";
 import { CourseSwitch } from "../components/CourseSwitch";
-import { ChevronRightIcon, RefreshIcon } from "../components/icons";
 import { LectureSingleChip } from "../components/LectureFilter";
 import { MissedFlow } from "../components/MissedFlow";
-import { Button, EmptyState, ErrorState, LoadingBlocks, PageHeader, Pills, buttonClass, cx } from "../components/ui";
-
-const TYPE_LABEL = { single: "Single choice", multi: "Multiple select", truefalse: "True or false", cloze: "Fill the blank", order: "Ordering", match: "Matching" } as const;
+import { plainPreview } from "../components/QuestionView";
+import { ErrorState, LoadingPlates, PageHeader, Primary, PrimaryLink, Quiet, Segmented, cx, secondaryClass } from "../components/ui";
 
 export function runUrl(course: string, lecture: string | null): string {
   const p = new URLSearchParams({ course });
@@ -41,81 +39,73 @@ export function MissedList() {
   const count = list.data?.pages[0]?.count ?? 0;
 
   return (
-    <Page>
+    <Screen>
       <PageHeader title="Missed questions" />
-      <div className="flex flex-col gap-3">
+      <Body className="gap-3">
         <CourseSwitch />
-        <div className="flex items-center gap-2">
-          <LectureSingleChip
-            course={course}
-            value={lecture}
-            onChange={(v) => setParam("lecture", v)}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2.5">
+          <div className="min-w-0 max-w-[11rem] [&>button]:min-h-10 [&>button]:max-w-full">
+            <LectureSingleChip course={course} value={lecture} onChange={(v) => setParam("lecture", v)} />
+          </div>
+          <Segmented
+            label="Show"
+            options={[
+              { value: "open", label: "To review" },
+              { value: "learned", label: "Learned" },
+            ]}
+            value={status}
+            onChange={(v) => setParam("status", v === "open" ? null : v)}
           />
         </div>
-        <Pills
-          label="Status"
-          options={[
-            { value: "open", label: "To review" },
-            { value: "learned", label: "Learned" },
-          ]}
-          value={status}
-          onChange={(v) => setParam("status", v === "open" ? null : v)}
-        />
-      </div>
 
-      {list.isPending ? (
-        <LoadingBlocks className="mt-4" count={4} />
-      ) : list.error ? (
-        <ErrorState className="mt-4" error={list.error} onRetry={() => void list.refetch()} />
-      ) : (
-        <>
-          <div className="mt-4 mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">
-              <span className="text-2xl font-bold text-text tabular-nums">{count}</span> {status === "open" ? "to review" : "learned"}
-            </p>
-            {status === "open" && count > 0 && courseId ? (
-              <Link to={runUrl(courseId, lecture)} className={buttonClass("primary", "px-4")}>
-                <RefreshIcon size={18} />
-                Retry these
-              </Link>
-            ) : null}
-          </div>
-          {items.length === 0 ? (
-            <EmptyState title={status === "open" ? "Nothing to review" : "Nothing learned yet"}>
-              {status === "open" ? "Questions you get wrong in a match land here." : "Questions you mark as learned land here."}
-            </EmptyState>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {items.map((it) => (
-                <li key={it.questionId}>
-                  <Link
-                    to={`/missed/${it.questionId}`}
-                    className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition hover:border-muted/60"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2 text-xs text-muted">
-                        <span className="truncate font-medium text-text/80">{it.lectureTitle}</span>
+        {list.isPending ? (
+          <LoadingPlates className="mt-2" count={4} height={96} />
+        ) : list.error ? (
+          <ErrorState className="mt-2" error={list.error} onRetry={() => void list.refetch()} />
+        ) : (
+          <>
+            <div className="flex items-center gap-3 py-1">
+              <span className="flex flex-1 items-baseline gap-2">
+                <span className="font-display text-[40px] leading-[44px] font-bold">{count}</span>
+                <span className="text-base leading-[22px] text-muted">{status === "open" ? "to review" : "learned"}</span>
+              </span>
+              {status === "open" && count > 0 && courseId ? (
+                <PrimaryLink to={runUrl(courseId, lecture)} height={48} small className="w-[170px]">
+                  <Icon name="retry" size={20} stroke={2.4} />
+                  Retry these
+                </PrimaryLink>
+              ) : null}
+            </div>
+            {items.length === 0 ? (
+              <Quiet>
+                {status === "open" ? "Nothing to review. Questions you get wrong in a match land here." : "Nothing learned yet. Questions you mark as learned land here."}
+              </Quiet>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+                {items.map((it) => (
+                  <li key={it.questionId}>
+                    <Link to={`/missed/${it.questionId}`} className="plate press flex flex-col gap-1.5 rounded-xs px-4 pt-3 pb-3.5">
+                      <span className="flex justify-between gap-3 text-sm leading-5 text-muted">
+                        <span className="min-w-0 truncate">{it.lectureTitle}</span>
                         <span className="shrink-0">
-                          · missed {it.timesMissed}x · {formatAgo(it.lastMissedAt)}
+                          missed {it.timesMissed}x · {formatAgo(it.lastMissedAt)}
                         </span>
                       </span>
-                      <span className="line-clamp-3 mt-1 block leading-snug">{it.preview}</span>
-                      <span className="mt-1 block text-[11px] tracking-wide text-muted uppercase">{TYPE_LABEL[it.type]}</span>
-                    </span>
-                    <ChevronRightIcon size={18} className="mt-1 shrink-0 text-muted" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {list.hasNextPage ? (
-            <Button variant="secondary" className="mt-3 w-full" onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage}>
-              Load more
-            </Button>
-          ) : null}
-        </>
-      )}
-    </Page>
+                      <span className="line-clamp-3 text-base leading-[22px]">{plainPreview(it.preview)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {list.hasNextPage ? (
+              <button type="button" className={cx(secondaryClass, "h-12 w-full")} onClick={() => void list.fetchNextPage()} disabled={list.isFetchingNextPage}>
+                {list.isFetchingNextPage ? "Loading" : "Load more"}
+              </button>
+            ) : null}
+          </>
+        )}
+      </Body>
+    </Screen>
   );
 }
 
@@ -123,16 +113,18 @@ export function MissedQuestion() {
   const { questionId = "" } = useParams();
   const q = useMissedQuestion(questionId);
   return (
-    <Page>
-      <PageHeader title="Missed question" back />
-      {q.isPending ? (
-        <LoadingBlocks count={4} />
-      ) : q.error ? (
-        <ErrorState error={q.error} onRetry={() => void q.refetch()} />
-      ) : (
-        <MissedFlow key={questionId} data={q.data} />
-      )}
-    </Page>
+    <Screen bottomBar={false}>
+      <PageHeader title="Missed question" back small />
+      <Body className="pb-6">
+        {q.isPending ? (
+          <LoadingPlates count={4} height={56} />
+        ) : q.error ? (
+          <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+        ) : (
+          <MissedFlow key={questionId} data={q.data} />
+        )}
+      </Body>
+    </Screen>
   );
 }
 
@@ -164,57 +156,65 @@ export function MissedRun() {
   const back = lecture ? `/missed?lecture=${encodeURIComponent(lecture)}` : "/missed";
   const done = list.data && index >= ids.length;
   const right = Object.values(results).filter((r) => r === true).length;
+  const running = ids.length > 0 && !done;
 
   return (
-    <Page>
+    <Screen bottomBar={false}>
       <PageHeader
-        title={ids.length > 0 && !done ? `Retry ${Math.min(index + 1, ids.length)} of ${ids.length}` : "Retry these"}
+        title="Retry"
+        small
         back={back}
+        right={running ? <span className="pr-3 text-sm leading-5 text-muted">{`${Math.min(index + 1, ids.length)} of ${ids.length}`}</span> : undefined}
       />
-      {ids.length > 0 && !done ? (
-        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-          <div className="h-full rounded-full bg-you transition-all" style={{ width: `${(index / ids.length) * 100}%` }} />
+      {running ? (
+        <div className="mx-4 h-1 bg-line" aria-hidden>
+          <span className="block h-1 bg-text transition-[width] duration-300" style={{ width: `${((index + 1) / ids.length) * 100}%` }} />
         </div>
       ) : null}
-      {course === "" ? (
-        <ErrorState error={new Error("No course picked for this run.")} />
-      ) : list.isPending ? (
-        <LoadingBlocks count={4} />
-      ) : list.error ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : ids.length === 0 ? (
-        <EmptyState title="Nothing to review">Questions you get wrong in a match land here.</EmptyState>
-      ) : done ? (
-        <div className="pop-in flex flex-col items-center gap-4 py-10 text-center">
-          <p className="font-display text-4xl font-bold text-gold">Done</p>
-          <p className="text-muted">
-            {right} of {ids.length} right on the retry.
-          </p>
-          <Button className="w-full" onClick={() => navigate(back)}>
-            Back to the list
-          </Button>
-        </div>
-      ) : q.isPending ? (
-        <LoadingBlocks count={4} />
-      ) : q.error ? (
-        <div className="flex flex-col gap-3">
-          <ErrorState error={q.error} onRetry={() => void q.refetch()} />
-          <Button variant="secondary" onClick={() => setIndex((i) => i + 1)}>
-            Skip
-          </Button>
-        </div>
-      ) : (
-        <MissedFlow
-          key={currentId}
-          data={q.data}
-          onAnswered={(correct) => setResults((r) => (currentId && !(currentId in r) ? { ...r, [currentId]: correct } : r))}
-          footer={
-            <Button className={cx("w-full")} onClick={() => setIndex((i) => i + 1)}>
-              {index + 1 < ids.length ? "Next" : "Finish"}
-            </Button>
-          }
-        />
-      )}
-    </Page>
+      <Body className="pt-4 pb-6">
+        {course === "" ? (
+          <ErrorState error={new Error("No course picked for this run.")} />
+        ) : list.isPending ? (
+          <LoadingPlates count={4} height={60} />
+        ) : list.error ? (
+          <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+        ) : ids.length === 0 ? (
+          <Quiet>Nothing to review. Questions you get wrong in a match land here.</Quiet>
+        ) : done ? (
+          <div className="pop-in flex flex-1 flex-col">
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <p className="m-0 font-display text-[64px] leading-[64px] font-bold italic">DONE</p>
+              <p className="m-0 text-[15px] leading-[22px] text-muted">
+                {right} of {ids.length} right on the retry.
+              </p>
+            </div>
+            <span className="flex-1" />
+            <Primary onClick={() => navigate(back)}>Back to the list</Primary>
+          </div>
+        ) : q.isPending ? (
+          <LoadingPlates count={4} height={60} />
+        ) : q.error ? (
+          <div className="flex flex-col gap-3">
+            <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+            <button type="button" className={cx(secondaryClass, "h-12")} onClick={() => setIndex((i) => i + 1)}>
+              Skip
+            </button>
+          </div>
+        ) : (
+          <MissedFlow
+            key={currentId}
+            data={q.data}
+            startInRetry
+            onAnswered={(correct) => setResults((r) => (currentId && !(currentId in r) ? { ...r, [currentId]: correct } : r))}
+            footer={
+              <Primary onClick={() => setIndex((i) => i + 1)}>
+                {index + 1 < ids.length ? "Next" : "Finish"}
+                <Icon name="arrow" size={20} stroke={2.4} />
+              </Primary>
+            }
+          />
+        )}
+      </Body>
+    </Screen>
   );
 }

@@ -5,13 +5,14 @@ import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MeResponse } from "@shared/api-schemas";
 import { PersonNameSchema, UsernameSchema } from "@shared/api-schemas";
-import { APP_NAME } from "@shared/brand";
 import { LIMITS } from "@shared/game/config";
 import { ApiRequestError, apiRequest, errorMessage } from "../lib/api";
 import { useCurrentCourse } from "../lib/course";
+import { formatRating } from "../lib/format";
 import { qk, useMeData, useUpdatePrefs } from "../lib/queries";
 import { CoursePicker } from "../components/CoursePicker";
-import { Button, ErrorState, FormError, LoadingBlocks, TextField } from "../components/ui";
+import { ArrowRightIcon } from "../components/icons";
+import { Button, ErrorState, FormError, LoadingPlates, TextField } from "../components/ui";
 import { safeNext } from "./guards";
 
 function UsernameStep({ me }: { me: MeResponse }) {
@@ -42,9 +43,25 @@ function UsernameStep({ me }: { me: MeResponse }) {
 
   const generalError = save.error && !(save.error instanceof ApiRequestError && save.error.code === "username_taken") ? errorMessage(save.error) : null;
 
+  const shown = username.trim() || me.user.firstName || "?";
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      <p className="text-muted">Pick the name other players will see.</p>
+    <form onSubmit={submit} className="flex flex-1 flex-col gap-4" noValidate>
+      <h1 className="font-display text-5xl leading-[48px] font-bold">Pick a username</h1>
+      <p className="text-base leading-6 text-muted">Your opponents see it in every duel. Names come from your Google account.</p>
+      {/* How opponents will see you: updates as you type. */}
+      <div className="plate mt-2 flex items-center gap-3.5 p-4" aria-hidden>
+        <span className="font-display flex size-14 shrink-0 items-center justify-center rounded-full bg-you text-[28px] font-bold text-bg">
+          {shown.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="font-display truncate text-2xl leading-7 font-bold tracking-[0.02em] uppercase">{shown}</span>
+          <span className="truncate text-sm leading-5 text-muted">
+            {[firstName.trim(), lastName.trim()].filter(Boolean).join(" ")}
+            {firstName.trim() || lastName.trim() ? " · " : ""}
+            {formatRating(null, true)} ranked
+          </span>
+        </span>
+      </div>
       <TextField
         label="Username"
         autoComplete="username"
@@ -53,6 +70,7 @@ function UsernameStep({ me }: { me: MeResponse }) {
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         error={fieldError.username}
+        hint={`${LIMITS.usernameMin} to ${LIMITS.usernameMax} characters: letters, digits, dots and underscores.`}
         autoFocus
       />
       <div className="grid grid-cols-2 gap-3">
@@ -60,8 +78,10 @@ function UsernameStep({ me }: { me: MeResponse }) {
         <TextField label="Surname" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} error={fieldError.lastName} />
       </div>
       <FormError message={generalError} />
-      <Button type="submit" loading={save.isPending} className="mt-2">
-        Continue
+      <div className="flex-1" />
+      <Button type="submit" loading={save.isPending}>
+        Start playing
+        <ArrowRightIcon size={20} strokeWidth={2.4} />
       </Button>
     </form>
   );
@@ -79,12 +99,13 @@ function CourseStep({ next }: { next: string }) {
     if (only && !hasPicked && update.isIdle) pick(only);
     // pick is recreated every render; the course id and the mutation state decide.
   }, [only, hasPicked, update.isIdle]);
-  if (isLoading) return <LoadingBlocks count={2} />;
+  if (isLoading) return <LoadingPlates count={2} />;
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (only && !update.isError) return <LoadingBlocks count={2} />;
+  if (only && !update.isError) return <LoadingPlates count={2} />;
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-muted">Which course first? You can switch any time.</p>
+      <h1 className="font-display text-5xl leading-[48px] font-bold">Pick a course</h1>
+      <p className="text-base leading-6 text-muted">Which course first? You can switch any time.</p>
       <CoursePicker courses={courses} value={hasPicked ? courseId : null} onPick={pick} busy={update.isPending} />
       <FormError message={update.error ? errorMessage(update.error) : null} />
     </div>
@@ -97,9 +118,7 @@ export function Onboarding() {
   const next = safeNext(params.get("next"));
   if (!me.needsOnboarding && me.prefs.courseId !== null) return <Navigate to={next} replace />;
   return (
-    <main className="flex min-h-dvh flex-col px-6 pt-10 pb-8">
-      <p className="font-display text-lg font-bold text-gold">{APP_NAME}</p>
-      <h1 className="font-display mt-4 mb-6 text-3xl font-bold">{me.needsOnboarding ? "Welcome" : "Pick a course"}</h1>
+    <main className="flex min-h-dvh flex-col px-4 pt-10 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       {me.needsOnboarding ? <UsernameStep me={me} /> : <CourseStep next={next} />}
     </main>
   );

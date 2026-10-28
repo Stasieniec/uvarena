@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SCORING } from "@shared/game/config";
 import { stableOrder } from "../../../src/client/lib/answers";
 import { endReasonLine } from "../../../src/client/match/copy";
-import { damageLine, worstHit, type DamageFacts } from "../../../src/client/match/format";
+import { damageLine, hitLine, hitNote, worstHit, type DamageFacts } from "../../../src/client/match/format";
 import { initialMatchState, reduceServer } from "../../../src/client/match/state";
 
 const base: DamageFacts = {
@@ -20,6 +20,28 @@ const base: DamageFacts = {
   bibi: null,
   shield: null,
 };
+
+describe("hitLine and hitNote", () => {
+  it("names both scores and the multiplier, opponent by name", () => {
+    expect(hitLine(base, "kvdberg", SCORING)).toBe("You 900 · kvdberg 0 · x2");
+  });
+
+  it("adds Bibi only when the attacker had it", () => {
+    expect(hitLine({ ...base, bibi: "you" }, "kvdberg", SCORING)).toBe("You 900 · kvdberg 0 · x2 · Bibi x2");
+    expect(hitLine({ ...base, bibi: "opponent" }, "kvdberg", SCORING)).toBe("You 900 · kvdberg 0 · x2");
+  });
+
+  it("is null without damage", () => {
+    expect(hitLine({ ...base, damageToOpponent: 0 }, "kvdberg", SCORING)).toBeNull();
+    expect(hitNote({ ...base, damageToOpponent: 0 }, SCORING)).toBeNull();
+  });
+
+  it("notes the cap and Shield on the victim", () => {
+    expect(hitNote(base, SCORING)).toBeNull();
+    expect(hitNote({ ...base, capped: true, bibi: "you", shield: "opponent" }, SCORING)).toBe(`Capped at 4,500 · Halved by Shield`);
+    expect(hitNote({ ...base, shield: "you" }, SCORING)).toBeNull();
+  });
+});
 
 describe("damageLine", () => {
   it("accounts for a plain hit", () => {

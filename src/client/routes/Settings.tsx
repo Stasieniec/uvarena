@@ -1,5 +1,6 @@
-// Settings: picture (upload with square crop, or remove), username and names,
-// sound, account, log out.
+// Settings: picture (upload with square crop, or remove), username and names
+// with Save, the sound switch, the email and its verification, Log out, and
+// the Credits link.
 import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,11 +10,10 @@ import { ApiRequestError, apiRequest, errorMessage, uploadAvatar } from "../lib/
 import { authClient } from "../lib/auth-client";
 import { readSoundPref, writeSoundPref } from "../lib/local-prefs";
 import { qk, useConfig, useMeData, useUpdatePrefs } from "../lib/queries";
-import { Page } from "../components/AppShell";
+import { Body, Icon, Screen } from "../components/after/ui";
 import { Avatar } from "../components/Avatar";
 import { AvatarCropper } from "../components/AvatarCropper";
-import { CameraIcon } from "../components/icons";
-import { Button, FormError, PageHeader, SectionTitle, Sheet, Switch, TextField } from "../components/ui";
+import { FormError, PageHeader, Primary, Sheet, Switch, TextField, buttonClass, cx } from "../components/ui";
 
 function PictureSection() {
   const me = useMeData();
@@ -40,17 +40,17 @@ function PictureSection() {
   });
 
   return (
-    <section className="flex flex-col items-center gap-3">
-      <Avatar user={me.user} size={96} ring="var(--color-you)" />
-      <div className="flex gap-2">
-        <Button variant="secondary" onClick={() => input.current?.click()}>
-          <CameraIcon size={18} />
+    <section className="flex flex-col gap-2">
+      <div className="flex items-center gap-3.5">
+        <Avatar user={me.user} size={64} you />
+        <button type="button" className={buttonClass("secondary", "min-h-11 px-3.5 text-[15px]")} onClick={() => input.current?.click()}>
+          <Icon name="camera" size={18} />
           {me.user.image ? "Change picture" : "Add a picture"}
-        </Button>
+        </button>
         {me.user.image ? (
-          <Button variant="ghost" onClick={() => remove.mutate()} loading={remove.isPending}>
+          <button type="button" className={buttonClass("ghost", "min-h-11 px-2 text-[15px]")} onClick={() => remove.mutate()} disabled={remove.isPending}>
             Remove
-          </Button>
+          </button>
         ) : null}
       </div>
       <input
@@ -127,17 +127,41 @@ function ProfileForm() {
   const other = save.error && !(save.error instanceof ApiRequestError && save.error.code === "username_taken") ? errorMessage(save.error) : null;
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      <TextField label="Username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => (setUsername(e.target.value), setSaved(false))} error={errors.username} />
+    <form onSubmit={submit} className="flex flex-col gap-3.5" noValidate>
+      <TextField label="Username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => (setUsername(e.target.value), setSaved(false))} error={errors.username} />
       <div className="grid grid-cols-2 gap-3">
-        <TextField label="First name" value={firstName} onChange={(e) => (setFirstName(e.target.value), setSaved(false))} error={errors.firstName} />
-        <TextField label="Surname" value={lastName} onChange={(e) => (setLastName(e.target.value), setSaved(false))} error={errors.lastName} />
+        <TextField label="First name" autoComplete="given-name" value={firstName} onChange={(e) => (setFirstName(e.target.value), setSaved(false))} error={errors.firstName} />
+        <TextField label="Surname" autoComplete="family-name" value={lastName} onChange={(e) => (setLastName(e.target.value), setSaved(false))} error={errors.lastName} />
       </div>
       <FormError message={other} />
-      <Button type="submit" disabled={!dirty} loading={save.isPending}>
+      <Primary type="submit" height={52} disabled={!dirty} busy={save.isPending}>
         {saved && !dirty ? "Saved" : "Save"}
-      </Button>
+      </Primary>
     </form>
+  );
+}
+
+/** Your email, whether it is verified, and Resend email while it is not. */
+function EmailRow({ email, verified, canSend }: { email: string; verified: boolean; canSend: boolean }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const resend = async () => {
+    setState("sending");
+    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/" });
+    setState(error ? "failed" : "sent");
+  };
+  const line = verified ? "Verified" : state === "sent" ? "Sent. Check your inbox." : state === "failed" ? "Could not send it. Try again later." : "Not verified";
+  return (
+    <div className="flex min-h-16 items-center gap-3 border-b border-line">
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-base leading-[22px] font-semibold">{email}</span>
+        <span className="text-sm leading-5 text-muted">{line}</span>
+      </span>
+      {!verified && canSend && state !== "sent" ? (
+        <button type="button" className={buttonClass("ghost", "min-h-11 px-1 text-[15px]")} onClick={resend} disabled={state === "sending"}>
+          Resend email
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -165,38 +189,38 @@ export function Settings() {
   };
 
   return (
-    <Page>
+    <Screen bottomBar={false}>
       <PageHeader title="Settings" back="/profile" />
-      <PictureSection />
-      <SectionTitle>Profile</SectionTitle>
-      <ProfileForm />
-      <SectionTitle>Game</SectionTitle>
-      <div className="rounded-2xl border border-border bg-surface px-4">
-        <Switch
-          checked={sound}
-          onChange={(v) => {
-            setSound(v);
-            writeSoundPref(v);
-            update.mutate({ sound: v });
-          }}
-          label="Sound"
-          description="Effects during matches, on this device"
-        />
-      </div>
-      <SectionTitle>Account</SectionTitle>
-      <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface px-4 py-3 text-sm">
-        <p className="truncate">{me.user.email}</p>
-        <p className="text-muted">
-          {me.user.emailVerified ? "Verified" : config.data?.emailEnabled ? "Not verified yet. Check your inbox." : "Not verified"}
-        </p>
-      </div>
-      <FormError message={logoutError} />
-      <Button variant="danger" className="mt-6 w-full" onClick={logout} loading={loggingOut}>
-        Log out
-      </Button>
-      <Link to="/credits" className="mt-4 block py-2 text-center text-xs text-muted underline-offset-2 hover:underline">
-        Credits
-      </Link>
-    </Page>
+      <Body className="gap-3.5 pb-4">
+        <PictureSection />
+        <ProfileForm />
+        <div className="flex flex-col">
+          <div className="border-b border-line">
+            <Switch
+              label="Sound"
+              description="Effects during matches, on this device"
+              checked={sound}
+              onChange={(v) => {
+                setSound(v);
+                writeSoundPref(v);
+                update.mutate({ sound: v });
+              }}
+            />
+          </div>
+          <EmailRow email={me.user.email} verified={me.user.emailVerified} canSend={config.data?.emailEnabled === true} />
+        </div>
+        <FormError message={logoutError} />
+        <span className="flex-1" />
+        <div className="flex items-center justify-between">
+          <button type="button" className={buttonClass("ghost", "px-0")} onClick={logout} disabled={loggingOut}>
+            <Icon name="logout" size={18} />
+            {loggingOut ? "Logging out" : "Log out"}
+          </button>
+          <Link to="/credits" className="flex h-11 items-center text-[15px] text-muted hover:text-text">
+            Credits
+          </Link>
+        </div>
+      </Body>
+    </Screen>
   );
 }

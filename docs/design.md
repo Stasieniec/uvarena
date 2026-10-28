@@ -327,12 +327,17 @@ A small flag on the reveal lets you report a question that looks wrong. Reports 
 
 ## Tone and look
 
-- **A serious study platform.** Deep navy background, teal for you, orange for the opponent. Gold is a small accent (the multiplier, a rank, a highlight), never a large field. Ranked screens carry a muted red with gold accents, bot screens a muted blue.
-- **Type.** Inter throughout: heavy weights for headings, ratings and WIN/LOSS, regular weights for questions and buttons. Questions must read fast.
+The look is **Broadcast**: an esports overlay on a study tool. The full token and component spec is docs/broadcast-spec.md; the research and the rules behind it are in docs/design-research.md.
+
+- **Ground and plates.** A near-black ground (#0E1013). Buttons, options, cards and the clock sit on dark plates with a 3 px darker bottom edge that drops when pressed. Corners are square (2 to 3 px); only avatars are round. No glow, shadows, gradients or photos outside the power-up banners.
+- **Colour marks a player, never a result.** Teal is you, red is the opponent, both with dark text on them. A right answer is a white fill with a check; a wrong one is a red outline, a red cross and struck text; whose pick it was is a name tag. Yellow is an event: the one primary button per screen, the multiplier, the damage plate, an armable or armed power-up, the K.O.
+- **The HUD strip.** Both players in one mirrored strip at the top of the duel: your plate, the clock, their plate, the inner ends cut at 12 degrees (the only angled shapes in the app), HP bars under them filling outward from the clock. It stays put through arming, banners, the question and the reveal. Events land in the lane under it ("10 SECONDS", the damage plate, K.O.), so nothing floats over text. The question and the options are one block anchored to the bottom.
+- **Type.** Barlow Condensed for numbers, names, titles and callouts; Barlow for questions, options and everything you read. Uppercase only on name plates, name tags and callouts, never on questions, options or buttons. Numerals are tabular everywhere.
 - **The power-ups are the exception.** Their banners are huge, loud and silly (see Power-ups), and gone in 1.5 seconds. The question is never covered while the timer runs. Nothing else in the app jokes.
+- **Game feel from timing.** A hit freezes the strip for 100 ms, shows the lost HP as a chunk, then drains it; big hits shake the damage plate. Event words are big for under a second, then gone.
 - **Sound.** Short synthesised effects: Bibi's thunder and boom, the Shield clang, the 50:50 lifeline drop, the Gotta Go Fast zoom, a tick in the last 5 seconds, a hit thud, a win fanfare. On by default, with a mute button on the match screen that the phone remembers.
 - **Vibration** on hits, on Android phones that support it.
-- **Reduced motion.** If your phone asks for less motion, shakes and flashes become fades.
+- **Reduced motion.** If your phone asks for less motion, the freezes and colour changes stay; shakes, slides and scaling become short fades.
 - **Phone first.** Answer buttons in the thumb zone, at least 48 pixels tall, no hover-only controls, and the screen stays awake during a match. It works on a laptop too, with the same layout in a centred column.
 - **Copy.** Dry and short. "Bibi is unimpressed." "Nobody else is searching." No exclamation marks outside the power-up lines.
 - **Credits.** The banner pictures carry their licences' attribution on /credits (docs/CREDITS.md).

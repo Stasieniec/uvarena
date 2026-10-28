@@ -64,7 +64,7 @@ export function DevMatchRoute() {
 export function NotFound() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="font-display text-6xl font-black text-gold">404</p>
+      <p className="font-display text-6xl font-bold">404</p>
       <p className="text-muted">Nothing here.</p>
       <Link to="/" className={buttonClass("secondary", "min-w-40")}>
         Home

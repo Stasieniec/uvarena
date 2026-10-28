@@ -312,12 +312,13 @@ export function planFinalization(state: MatchState, ctx: FinalizationContext): F
 
   // Bot rating (bot matches only), processed in round order alongside the items.
   const botMatch = state.mode === "bot";
-  const botState = new Map<string, { theta: number; n: number; before: number }>();
+  // steps: how far each round moved the rounded rating, for the end screen's per-answer bars.
+  const botState = new Map<string, { theta: number; n: number; before: number; steps: number[] }>();
   for (const human of humans) {
     const before = botThetaAtStart(ctx, human);
     const row = ratingRowOf(ctx, human.userId, "bot");
     const n = effectiveN(row?.n ?? human.player.botRatingN, fullIdleDays(row?.lastPlayedAt ?? null, playStart));
-    botState.set(human.userId, { theta: before, n, before });
+    botState.set(human.userId, { theta: before, n, before, steps: [] });
   }
 
   // Answers, missed questions, item deltas, player_course totals.
@@ -393,6 +394,10 @@ export function planFinalization(state: MatchState, ctx: FinalizationContext): F
           bot.theta += update.playerDelta;
           bot.n += 1;
         }
+      }
+      if (botMatch) {
+        const shownBefore = Math.round(bot.before) + bot.steps.reduce((sum, step) => sum + step, 0);
+        bot.steps.push(Math.round(bot.theta) - shownBefore);
       }
       itemMap.set(round.questionId, item);
 
@@ -471,6 +476,7 @@ export function planFinalization(state: MatchState, ctx: FinalizationContext): F
         row.n = bot.n;
         if (outcome === "win" && ladderLevel !== null) row.highestBotLevel = Math.max(row.highestBotLevel, ladderLevel);
         summaries[human.side].bot = { before: bot.before, after: bot.theta, provisional: isBotRatingProvisional(bot.n) };
+        summaries[human.side].botRatingSteps = bot.steps.slice();
       }
       ratingRows.push(row);
     }

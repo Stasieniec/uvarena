@@ -17,7 +17,7 @@ import { BankFileSchema } from "@shared/question-schema";
 import { MatchView, type MatchNav } from "../MatchView";
 import { useMatchController, type MatchActions } from "../useMatch";
 import { EngineHarness, questionsFromBank } from "./engine-harness";
-import { DevHarness } from "./harness";
+import { DevHarness, PREVIEW_EPOCH } from "./harness";
 import { MOMENTS, SCENARIOS, type Moment } from "./scenarios";
 import type { ClientMessage } from "@shared/protocol";
 
@@ -121,7 +121,13 @@ function Run({ config, onRestart }: { config: Config; onRestart(): void }) {
   // As if the ladder screen had cached the ladder before the match: the bot after the opponent still locked.
   const opponentLevel = SCENARIOS[config.scenario]!.players[config.side === 0 ? 1 : 0].botLevel ?? 0;
   const extras = useMemo(
-    () => ({ record: { wins: 2, losses: 1, draws: 0 }, ladderBefore: BOT_LADDER.map((b) => ({ level: b.level, unlocked: b.level <= Math.max(1, opponentLevel) })) }),
+    () => ({
+      courseTitle: "Agentic AI",
+      record: { wins: 2, losses: 1, draws: 0 },
+      ladderBefore: BOT_LADDER.map((b) => ({ level: b.level, unlocked: b.level <= Math.max(1, opponentLevel) })),
+      lobbyPeople: { stas: { fullName: "Stas Wasilewski", rating: null }, "filip.p": { fullName: "Filip Pieniak", rating: "1500?" } },
+      lobbyCreatedAt: PREVIEW_EPOCH - 28_000,
+    }),
     [opponentLevel],
   );
 
@@ -197,7 +203,7 @@ function EngineMatch({ questions, config, onRestart }: { questions: QuestionFull
 
 function Index() {
   return (
-    <div className="mx-auto max-w-[30rem] px-4 py-6 text-sm">
+    <div className="mx-auto max-w-column px-4 py-6 text-sm">
       <h1 className="rq-display text-2xl font-bold text-gold">Match preview</h1>
       <p className="mt-1 text-muted">Scripted matches on the real match screen. No server involved.</p>
       <h2 className="mt-6 mb-2 font-semibold">Play</h2>

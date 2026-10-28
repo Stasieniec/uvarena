@@ -1,48 +1,48 @@
 // Leaderboard per course by ranked rating. Established players first, then
-// "Still provisional".
+// "Still provisional" with "?" ratings; your row is outlined in your colour.
 import { Link } from "react-router";
 import type { LeaderboardResponse } from "@shared/api-schemas";
 import { useCurrentCourse } from "../lib/course";
 import { useLeaderboard, useMeData } from "../lib/queries";
-import { Page } from "../components/AppShell";
+import { Body, Screen } from "../components/after/ui";
 import { Avatar } from "../components/Avatar";
 import { CourseSwitch } from "../components/CourseSwitch";
-import { EmptyState, ErrorState, LoadingBlocks, PageHeader, SectionTitle, cx } from "../components/ui";
+import { ErrorState, LoadingPlates, PageHeader, Quiet, Rating, SectionHeading, cx } from "../components/ui";
 
 type Row = LeaderboardResponse["established"][number];
 
-const MEDAL = ["text-gold", "text-[#cbd5e1]", "text-[#c08457]"];
+/** Ranks shown in the text colour; the rest are muted. */
+const TOP_RANKS = 3;
 
-function Rows({ rows, meId, provisional }: { rows: Row[]; meId: string; provisional?: boolean }) {
+function gamesLine(r: Row): string {
+  const name = `${r.user.firstName} ${r.user.lastName}`.trim();
+  const games = `${r.played} ${r.played === 1 ? "game" : "games"}`;
+  return name ? `${name} · ${games}` : games;
+}
+
+function Rows({ rows, meId, provisional = false }: { rows: Row[]; meId: string; provisional?: boolean }) {
   return (
-    <ol className="flex flex-col gap-1.5">
+    <ol className="m-0 flex list-none flex-col p-0">
       {rows.map((r) => {
         const self = r.user.id === meId;
         return (
           <li key={r.user.id}>
             <Link
               to={`/u/${encodeURIComponent(r.user.username)}`}
+              aria-current={self ? "true" : undefined}
               className={cx(
-                "flex min-h-16 items-center gap-3 rounded-2xl border px-3 py-2 transition",
-                self ? "border-you/60 bg-you/10" : "border-border bg-surface hover:border-muted/50",
+                "grid h-[52px] grid-cols-[28px_32px_minmax(0,1fr)_auto] items-center gap-x-3 px-3",
+                self ? "bg-plate shadow-[inset_0_0_0_2px_var(--color-you)]" : "border-b border-line",
               )}
             >
-              <span className={cx("font-display w-8 text-center text-lg font-bold tabular-nums", !provisional && r.rank <= 3 ? MEDAL[r.rank - 1] : "text-muted")}>
-                {r.rank}
+              <span className={cx("font-display text-xl font-bold", !provisional && r.rank <= TOP_RANKS ? "text-text" : "text-muted")}>{provisional ? "" : r.rank}</span>
+              <Avatar user={r.user} size={32} you={self} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-base leading-5 font-semibold">{r.user.displayUsername}</span>
+                <span className="truncate text-[13px] leading-[18px] text-muted">{gamesLine(r)}</span>
               </span>
-              <Avatar user={r.user} size={38} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">
-                  {r.user.displayUsername}
-                  {self ? <span className="ml-1.5 text-xs font-medium text-you">you</span> : null}
-                </span>
-                <span className="block truncate text-xs text-muted">
-                  {r.played} played · {r.won} won
-                </span>
-              </span>
-              <span className={cx("text-lg font-bold tabular-nums", provisional ? "text-muted" : "text-ranked-gold")}>
-                {Math.round(r.rating)}
-                {provisional ? "?" : ""}
+              <span className="font-display text-2xl font-bold">
+                <Rating value={r.rating} provisional={provisional} />
               </span>
             </Link>
           </li>
@@ -57,33 +57,30 @@ export function Leaderboard() {
   const { courseId, course } = useCurrentCourse();
   const board = useLeaderboard(courseId);
   return (
-    <Page>
-      <PageHeader title="Leaderboard" />
-      <CourseSwitch tone="ranked" />
-      {board.isPending ? (
-        <LoadingBlocks className="mt-4" count={6} />
-      ) : board.error ? (
-        <ErrorState className="mt-4" error={board.error} onRetry={() => void board.refetch()} />
-      ) : board.data.established.length === 0 && board.data.provisional.length === 0 ? (
-        <EmptyState className="mt-4" title="No ranked games yet">
-          Play a ranked duel in {course?.shortTitle ?? "this course"} to get on the board.
-        </EmptyState>
-      ) : (
-        <>
-          {board.data.established.length > 0 ? (
-            <>
-              <SectionTitle>Ranked</SectionTitle>
-              <Rows rows={board.data.established} meId={me.user.id} />
-            </>
-          ) : null}
-          {board.data.provisional.length > 0 ? (
-            <>
-              <SectionTitle>Still provisional</SectionTitle>
-              <Rows rows={board.data.provisional} meId={me.user.id} provisional />
-            </>
-          ) : null}
-        </>
-      )}
-    </Page>
+    <Screen>
+      <PageHeader title="Leaderboard" right={course ? <span className="max-w-[45%] truncate pr-3 text-sm leading-5 text-muted">{course.shortTitle}</span> : undefined} />
+      <Body className="pb-3">
+        <CourseSwitch />
+        {board.isPending ? (
+          <LoadingPlates count={6} height={52} />
+        ) : board.error ? (
+          <ErrorState error={board.error} onRetry={() => void board.refetch()} />
+        ) : board.data.established.length === 0 && board.data.provisional.length === 0 ? (
+          <Quiet>No ranked games yet. Play a ranked duel in {course?.shortTitle ?? "this course"} to get on the board.</Quiet>
+        ) : (
+          <>
+            {board.data.established.length > 0 ? <Rows rows={board.data.established} meId={me.user.id} /> : null}
+            {board.data.provisional.length > 0 ? (
+              <>
+                <SectionHeading className={board.data.established.length > 0 ? "mt-5 mb-0.5" : "mt-1 mb-0.5"}>
+                  Still provisional
+                </SectionHeading>
+                <Rows rows={board.data.provisional} meId={me.user.id} provisional />
+              </>
+            ) : null}
+          </>
+        )}
+      </Body>
+    </Screen>
   );
 }

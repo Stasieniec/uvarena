@@ -337,6 +337,45 @@ describe("bot match", () => {
     expect(plan.match.botRatingAfter).toBeCloseTo(theta, 9);
   });
 
+  it("records how far each answer moved the shown bot rating, one step per round", () => {
+    const specs: RoundSpec[] = [
+      { a: true, b: false, itemRating: 1400, chance: 0.25 },
+      { a: false, b: true, itemRating: 1300, chance: 0.5 },
+      { a: { correct: true, helped: true }, b: false, itemRating: 1800, chance: 0.25 },
+      { a: null, b: true, itemRating: 1600, chance: 1 / 7 },
+      { a: true, b: true, itemRating: 1700, chance: 0.25 },
+    ];
+    const state = finishedState({ mode: "bot", rated: false, players: [human("alice"), bot(5)], rounds: rounds(specs), winner: 0, reason: "hp" });
+    const plan = planFinalization(state, context({ users: ["alice"], ratings: [ratingRow("alice", "bot", { rating: 1450.4, n: 12 })] }));
+
+    let theta = 1450.4;
+    let n = 12;
+    const expected: number[] = [];
+    for (const [i, spec] of specs.entries()) {
+      const shown = Math.round(theta);
+      if (i !== 2) {
+        theta += eloUpdate(theta, n, spec.itemRating!, 0, spec.chance!, spec.a === true).playerDelta;
+        n += 1;
+      }
+      expected.push(Math.round(theta) - shown);
+    }
+    const steps = plan.summaries[0].botRatingSteps!;
+    expect(steps).toEqual(expected);
+    expect(steps).toHaveLength(specs.length);
+    expect(steps[2]).toBe(0); // the 50:50 answer
+    expect(steps[0]).toBeGreaterThan(0);
+    expect(steps[1]).toBeLessThan(0);
+    const change = plan.summaries[0].bot!;
+    expect(steps.reduce((a, b) => a + b, 0)).toBe(Math.round(change.after) - Math.round(change.before));
+    expect(plan.summaries[1].botRatingSteps).toBeUndefined();
+  });
+
+  it("gives no steps outside bot matches", () => {
+    const state = finishedState({ players: [human("alice"), human("bob")], rounds: rounds(aliceSweeps), winner: 0, reason: "hp" });
+    const plan = planFinalization(state, context());
+    expect(plan.summaries.map((s) => s.botRatingSteps)).toEqual([undefined, undefined]);
+  });
+
   it("records only the human's answers, but both sides in the round rows", () => {
     const state = finishedState({ mode: "bot", players: [human("alice"), bot(2, 1200)], rounds: rounds(aliceSweeps), winner: 0, reason: "hp" });
     const plan = planFinalization(state, context({ users: ["alice"] }));

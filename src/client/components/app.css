@@ -3,64 +3,62 @@
  * few effects Tailwind utilities cannot express. Plain CSS, token variables only.
  */
 
-/* Backdrop: two faint colour pools behind every screen. */
-body {
-  background:
-    radial-gradient(60rem 30rem at 50% -12rem, rgb(45 212 191 / 0.05), transparent 70%),
-    radial-gradient(40rem 26rem at 110% 110%, rgb(229 72 77 / 0.035), transparent 70%),
-    var(--color-bg);
-  background-attachment: fixed;
+/* In the components layer, so a tracking-* utility on the same element wins. */
+@layer components {
+  .font-display {
+    letter-spacing: 0.005em;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
-.font-display {
-  letter-spacing: -0.015em;
+/* ---- The Broadcast strip outside a match (landing, queue) ---- */
+
+.bc-strip-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+  column-gap: 4px;
 }
 
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/* The 12 degree cut: only on the inner ends of the two name plates. */
+.bc-cut-you {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+.bc-cut-them {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%);
 }
 
-/* ---- Landing: two HP bars trading hits ---- */
-
-.duel-hp {
-  width: 100%;
+/* Landing loop: the hit lands at once; the refill grows back over 600 ms. */
+.bc-hit .bc-bar-fill {
   transition: none;
 }
-
-.duel-hp-them {
-  animation: duel-them 9s ease-in-out infinite;
+.bc-refill .bc-bar-fill {
+  transition: width 600ms ease-out;
+}
+.bc-refill .bc-bar-chunk {
+  opacity: 0 !important;
+  transition: opacity 150ms linear;
 }
 
-.duel-hp-you {
-  animation: duel-you 9s ease-in-out infinite;
+/* The damage plate drops 12 px from the strip after the 100 ms freeze. */
+.bc-drop {
+  animation: bc-drop 160ms ease-out 100ms both;
+}
+.bc-fade-out {
+  animation: bc-fade-out 150ms linear both;
 }
 
-.duel-pick {
-  animation: duel-pick 9s ease-in-out infinite;
+@keyframes bc-drop {
+  from { opacity: 0; transform: translateY(-12px); }
 }
 
-@keyframes duel-them {
-  0%, 14% { width: 100%; }
-  20%, 58% { width: 72%; }
-  64%, 88% { width: 41%; }
-  96%, 100% { width: 100%; }
-}
-
-@keyframes duel-you {
-  0%, 36% { width: 100%; }
-  42%, 88% { width: 83%; }
-  96%, 100% { width: 100%; }
-}
-
-@keyframes duel-pick {
-  0%, 8% { background: var(--color-surface-2); box-shadow: none; }
-  11%, 18% { background: color-mix(in srgb, var(--color-correct) 30%, var(--color-surface-2)); box-shadow: 0 0 0 1px var(--color-correct); }
-  24%, 54% { background: var(--color-surface-2); box-shadow: none; }
-  57%, 62% { background: color-mix(in srgb, var(--color-correct) 30%, var(--color-surface-2)); box-shadow: 0 0 0 1px var(--color-correct); }
-  68%, 100% { background: var(--color-surface-2); box-shadow: none; }
+@keyframes bc-fade-out {
+  to { opacity: 0; }
 }
 
 /* ---- Sheets and toasts ---- */
@@ -97,24 +95,6 @@ body {
   from { opacity: 0; transform: scale(0.94); }
 }
 
-/* Queue: pulsing rings behind the searching emblem. */
-.search-ring {
-  animation: search-ring 2.4s ease-out infinite;
-}
-
-.search-ring-2 {
-  animation-delay: 0.8s;
-}
-
-.search-ring-3 {
-  animation-delay: 1.6s;
-}
-
-@keyframes search-ring {
-  from { opacity: 0.6; transform: scale(0.6); }
-  to { opacity: 0; transform: scale(1.6); }
-}
-
 /* Undo countdown bar. */
 .undo-bar {
   transform-origin: left;
@@ -131,13 +111,7 @@ body {
  * pass. These keep the end states sensible: still bars and still rings.
  */
 @media (prefers-reduced-motion: reduce) {
-  .duel-hp-them,
-  .duel-hp-you,
-  .duel-pick,
-  .search-ring {
-    animation: none !important;
-  }
-  .duel-hp-them { width: 72%; }
-  .search-ring { opacity: 0.25; }
+  .bc-drop { animation: none !important; }
+  .bc-refill .bc-bar-fill { transition: none !important; }
   .undo-bar { animation: none !important; }
 }

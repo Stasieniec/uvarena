@@ -63,7 +63,9 @@ describe("scripted preview matches", () => {
     expect(bot.result).toMatchObject({ result: "loss", reason: "surrender" });
     expect(bot.result?.bot).not.toBeNull();
     const friend = playScenario("friend", 0);
-    expect(friend.frames[0]?.type).toBe("lobby");
+    // As the real room: a snapshot on connect, then the lobby frames.
+    expect(friend.frames[0]?.type).toBe("snapshot");
+    expect(friend.frames[1]?.type).toBe("lobby");
     expect(friend.store.getState().result?.result).toBe("win");
   });
 

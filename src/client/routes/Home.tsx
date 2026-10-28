@@ -1,22 +1,22 @@
-// Home: avatar and name, sound, course switch, ranked card, bot match card,
-// power-ups, missed questions, recent matches.
-import { useState } from "react";
+// Home: you, the course and sound in a thin bar; the big ranked rating with
+// Find a duel (the one primary) and Duel a friend; rows for the bot match,
+// power-ups and missed questions; the last matches as plain lines.
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { HomeResponse } from "@shared/api-schemas";
+import type { HomeResponse, MatchSummary } from "@shared/api-schemas";
 import { BOT_LADDER, ELO } from "@shared/game/config";
 import { useCurrentCourse } from "../lib/course";
-import { formatRating } from "../lib/format";
+import { formatDelta, formatRating } from "../lib/format";
 import { readSoundPref, writeSoundPref } from "../lib/local-prefs";
-import { useHome, useMeData, useUpdatePrefs } from "../lib/queries";
+import { useConfig, useHome, useMeData, useUpdatePrefs } from "../lib/queries";
 import { Page, VerifyBanner } from "../components/AppShell";
 import { Avatar } from "../components/Avatar";
 import { CourseSwitch } from "../components/CourseSwitch";
 import { CoursePicker } from "../components/CoursePicker";
-import { BotIcon, ChevronRightIcon, GearIcon, MissedIcon, SoundOffIcon, SoundOnIcon, SwordsIcon } from "../components/icons";
+import { ArrowRightIcon, BotIcon, ChevronRightIcon, SoundOffIcon, SoundOnIcon } from "../components/icons";
 import { LoadoutSheet } from "../components/LoadoutSheet";
-import { MatchRow } from "../components/MatchRow";
 import { PowerupIcon, powerupInfo } from "../components/powerups";
-import { ErrorState, Sheet, SectionTitle, Skeleton, buttonClass, cx } from "../components/ui";
+import { ErrorState, RatingText, Sheet, Skeleton, buttonClass, cx } from "../components/ui";
 
 function SoundToggle() {
   const me = useMeData();
@@ -32,143 +32,194 @@ function SoundToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface hover:text-text"
+      className="flex size-11 shrink-0 items-center justify-center text-muted hover:text-text"
       aria-label={on ? "Sound on. Tap to mute." : "Sound off. Tap to unmute."}
       aria-pressed={on}
     >
-      {on ? <SoundOnIcon /> : <SoundOffIcon />}
+      {on ? <SoundOnIcon size={18} strokeWidth={1.8} /> : <SoundOffIcon size={18} strokeWidth={1.8} />}
     </button>
   );
 }
 
 function HomeHeader() {
   const me = useMeData();
+  const { course } = useCurrentCourse();
+  const name = me.user.displayUsername ?? me.user.username ?? "";
   return (
-    <header className="flex items-center gap-2 py-2">
-      <Link to="/profile" className="flex min-h-tap min-w-0 flex-1 items-center gap-3 rounded-xl pr-2">
-        <Avatar user={me.user} size={44} ring="var(--color-you)" />
-        <span className="min-w-0">
-          <span className="block truncate text-lg font-semibold">{me.user.displayUsername ?? me.user.username}</span>
-          <span className="block truncate text-xs text-muted">
-            {me.user.firstName} {me.user.lastName}
-          </span>
-        </span>
+    <header className="-mx-4 flex h-14 items-center gap-3 pr-1 pl-4">
+      <Link to="/profile" className="flex min-h-tap min-w-0 items-center gap-3" aria-label={`${name}, your profile`}>
+        <Avatar user={me.user} size={32} you />
+        <span className="truncate text-base leading-5 font-semibold">{name}</span>
       </Link>
+      <span className="flex-1" />
+      {course ? <span className="truncate text-sm leading-5 text-muted">{course.shortTitle}</span> : null}
       <SoundToggle />
-      <Link to="/settings" className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface hover:text-text" aria-label="Settings">
-        <GearIcon />
-      </Link>
     </header>
   );
 }
 
-function RankedCard({ home }: { home: HomeResponse }) {
+function RankedBlock({ home, compact }: { home: HomeResponse; compact: boolean }) {
+  const r = home.ranked;
+  const rating = formatRating(r.rating, r.provisional);
   const others = Math.max(0, home.searching);
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-ranked/35 bg-gradient-to-br from-[#2a1420] via-surface to-surface p-4">
-      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-ranked/10 blur-3xl" />
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-ranked-gold uppercase">Ranked</p>
-          <p className="font-display mt-1 text-5xl font-black tabular-nums text-text" aria-label={`Ranked rating ${formatRating(home.ranked.rating, home.ranked.provisional)}`}>
-            {formatRating(home.ranked.rating, home.ranked.provisional)}
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            {home.ranked.played} played · {home.ranked.won} won
-            {home.ranked.provisional ? " · ? means provisional" : ""}
-          </p>
-        </div>
-        <SwordsIcon size={30} className="mt-1 text-ranked/70" />
+    <section aria-label="Ranked" className={cx("flex flex-col", compact ? "pt-3" : "pt-4")}>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-base leading-5 font-semibold">Ranked rating</span>
+        <span className="text-sm leading-5 text-muted">
+          {r.provisional ? `Provisional, ${r.played} played` : `${r.played} played, ${r.won} won`}
+        </span>
       </div>
-      <div className="relative mt-4 grid grid-cols-2 gap-2">
-        <Link to="/queue" className={buttonClass("ranked", "px-3")}>
-          Find a duel
-        </Link>
-        <Link to="/friend" className={buttonClass("secondary", "border-ranked-gold/30 px-3")}>
+      <p
+        className={cx(
+          "font-display font-bold tracking-[-1px]",
+          compact ? "mt-0.5 text-[clamp(80px,26vw,104px)] leading-[0.96]" : "mt-1 text-[clamp(84px,28vw,112px)] leading-[0.93]",
+        )}
+        aria-label={`Ranked rating ${rating}`}
+      >
+        <RatingText text={rating} />
+      </p>
+      <Link to="/queue" className={buttonClass("primary", cx("min-h-[60px]", compact ? "mt-[19px]" : "mt-[23px]"))}>
+        Find a duel
+        <ArrowRightIcon size={20} strokeWidth={2.4} />
+      </Link>
+      <div className="mt-3.5 flex items-center gap-3">
+        <Link to="/friend" className={buttonClass("secondary", "flex-1 px-3")}>
           Duel a friend
         </Link>
-      </div>
-      <p className="relative mt-3 flex items-center gap-2 text-sm text-muted">
-        <span className={cx("size-2 rounded-full", others > 0 ? "bg-correct shadow-[0_0_8px] shadow-correct" : "bg-muted/50")} />
-        {others === 0 ? "Nobody searching right now" : `${others} searching now`}
-      </p>
-    </section>
-  );
-}
-
-function BotCard({ home }: { home: HomeResponse }) {
-  const provisional = home.bot.provisional;
-  const next = home.nextBot;
-  return (
-    <section className="relative overflow-hidden rounded-3xl border border-bot/30 bg-gradient-to-br from-[#0f2350] via-surface to-surface p-4">
-      <div className="pointer-events-none absolute -bottom-16 -left-10 size-44 rounded-full bg-bot/20 blur-3xl" />
-      <div className="relative flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-[0.18em] text-[#93c5fd] uppercase">Bot match</p>
-          <p className="font-display mt-1 text-3xl font-bold tabular-nums text-[#bfdbfe]">{formatRating(home.bot.rating, provisional, ELO.startBotRating)}</p>
-          <p className="mt-1 truncate text-sm text-muted">
-            {next ? (
-              <>
-                Next: <span className="font-semibold text-text">{next.name}</span> · {Math.round(next.rating)}
-              </>
-            ) : (
-              `All ${BOT_LADDER.length} bots beaten`
-            )}
-          </p>
-        </div>
-        <Link to="/bots" className={buttonClass("bot", "min-w-24 px-6")}>
-          Play
-        </Link>
+        <span className="flex w-[132px] items-center gap-2 text-sm leading-5 text-muted">
+          <span aria-hidden className={cx("size-1.5 shrink-0", others > 0 ? "bg-you" : "bg-line")} />
+          {others === 0 ? "Nobody searching" : `${others} searching now`}
+        </span>
       </div>
     </section>
   );
 }
 
-function PowerupsCard() {
+/** A 64 px plate row: title and a muted line on the left, a value and a chevron on the right. */
+function HomeRow({ title, sub, right, to, onClick, label }: { title: string; sub: string; right: ReactNode; to?: string; onClick?: () => void; label?: string }) {
+  const className = "plate press flex h-16 items-center gap-3 rounded-sm pr-3 pl-4 text-left";
+  const inner = (
+    <>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-base leading-5 font-semibold">{title}</span>
+        <span className="truncate text-sm leading-5 text-muted">{sub}</span>
+      </span>
+      {right}
+      <ChevronRightIcon size={16} className="shrink-0 text-muted" />
+    </>
+  );
+  return to ? (
+    <Link to={to} className={className} aria-label={label}>
+      {inner}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} className={cx(className, "w-full")} aria-label={label}>
+      {inner}
+    </button>
+  );
+}
+
+function BigNum({ children }: { children: ReactNode }) {
+  return <span className="font-display shrink-0 text-[28px] leading-8 font-bold">{children}</span>;
+}
+
+function MoreRows({ home }: { home: HomeResponse }) {
   const me = useMeData();
   const [open, setOpen] = useState(false);
   const loadout = me.prefs.loadout;
+  const next = home.nextBot;
+  const names = loadout.map((p) => powerupInfo(p).name).join(", ");
   return (
-    <>
-      <button
-        type="button"
+    <nav aria-label="More" className="flex flex-col gap-2.5">
+      <HomeRow
+        to="/bots"
+        title="Bot match"
+        sub={next ? `Next: ${next.name}, ${Math.round(next.rating)}` : `All ${BOT_LADDER.length} bots beaten`}
+        right={
+          <BigNum>
+            <RatingText text={formatRating(home.bot.rating, home.bot.provisional, ELO.startBotRating)} />
+          </BigNum>
+        }
+      />
+      <HomeRow
         onClick={() => setOpen(true)}
-        className="flex min-h-tap w-full items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-left transition hover:border-muted/60"
-        aria-label={`Power-ups: ${loadout.map((p) => powerupInfo(p).name).join(", ")}. Tap to change.`}
-      >
-        <span className="text-sm font-semibold">Power-ups</span>
-        <span className="flex flex-1 justify-end gap-2">
-          {loadout.map((p) => (
-            <span key={p} className="flex size-11 items-center justify-center rounded-xl border border-border bg-surface-2">
-              <PowerupIcon id={p} size={26} />
-            </span>
-          ))}
-        </span>
-        <ChevronRightIcon size={18} className="text-muted" />
-      </button>
+        title="Power-ups"
+        sub={names}
+        label={`Power-ups: ${names}. Tap to change.`}
+        right={
+          <span aria-hidden className="flex shrink-0 gap-1.5 text-muted">
+            {loadout.map((p) => (
+              <PowerupIcon key={p} id={p} size={18} />
+            ))}
+          </span>
+        }
+      />
+      <HomeRow
+        to="/missed"
+        title="Missed questions"
+        sub={home.missedOpen === 0 ? "None to review" : "To review"}
+        right={<BigNum>{home.missedOpen}</BigNum>}
+      />
       <LoadoutSheet open={open} onClose={() => setOpen(false)} current={loadout} />
-    </>
+    </nav>
   );
 }
 
-function MissedCard({ count }: { count: number }) {
+const RESULT: Record<MatchSummary["result"], string> = { win: "Won", loss: "Lost", draw: "Drawn", void: "Void" };
+
+function RecentMatches({ matches }: { matches: MatchSummary[] }) {
   return (
-    <Link to="/missed" className="flex min-h-tap items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition hover:border-muted/60">
-      <MissedIcon className="text-wrong" />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold">Missed questions</span>
-      <span className="shrink-0 text-sm text-muted tabular-nums">{count === 0 ? "None to review" : `${count} to review`}</span>
-      <ChevronRightIcon size={18} className="text-muted" />
-    </Link>
+    <section className="flex flex-col">
+      <div className="mb-0.5 flex items-baseline justify-between">
+        <h2 className="text-base leading-5 font-semibold">Recent matches</h2>
+        {matches.length > 0 ? (
+          <Link to="/history" className="-my-3 flex min-h-tap items-center pl-3 text-sm text-muted hover:text-text">
+            All matches
+          </Link>
+        ) : null}
+      </div>
+      {matches.length === 0 ? (
+        <div className="mt-2 flex flex-col items-start gap-3">
+          <p className="text-[15px] leading-[22px] text-muted">No matches yet. A bot is a good place to start.</p>
+          <Link to="/bots" className={buttonClass("secondary", "px-5")}>
+            <BotIcon size={18} />
+            Play a bot
+          </Link>
+        </div>
+      ) : (
+        matches.map((m, i) => {
+          const name = m.opponent ? m.opponent.displayUsername : (m.bot?.name ?? "Bot");
+          const delta = m.ratingChange;
+          return (
+            <Link
+              key={m.id}
+              to={`/matches/${m.id}`}
+              className={cx("grid h-[38px] grid-cols-[minmax(0,1fr)_64px_56px] items-center text-[15px]", i < matches.length - 1 && "border-b border-line")}
+            >
+              <span className="truncate pr-2">{name}</span>
+              <span className="text-sm text-muted">{RESULT[m.result]}</span>
+              <span className={cx("font-display text-right text-xl font-bold", (delta ?? 0) <= 0 && "text-muted")}>
+                {delta === null ? "" : formatDelta(delta)}
+              </span>
+            </Link>
+          );
+        })
+      )}
+    </section>
   );
 }
 
 function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-3" role="status" aria-label="Loading">
-      <Skeleton className="h-52 rounded-3xl" />
-      <Skeleton className="h-28 rounded-3xl" />
+    <div className="flex flex-col gap-3 pt-4" role="status" aria-label="Loading">
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="h-24 w-56" />
+      <Skeleton className="h-[60px]" />
+      <Skeleton className="h-12" />
+      <Skeleton className="mt-4 h-16" />
       <Skeleton className="h-16" />
-      <Skeleton className="h-14" />
+      <Skeleton className="h-16" />
     </div>
   );
 }
@@ -180,7 +231,7 @@ function FirstCourseSheet() {
   const open = !hasPicked && !dismissed && !isLoading && courses.length > 1;
   return (
     <Sheet open={open} onClose={() => setDismissed(true)} title="Pick a course">
-      <p className="mb-3 text-sm text-muted">Everything on Home follows this. Switch any time with the pills.</p>
+      <p className="mb-3 text-sm text-muted">Everything on Home follows this. Switch any time at the top of Home.</p>
       <CoursePicker
         courses={courses}
         value={null}
@@ -196,52 +247,31 @@ function FirstCourseSheet() {
 export function Home() {
   const { courseId, error: coursesError, refetch: refetchCourses } = useCurrentCourse();
   const home = useHome(courseId);
+  const me = useMeData();
+  const config = useConfig();
+  // The verification banner takes some height: the rating block tightens to fit.
+  const banner = !me.user.emailVerified && !!config.data?.emailEnabled;
   return (
     <Page>
       <HomeHeader />
       <VerifyBanner />
-      <div className="mb-3">
-        <CourseSwitch />
-      </div>
+      <CourseSwitch />
       {coursesError ? (
-        <ErrorState error={coursesError} onRetry={() => void refetchCourses()} />
+        <ErrorState error={coursesError} onRetry={() => void refetchCourses()} className="mt-4" />
       ) : home.isPending ? (
         <HomeSkeleton />
       ) : home.error ? (
-        <ErrorState error={home.error} onRetry={() => void home.refetch()} />
+        <ErrorState error={home.error} onRetry={() => void home.refetch()} className="mt-4" />
       ) : (
-        <div className="flex flex-col gap-3">
-          <RankedCard home={home.data} />
-          <BotCard home={home.data} />
-          <PowerupsCard />
-          <MissedCard count={home.data.missedOpen} />
-          <SectionTitle
-            right={
-              home.data.recentMatches.length > 0 ? (
-                <Link to="/history" className="flex min-h-tap items-center px-1 text-sm font-medium text-you">
-                  All matches
-                </Link>
-              ) : null
-            }
-          >
-            Recent matches
-          </SectionTitle>
-          {home.data.recentMatches.length === 0 ? (
-            <div className="mb-4 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted">
-              <p>No matches yet. A bot is a good place to start.</p>
-              <Link to="/bots" className={buttonClass("bot", "px-5")}>
-                <BotIcon size={18} />
-                Play a bot
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {home.data.recentMatches.map((m) => (
-                <MatchRow key={m.id} match={m} />
-              ))}
-            </div>
-          )}
-        </div>
+        <>
+          <RankedBlock home={home.data} compact={banner} />
+          <div className={banner ? "mt-6" : "mt-7"}>
+            <MoreRows home={home.data} />
+          </div>
+          <div className={banner ? "mt-5" : "mt-6"}>
+            <RecentMatches matches={home.data.recentMatches} />
+          </div>
+        </>
       )}
       <FirstCourseSheet />
     </Page>

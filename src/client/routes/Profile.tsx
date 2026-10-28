@@ -1,231 +1,327 @@
-// Profiles (own and public): ratings and stats per course, accuracy per
-// lecture, head-to-head on someone else's profile, recent matches.
+// Profiles. Your own: ranked and bot ratings as two plates, played, won, lost
+// and drawn as four numbers, a few stat rows, accuracy per lecture as 6 px
+// bars. Someone else's: the head-to-head (you in teal, them in red, a split
+// bar), your last meetings, their stats, and Duel them as the primary.
 import { Link, useParams } from "react-router";
-import type { UserProfileResponse } from "@shared/api-schemas";
-import { ELO } from "@shared/game/config";
+import type { MatchSummary, UserProfileResponse } from "@shared/api-schemas";
+import { ELO, GLICKO } from "@shared/game/config";
 import { useCurrentCourse } from "../lib/course";
-import { botName, formatRating, percent } from "../lib/format";
+import { botName, percent } from "../lib/format";
 import { useMeData, useUserMatches, useUserProfile } from "../lib/queries";
-import { Page } from "../components/AppShell";
+import { Body, Icon, Screen, dayLabel, signed } from "../components/after/ui";
 import { Avatar } from "../components/Avatar";
-import { GearIcon } from "../components/icons";
-import { MatchRow } from "../components/MatchRow";
 import { CourseSwitch } from "../components/CourseSwitch";
-import { EmptyState, ErrorState, LoadingBlocks, PageHeader, SectionTitle, Skeleton, buttonClass, cx } from "../components/ui";
+import { ErrorState, HeaderIconLink, LoadingPlates, NameTag, Num, PageHeader, PrimaryLink, Quiet, Rating, SectionHeading, StatRow, cx } from "../components/ui";
 
-type CourseStats = UserProfileResponse["courses"][number];
+type Profile = UserProfileResponse;
+type CourseStats = Profile["courses"][number];
 
-/** Profile matches shown before "All matches". */
-const PROFILE_RECENT = 5;
+/** Accuracy under this many percent draws its bar in muted. */
+const WEAK_ACCURACY = 60;
+/** Meetings listed on someone else's profile. */
+const LAST_MEETINGS = 3;
 
-function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
+function Identity({ user, you }: { user: Profile["user"]; you: boolean }) {
   return (
-    <div className="rounded-xl bg-bg/50 px-3 py-2">
-      <p className={cx("truncate text-xl font-bold tabular-nums", tone)}>{value}</p>
-      <p className="text-[11px] tracking-wide text-muted uppercase">{label}</p>
+    <div className="flex items-center gap-3.5">
+      <Avatar user={user} size={56} you={you} />
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate font-display text-[28px] leading-[30px] font-bold">{user.displayUsername}</span>
+        <span className="truncate text-[15px] leading-5 text-muted">
+          {user.firstName} {user.lastName}
+        </span>
+      </span>
     </div>
   );
 }
 
-function accuracyTone(p: number): string {
-  if (p < 50) return "bg-wrong";
-  if (p < 75) return "bg-gold";
-  return "bg-correct";
+function RatingPlate({ label, value, provisional, start }: { label: string; value: number | null; provisional: boolean; start: number }) {
+  return (
+    <div className="plate flex min-w-0 flex-col px-3.5 py-2.5">
+      <span className="text-sm leading-5 text-muted">{label}</span>
+      <span className="font-display text-[40px] leading-[44px] font-bold">
+        <Rating value={value ?? start} provisional={provisional || value === null} />
+      </span>
+    </div>
+  );
 }
 
-function CourseBlock({ stats }: { stats: CourseStats }) {
-  const r = stats.ranked;
-  const b = stats.bot;
-  const strongest = b.highestBotLevel > 0 ? botName(b.highestBotLevel) : null;
-  const casualPlayed = stats.casual.played;
+function Accuracy({ stats }: { stats: CourseStats }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border border-ranked/30 bg-gradient-to-br from-[#2a1420] to-surface p-3">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-ranked-gold uppercase">Ranked</p>
-          <p className="font-display text-3xl font-black tabular-nums text-text">{formatRating(r.rating, r.provisional)}</p>
-        </div>
-        <div className="rounded-2xl border border-bot/30 bg-gradient-to-br from-[#0f2350] to-surface p-3">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-[#93c5fd] uppercase">Bot</p>
-          <p className="font-display text-3xl font-black tabular-nums text-[#bfdbfe]">{formatRating(b.rating, b.provisional, ELO.startBotRating)}</p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-border bg-surface p-3">
-        <p className="mb-2 text-xs font-semibold text-muted">Ranked matches</p>
-        <div className="grid grid-cols-4 gap-2">
-          <Stat label="Played" value={r.played} />
-          <Stat label="Won" value={r.won} tone="text-correct" />
-          <Stat label="Lost" value={r.lost} tone="text-wrong" />
-          <Stat label="Drawn" value={r.drawn} />
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          <Stat label="Surrendered" value={r.surrendered} />
-          <Stat label="Left early" value={r.abandoned} />
-          <Stat label="Best streak" value={r.bestStreak} tone="text-gold" />
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-border bg-surface p-3">
-        <p className="mb-2 text-xs font-semibold text-muted">Bot matches</p>
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="Played" value={b.played} />
-          <Stat label="Won" value={b.won} tone="text-correct" />
-          <Stat label="Strongest beaten" value={strongest ?? "None"} tone={strongest ? "text-[#bfdbfe] text-base" : "text-muted text-base"} />
-        </div>
-        {casualPlayed > 0 ? (
-          <p className="mt-2 text-xs text-muted">
-            Unrated friend games: {casualPlayed} played, {stats.casual.won} won, {stats.casual.lost} lost
-            {stats.casual.drawn > 0 ? `, ${stats.casual.drawn} drawn` : ""}
-          </p>
-        ) : null}
-      </div>
-
-      <SectionTitle>Accuracy per lecture</SectionTitle>
+    <>
+      <SectionHeading className="mt-3.5 mb-1.5">Accuracy per lecture</SectionHeading>
       {stats.accuracy.length === 0 ? (
-        <p className="text-sm text-muted">No answers in this course yet.</p>
+        <p className="m-0 text-sm leading-5 text-muted">No answers in this course yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface p-3">
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {stats.accuracy.map((a) => {
             const p = percent(a.correct, a.answers);
             return (
-              <li key={a.lectureId}>
-                <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-                  <span className="min-w-0 truncate">{a.title}</span>
-                  <span className="shrink-0 text-xs text-muted tabular-nums">
-                    {a.correct}/{a.answers} · <span className="font-semibold text-text">{p}%</span>
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-bg" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={`${a.title} accuracy`}>
-                  <div className={cx("h-full rounded-full", accuracyTone(p))} style={{ width: `${p}%` }} />
-                </div>
+              <li key={a.lectureId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-[3px]">
+                <span className="truncate text-sm leading-[18px]">{a.title}</span>
+                <span className="row-span-2 min-w-9 text-right font-display text-xl font-bold" aria-label={`${p}% of ${a.answers} answers right`}>
+                  {p}%
+                </span>
+                <span
+                  className="h-1.5 bg-line"
+                  role="meter"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={p}
+                  aria-label={`${a.title} accuracy`}
+                >
+                  <span className={cx("block h-1.5", p < WEAK_ACCURACY ? "bg-muted" : "bg-text")} style={{ width: `${p}%` }} />
+                </span>
               </li>
             );
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-function RecentMatches({ username, isSelf, courseId }: { username: string; isSelf: boolean; courseId: string | null }) {
-  const matches = useUserMatches(username, courseId);
-  const items = matches.data?.pages[0]?.items.slice(0, PROFILE_RECENT) ?? [];
-  const all = isSelf ? "/history" : `/history?user=${encodeURIComponent(username)}`;
-  return (
-    <>
-      <SectionTitle
-        right={
-          items.length > 0 ? (
-            <Link to={all} className="flex min-h-tap items-center px-1 text-sm font-medium text-you">
-              All matches
-            </Link>
-          ) : null
-        }
-      >
-        Recent matches
-      </SectionTitle>
-      {matches.isPending ? (
-        <LoadingBlocks count={2} />
-      ) : matches.error ? (
-        <ErrorState error={matches.error} onRetry={() => void matches.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-sm text-muted">No matches yet.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {items.map((m) => (
-            <MatchRow key={m.id} match={m} />
-          ))}
-        </div>
-      )}
     </>
   );
 }
 
-function ProfileView({ username }: { username: string }) {
-  const profile = useUserProfile(username);
-  // One course selection app-wide: the switch here is the same one Home and the leaderboard use.
-  const { courseId, course } = useCurrentCourse();
-
-  if (profile.isPending) {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-20 rounded-full" />
-          <div className="flex flex-1 flex-col gap-2">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </div>
-        <LoadingBlocks count={3} />
-      </div>
-    );
-  }
-  if (profile.error) return <ErrorState error={profile.error} onRetry={() => void profile.refetch()} />;
-
-  const data = profile.data;
-  const user = data.user;
-  const statsCourses = data.courses;
-  const shown = statsCourses.find((c) => c.courseId === courseId) ?? null;
-  const h2h = data.headToHead;
-
+function OwnStats({ stats }: { stats: CourseStats }) {
+  const r = stats.ranked;
+  const b = stats.bot;
+  const strongest = b.highestBotLevel > 0 ? botName(b.highestBotLevel) : null;
+  const c = stats.casual;
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <Avatar user={user} size={80} ring={data.isSelf ? "var(--color-you)" : "var(--color-opponent)"} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-2xl font-bold">{user.displayUsername}</p>
-          <p className="truncate text-muted">
-            {user.firstName} {user.lastName}
-          </p>
-        </div>
-        {data.isSelf ? (
-          <Link to="/settings" className={buttonClass("secondary", "px-3")} aria-label="Edit profile">
-            <GearIcon size={20} />
-            Edit
-          </Link>
-        ) : null}
+    <>
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <RatingPlate label="Ranked" value={r.rating} provisional={r.provisional} start={GLICKO.startRating} />
+        <RatingPlate label="Bot" value={b.rating} provisional={b.provisional} start={ELO.startBotRating} />
       </div>
+      <dl className="m-0 mt-3.5 grid grid-cols-4 gap-2">
+        {(
+          [
+            ["Played", r.played],
+            ["Won", r.won],
+            ["Lost", r.lost],
+            ["Drawn", r.drawn],
+          ] as const
+        ).map(([label, n]) => (
+          <div key={label} className="flex flex-col-reverse">
+            <dt className="text-sm leading-5 text-muted">{label}</dt>
+            <dd className="m-0 font-display text-[32px] leading-9 font-bold">{n}</dd>
+          </div>
+        ))}
+      </dl>
+      <dl className="m-0 mt-2 flex flex-col">
+        <StatRow label="Surrendered · left early">
+          <Num>
+            {r.surrendered} · {r.abandoned}
+          </Num>
+        </StatRow>
+        <StatRow label="Best win streak">
+          <Num>{r.bestStreak}</Num>
+        </StatRow>
+        <StatRow label="Strongest bot beaten" last={c.played === 0}>
+          <span className={cx("text-[15px] font-semibold", !strongest && "text-muted")}>{strongest ?? "None yet"}</span>
+        </StatRow>
+        {c.played > 0 ? (
+          <StatRow label="Unrated friend games · won" last>
+            <Num>
+              {c.played} · {c.won}
+            </Num>
+          </StatRow>
+        ) : null}
+      </dl>
+      <Accuracy stats={stats} />
+    </>
+  );
+}
 
-      {h2h && h2h.wins + h2h.losses + h2h.draws === 0 ? (
-        <p className="rounded-2xl border border-border bg-surface px-4 py-3 text-center text-sm text-muted">No duels between you two yet.</p>
-      ) : h2h ? (
-        <div className="flex items-center justify-center gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
-          <span className="text-sm text-muted">You</span>
-          <span className="font-display text-2xl font-bold tabular-nums">
-            <span className="text-you">{h2h.wins}</span>
-            <span className="mx-2 text-muted">·</span>
-            <span className="text-opponent">{h2h.losses}</span>
+/** Your record against them: big numbers in the player colours over a split bar. */
+function HeadToHead({ h2h, you, them }: { h2h: NonNullable<Profile["headToHead"]>; you: string; them: string }) {
+  const total = h2h.wins + h2h.losses;
+  return (
+    <section aria-label="Head to head" className="plate mt-5 p-4">
+      <span className="text-sm leading-5 text-muted">You against {them}</span>
+      {h2h.wins + h2h.losses + h2h.draws === 0 ? (
+        <p className="m-0 mt-2 text-[15px] leading-[22px]">No duels between you two yet.</p>
+      ) : (
+        <>
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end">
+            <div className="flex min-w-0 flex-col items-start gap-1">
+              <NameTag name={you} who="you" />
+              <span className="font-display text-[72px] leading-[72px] font-bold text-you">{h2h.wins}</span>
+            </div>
+            <span className="flex flex-col items-center pb-3.5 font-display text-[28px] font-bold text-muted">
+              ·{h2h.draws > 0 ? <span className="text-sm leading-5 font-semibold">{h2h.draws} drawn</span> : null}
+            </span>
+            <div className="flex min-w-0 flex-col items-end gap-1">
+              <NameTag name={them} who="opponent" />
+              <span className="font-display text-[72px] leading-[72px] font-bold text-opponent">{h2h.losses}</span>
+            </div>
+          </div>
+          {total > 0 ? (
+            <div aria-hidden className="mt-3 flex h-2 gap-0.5">
+              {h2h.wins > 0 ? <span className="bg-you" style={{ flex: h2h.wins }} /> : null}
+              {h2h.losses > 0 ? <span className="bg-opponent" style={{ flex: h2h.losses }} /> : null}
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+const RESULT_WORD: Record<MatchSummary["result"], string> = { win: "Won", loss: "Lost", draw: "Drawn", void: "Void" };
+
+/** Your matches against this player, newest first, from your own history. */
+function LastMeetings({ meUsername, themId, courseId }: { meUsername: string; themId: string; courseId: string | null }) {
+  const mine = useUserMatches(meUsername, courseId);
+  const meetings = (mine.data?.pages.flatMap((p) => p.items) ?? []).filter((m) => m.opponent?.id === themId).slice(0, LAST_MEETINGS);
+  if (mine.isPending || mine.error || meetings.length === 0) return null;
+  return (
+    <>
+      <SectionHeading className="mt-5 mb-0.5">Last meetings</SectionHeading>
+      {meetings.map((m, i) => (
+        <Link
+          key={m.id}
+          to={`/matches/${m.id}`}
+          className={cx("grid h-10 grid-cols-[minmax(0,1fr)_64px_56px] items-center text-[15px]", i < meetings.length - 1 && "border-b border-line")}
+        >
+          <span className="truncate">{dayLabel(m.endedAt)}</span>
+          <span className="text-sm text-muted">{RESULT_WORD[m.result]}</span>
+          <span className={cx("text-right font-display text-xl font-bold", m.result !== "win" && "text-muted")}>
+            {m.ratingChange !== null ? signed(m.ratingChange) : "·"}
           </span>
-          <span className="max-w-32 truncate text-sm text-muted">{user.displayUsername}</span>
-          {h2h.draws > 0 ? <span className="text-xs text-muted">({h2h.draws} drawn)</span> : null}
-        </div>
-      ) : null}
+        </Link>
+      ))}
+    </>
+  );
+}
 
-      <CourseSwitch />
-      {shown ? <CourseBlock stats={shown} /> : <EmptyState title={`No games in ${course?.shortTitle ?? "this course"} yet`} />}
+function TheirStats({ stats }: { stats: CourseStats }) {
+  const r = stats.ranked;
+  const strongest = stats.bot.highestBotLevel > 0 ? botName(stats.bot.highestBotLevel) : null;
+  return (
+    <dl className="m-0 mt-[18px] flex flex-col">
+      <StatRow label="Ranked rating">
+        <Num>
+          <Rating value={r.rating ?? GLICKO.startRating} provisional={r.provisional || r.rating === null} />
+        </Num>
+      </StatRow>
+      <StatRow label="Played · won · lost">
+        <Num>
+          {r.played} · {r.won} · {r.lost}
+        </Num>
+      </StatRow>
+      <StatRow label="Left early">
+        <Num>{r.abandoned}</Num>
+      </StatRow>
+      <StatRow label="Strongest bot beaten" last>
+        <span className={cx("text-[15px] font-semibold", !strongest && "text-muted")}>{strongest ?? "None yet"}</span>
+      </StatRow>
+    </dl>
+  );
+}
 
-      <RecentMatches username={user.username} isSelf={data.isSelf} courseId={courseId} />
+/** Duel them: the friend lobby (settings, then a code and a link to send them). */
+function DuelButton({ name }: { name: string }) {
+  return (
+    <div className="pt-6">
+      <PrimaryLink to="/friend">
+        <Icon name="swords" size={20} stroke={2.4} />
+        <span className="truncate">Duel {name}</span>
+      </PrimaryLink>
     </div>
   );
 }
 
+function useProfileData(username: string) {
+  const profile = useUserProfile(username);
+  const { courseId, course } = useCurrentCourse();
+  const shown = profile.data?.courses.find((c) => c.courseId === courseId) ?? null;
+  return { profile, courseId, course, shown };
+}
+
 export function MyProfile() {
   const me = useMeData();
+  const username = me.user.username ?? "";
+  const { profile, course, shown } = useProfileData(username);
   return (
-    <Page>
-      <PageHeader title="Profile" />
-      {me.user.username ? <ProfileView username={me.user.username} /> : <EmptyState title="Pick a username first" />}
-    </Page>
+    <Screen>
+      <PageHeader
+        title="Profile"
+        right={
+          <>
+            <HeaderIconLink to="/history" label="Match history"><Icon name="history" size={20} /></HeaderIconLink>
+            <HeaderIconLink to="/settings" label="Settings"><Icon name="gear" size={20} /></HeaderIconLink>
+          </>
+        }
+      />
+      <Body className="pb-3">
+        {!username ? (
+          <Quiet>Pick a username first.</Quiet>
+        ) : profile.isPending ? (
+          <LoadingPlates count={4} height={64} />
+        ) : profile.error ? (
+          <ErrorState error={profile.error} onRetry={() => void profile.refetch()} />
+        ) : (
+          <>
+            <Identity user={profile.data.user} you />
+            <div className="mt-4 empty:hidden">
+              <CourseSwitch />
+            </div>
+            {shown ? <OwnStats stats={shown} /> : <Quiet>No games in {course?.shortTitle ?? "this course"} yet.</Quiet>}
+          </>
+        )}
+      </Body>
+    </Screen>
   );
 }
 
 export function PublicProfile() {
   const { username = "" } = useParams();
+  return <PublicProfileView key={username} username={username} />;
+}
+
+function PublicProfileView({ username }: { username: string }) {
+  const me = useMeData();
+  const { profile, courseId, course, shown } = useProfileData(username);
+  const data = profile.data;
+  const them = data?.user.displayUsername ?? username;
   return (
-    <Page>
-      <PageHeader title="Player" back />
-      <ProfileView key={username} username={username} />
-    </Page>
+    <Screen bottomBar={false}>
+      <PageHeader title={them} back small />
+      <Body className="pb-6">
+        {profile.isPending ? (
+          <LoadingPlates count={4} height={64} />
+        ) : profile.error || !data ? (
+          <ErrorState error={profile.error} onRetry={() => void profile.refetch()} />
+        ) : (
+          <>
+            <Identity user={data.user} you={data.isSelf} />
+            {data.headToHead ? <HeadToHead h2h={data.headToHead} you={me.user.displayUsername ?? me.user.username ?? "You"} them={them} /> : null}
+            <div className="mt-4 empty:hidden">
+              <CourseSwitch />
+            </div>
+            {!data.isSelf && me.user.username ? <LastMeetings meUsername={me.user.username} themId={data.user.id} courseId={courseId} /> : null}
+            {shown ? (
+              data.isSelf ? (
+                <OwnStats stats={shown} />
+              ) : (
+                <>
+                  <TheirStats stats={shown} />
+                  <SectionHeading className="mt-5">
+                    <Link to={`/history?user=${encodeURIComponent(data.user.username)}`} className="flex h-11 w-full items-center justify-between text-[15px] font-semibold">
+                      All their matches
+                      <Icon name="right" size={16} stroke={2} className="text-muted" />
+                    </Link>
+                  </SectionHeading>
+                </>
+              )
+            ) : (
+              <Quiet>No games in {course?.shortTitle ?? "this course"} yet.</Quiet>
+            )}
+            <span className="flex-1" />
+            {!data.isSelf ? <DuelButton name={them} /> : null}
+          </>
+        )}
+      </Body>
+    </Screen>
   );
 }

@@ -1,53 +1,80 @@
 /*
- * Theme tokens (design.md "Tone and look"). Dark only in this release.
- * Tailwind v4: every --color-* and --font-* in @theme becomes a utility
- * (bg-you, text-gold, font-display, ...) and a CSS variable.
+ * Theme tokens: the Broadcast look (broadcast-spec.md: ground, plate,
+ * plate-dim, line, edge, text, muted, faint, you, opponent, event). The older
+ * names (bg, surface, border, gold, ...) stay as aliases so every screen
+ * picks the palette up.
+ * Dark only. Tailwind v4: every --color-*, --font-* and --radius-* in @theme
+ * becomes a utility (bg-you, text-gold, font-display, rounded-xl, ...) and a
+ * CSS variable.
+ *
+ * Colour marks a player only: teal is you, red is the opponent (always with
+ * dark text on it), yellow is an event or a power-up. A right answer is a
+ * text-colour fill with dark text; a wrong one is a red outline with a strike.
  */
 @import "tailwindcss";
 
 @theme {
-  /* Surfaces: deep navy */
-  --color-bg: #0a1128;
-  --color-surface: #121b3a;
-  --color-surface-2: #1b2650;
-  --color-border: #2a3766;
-  --color-text: #e8ecf8;
-  --color-muted: #8d97b8;
+  /* Surfaces (spec names first, then the aliases the screens use) */
+  --color-ground: #0e1013; /* page background, dark text on coloured plates */
+  --color-plate: #1a1e24; /* buttons, option plates, cards, clock plate */
+  --color-plate-dim: #15181d; /* revealed but irrelevant options, bottom nav, quiet panels */
+  --color-line: #2a2f37; /* hairlines, empty bar track, input border, 50:50 empty frame */
+  --color-edge: #08090b; /* the 3 px bottom edge under plates */
+  --color-text: #f2f4f7;
+  --color-muted: #8c939e;
+  --color-faint: #5e6570; /* the ? of provisional ratings, spent power-ups */
+  --color-event: #ffd23f; /* primary button, multiplier, damage plate, armable frame, K.O. */
+  --color-bg: #0e1013;
+  --color-surface: #1a1e24;
+  --color-surface-2: #2a2f37; /* a raised spot inside a plate: the line colour */
+  --color-sunken: #15181d;
+  --color-border: #2a2f37;
 
   /* Players */
-  --color-you: #2dd4bf; /* teal: you, your HP bar */
-  --color-you-dim: #115e59;
-  --color-opponent: #fb923c; /* orange: the opponent, their HP bar and answer dot */
-  --color-opponent-dim: #7c2d12;
+  --color-you: #3ce0c8; /* teal: you, your HP bar. Dark text on it. */
+  --color-you-dim: #1d6f64;
+  --color-opponent: #ff4f5e; /* red: the opponent. Dark text only, never white. */
+  --color-opponent-dim: #7a2a31;
 
-  /* Accents: gold is for small highlights (multiplier, ratings, wins), never large fields */
-  --color-gold: #e8b949;
+  /* Event: power-ups, the multiplier, the damage plate, the primary action */
+  --color-gold: #ffd23f;
 
-  /* Power-ups */
-  --color-bibi: #f5c542; /* Bibi: gold and thunder */
-  --color-shield: #a8b4cc; /* Shield: plain steel */
-  --color-fifty: #8b7bff; /* 50:50: the quiz show's blue-violet stage */
-  --color-fast: #2f7bff; /* Gotta Go Fast: blue blur */
+  /* Power-ups: the banners keep their own colours; everywhere else they are yellow */
+  --color-bibi: #ffd23f;
+  --color-shield: #a8b0bc;
+  --color-fifty: #8b7bff; /* 50:50 banner: the quiz show's blue-violet stage */
+  --color-fast: #2f7bff; /* Gotta Go Fast banner: blue blur */
 
-  /* Modes */
-  --color-ranked: #d9575b; /* ranked screens: muted red with gold accents */
-  --color-ranked-gold: #e8b949;
-  --color-bot: #4b83e6; /* bot screens: blue */
+  /* Modes no longer have colours of their own: ranked and private read as events, bot as plain text */
+  --color-ranked: #ffd23f;
+  --color-ranked-gold: #ffd23f;
+  --color-bot: #f2f4f7;
 
   /* Answers and damage */
-  --color-correct: #22c55e;
-  --color-wrong: #ef4444;
-  --color-hit-edge: #ff2d3a; /* red edge flash on big hits */
-  --color-speed-chip: #94a3b8; /* small grey chip for a speed hit */
+  --color-correct: #f2f4f7;
+  --color-wrong: #ff4f5e;
+  --color-hit-edge: #ff4f5e;
+  --color-speed-chip: #8c939e;
 
-  /* Type: Inter throughout; headings, numbers and power-up lines use its heavy weights */
-  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Type: Barlow for text, Barlow Condensed for numbers, names and callouts */
+  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Corners: plates and buttons 2 px, options 3 px. Only avatars are round (rounded-full). */
+  --radius: 2px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+  --radius-4xl: 2px;
 
   /* Layout */
   --spacing-tap: 3rem; /* 48 px minimum tap target */
-  --container-column: 30rem; /* 480 px centred column on laptops */
+  --container-column: 26.875rem; /* 430 px centred column on laptops */
 }
 
 @layer base {
@@ -56,6 +83,7 @@
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
@@ -64,6 +92,7 @@
     min-height: 100dvh;
     margin: 0;
     overflow-x: hidden;
+    background: var(--color-bg);
   }
 
   #root {
@@ -73,7 +102,53 @@
   }
 }
 
-/* Reduced motion: shakes and flashes become fades. Components check this too. */
+/*
+ * Plates and buttons. A plate is the surface colour with a 3 px darker bottom
+ * edge; pressed, it drops onto the edge. The primary action is a yellow plate
+ * with a 1 px frame 3 px outside it (keep 3 px free around it).
+ */
+@layer components {
+  .plate {
+    background-color: var(--color-surface);
+    box-shadow: 0 3px 0 var(--color-edge);
+  }
+
+  .press {
+    transition:
+      transform 60ms ease-out,
+      box-shadow 60ms ease-out;
+  }
+  .press:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--color-edge);
+  }
+
+  .frame {
+    outline: 1px solid var(--color-gold);
+    outline-offset: 3px;
+  }
+
+  .btn-primary {
+    background-color: var(--color-gold);
+    color: var(--color-bg);
+    font-family: var(--font-display);
+    font-weight: 700;
+    outline: 1px solid var(--color-gold);
+    outline-offset: 3px;
+    transition: transform 60ms ease-out;
+  }
+  /* Pressed, the fill and the frame drop 3 px together. */
+  .btn-primary:not(:disabled):active {
+    transform: translateY(3px);
+  }
+  .btn-primary:disabled {
+    background-color: var(--color-line);
+    color: var(--color-muted);
+    outline: none;
+  }
+}
+
+/* Reduced motion: no movement. Components check this too and keep colour changes. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

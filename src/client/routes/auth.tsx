@@ -3,7 +3,6 @@
 import { useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { APP_NAME } from "@shared/brand";
 import { LIMITS } from "@shared/game/config";
 import { authClient, authErrorMessage } from "../lib/auth-client";
 import { qk, useConfig } from "../lib/queries";
@@ -18,26 +17,43 @@ function joinHint(next: string, verb: string): string | null {
   return m ? `${verb} to join the duel. Code ${m[1]!.toUpperCase()}.` : null;
 }
 
+/**
+ * The auth screens: a 56 px bar with Back and the title, then the form, which
+ * fills the screen so its primary button and the footer line sit at the bottom.
+ */
 function AuthLayout({ title, children, footer, hint }: { title: string; children: ReactNode; footer: ReactNode; hint?: string | null }) {
   return (
-    <main className="flex min-h-dvh flex-col px-4 pt-2 pb-8">
-      <div className="flex min-h-14 items-center">
-        <Link to="/" className="flex size-12 items-center justify-center rounded-xl text-muted hover:text-text" aria-label="Back">
-          <BackIcon />
+    <main className="flex min-h-dvh flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <header className="flex h-14 flex-none items-center gap-1 px-1">
+        <Link to="/" className="flex size-11 items-center justify-center text-text" aria-label="Back">
+          <BackIcon size={22} />
         </Link>
-        <span className="font-display text-lg font-bold text-gold">{APP_NAME}</span>
-      </div>
-      <div className="mx-auto flex w-full flex-1 flex-col px-2 pt-4">
-        <h1 className={`font-display text-3xl font-bold ${hint ? "mb-2" : "mb-6"}`}>{title}</h1>
-        {hint ? <p className="mb-6 text-sm font-medium text-ranked-gold">{hint}</p> : null}
+        <h1 className="font-display min-w-0 flex-1 truncate text-[28px] leading-8 font-bold">{title}</h1>
+      </header>
+      <div className="flex flex-1 flex-col gap-3.5 px-4 pt-1">
+        {hint ? <p className="text-[15px] leading-[22px] font-semibold">{hint}</p> : null}
         {children}
-        <div className="mt-6 text-center text-sm text-muted">{footer}</div>
+        <p className="text-center text-[15px] leading-[22px] text-muted">{footer}</p>
       </div>
     </main>
   );
 }
 
-function GoogleButton({ next }: { next: string }) {
+function OrLine() {
+  return (
+    <div aria-hidden className="flex items-center gap-3 text-sm text-muted">
+      <span className="h-px flex-1 bg-line" />
+      or
+      <span className="h-px flex-1 bg-line" />
+    </div>
+  );
+}
+
+/** The footer link: text colour, semibold, with a full-height tap area. */
+const footerLink = "-my-3 inline-block px-1 py-3 font-semibold text-text";
+
+/** "Continue with Google" and the "or" line, above the form (sign up) or below it (log in). */
+function GoogleButton({ next, below }: { next: string; below?: boolean }) {
   const config = useConfig();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,23 +72,22 @@ function GoogleButton({ next }: { next: string }) {
       setBusy(false);
     }
   };
-  return (
+  const button = (
+    <Button variant="google" className="min-h-13 w-full" onClick={go} loading={busy}>
+      Continue with Google
+    </Button>
+  );
+  return below ? (
     <>
-      <Button variant="google" className="w-full" onClick={go} loading={busy}>
-        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
-          <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
-        </svg>
-        Continue with Google
-      </Button>
+      <OrLine />
+      {button}
       <FormError message={error} />
-      <div className="my-5 flex items-center gap-3 text-xs text-muted uppercase">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
+    </>
+  ) : (
+    <>
+      {button}
+      <FormError message={error} />
+      <OrLine />
     </>
   );
 }
@@ -131,14 +146,14 @@ export function SignUp() {
       footer={
         <>
           Have an account?{" "}
-          <Link to={withNext("/login", next)} className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
+          <Link to={withNext("/login", next)} className={footerLink}>
             Log in
           </Link>
         </>
       }
     >
       <GoogleButton next={next} />
-      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={submit} className="flex flex-1 flex-col gap-3.5" noValidate>
         <TextField label="Email" type="email" autoComplete="email" inputMode="email" value={form.email} onChange={set("email")} error={errors.email} />
         <TextField
           label="Password"
@@ -157,15 +172,16 @@ export function SignUp() {
           value={form.username}
           onChange={set("username")}
           error={errors.username}
-          hint="Shown to other players"
+          hint="Shown in duels and on the leaderboard"
         />
         <div className="grid grid-cols-2 gap-3">
           <TextField label="First name" autoComplete="given-name" value={form.firstName} onChange={set("firstName")} error={errors.firstName} />
           <TextField label="Surname" autoComplete="family-name" value={form.lastName} onChange={set("lastName")} error={errors.lastName} />
         </div>
         <FormError message={formError} />
-        <Button type="submit" variant="primary" loading={busy} className="mt-2 text-lg">
-          Sign up
+        <div className="min-h-2 flex-1" />
+        <Button type="submit" variant="primary" loading={busy}>
+          Create account
         </Button>
       </form>
     </AuthLayout>
@@ -207,25 +223,28 @@ export function LogIn() {
       hint={joinHint(next, "Log in")}
       footer={
         <>
-          New here?{" "}
-          <Link to={withNext("/signup", next)} className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
+          No account yet?{" "}
+          <Link to={withNext("/signup", next)} className={footerLink}>
             Sign up
           </Link>
         </>
       }
     >
-      <GoogleButton next={next} />
-      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-3.5" noValidate>
         <TextField label="Email or username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={id} onChange={(e) => setId(e.target.value)} />
-        <TextField label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="flex flex-col">
+          <TextField label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Link to="/reset-password" className="-mb-2 flex min-h-tap items-center self-end text-sm text-muted hover:text-text">
+            Forgot password?
+          </Link>
+        </div>
         <FormError message={formError} />
-        <Button type="submit" loading={busy} className="mt-2 text-lg">
+        <Button type="submit" loading={busy}>
           Log in
         </Button>
-        <Link to="/reset-password" className="flex min-h-tap items-center justify-center text-sm text-muted hover:text-text">
-          Forgot password?
-        </Link>
       </form>
+      <GoogleButton next={next} below />
+      <div className="flex-1" />
     </AuthLayout>
   );
 }
@@ -241,7 +260,7 @@ export function ResetPassword() {
   const [error, setError] = useState<string | null>(params.get("error") ? "This link is invalid or has expired." : null);
 
   const footer = (
-    <Link to="/login" className="inline-flex min-h-tap items-center px-1 font-semibold text-you">
+    <Link to="/login" className={footerLink}>
       Back to log in
     </Link>
   );
@@ -266,7 +285,7 @@ export function ResetPassword() {
     };
     return (
       <AuthLayout title="New password" footer={footer}>
-        <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        <form onSubmit={submit} className="flex flex-1 flex-col gap-3.5" noValidate>
           <TextField label="New password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <FormError message={error} />
           <Button type="submit" loading={state === "busy"}>
@@ -280,7 +299,7 @@ export function ResetPassword() {
   if (config.data && !config.data.emailEnabled) {
     return (
       <AuthLayout title="Forgot password" footer={footer}>
-        <p className="text-muted">Password reset by email is not available yet. Message Stas and he will set a temporary password for you.</p>
+        <p className="flex-1 text-base leading-6 text-muted">Password reset by email is not available yet. Message Stas and he will set a temporary password for you.</p>
       </AuthLayout>
     );
   }
@@ -305,9 +324,9 @@ export function ResetPassword() {
   return (
     <AuthLayout title="Forgot password" footer={footer}>
       {state === "sent" ? (
-        <p className="text-muted">If that email has an account, a reset link is on its way.</p>
+        <p className="flex-1 text-base leading-6 text-muted">If that email has an account, a reset link is on its way.</p>
       ) : (
-        <form onSubmit={request} className="flex flex-col gap-4" noValidate>
+        <form onSubmit={request} className="flex flex-1 flex-col gap-3.5" noValidate>
           <TextField label="Email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <FormError message={error} />
           <Button type="submit" loading={state === "busy"} disabled={!config.data}>

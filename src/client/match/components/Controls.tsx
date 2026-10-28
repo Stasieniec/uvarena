@@ -10,7 +10,7 @@ export function MuteButton({ on, onToggle }: { on: boolean; onToggle(): void }) 
     <button
       type="button"
       onClick={onToggle}
-      className="flex h-11 w-11 items-center justify-center rounded-full text-muted active:bg-white/10"
+      className="flex h-11 w-11 items-center justify-center text-muted active:text-text"
       aria-label={on ? "Mute sounds" : "Turn sounds on"}
       aria-pressed={!on}
     >
@@ -47,8 +47,6 @@ export function SurrenderButton({ enabled, onSurrender }: { enabled: boolean; on
     }, FX.surrenderHoldMs);
   };
 
-  const r = 19;
-  const circ = 2 * Math.PI * r;
   return (
     <div className="relative">
       <button
@@ -66,30 +64,21 @@ export function SurrenderButton({ enabled, onSurrender }: { enabled: boolean; on
           if ((e.key === "Enter" || e.key === " ") && !e.repeat) start();
         }}
         onKeyUp={cancel}
-        className="relative flex h-11 w-11 touch-none items-center justify-center rounded-full text-white/85 select-none active:bg-white/10 disabled:opacity-30"
+        className={`relative flex h-11 w-11 touch-none items-center justify-center select-none disabled:opacity-30 ${holding ? "text-text" : "text-muted"}`}
         aria-label={LINES.holdToSurrender}
         title={LINES.holdToSurrender}
       >
         <FlagIcon />
-        <svg className="pointer-events-none absolute inset-0 -rotate-90" viewBox="0 0 44 44" aria-hidden>
-          <circle
-            cx="22"
-            cy="22"
-            r={r}
-            fill="none"
-            stroke="#fff"
-            strokeWidth="3"
-            strokeDasharray={circ}
-            strokeDashoffset={holding ? 0 : circ}
-            className={holding ? "rq-hold" : undefined}
-            style={{ transition: holding ? `stroke-dashoffset ${FX.surrenderHoldMs}ms linear` : "none" }}
+        {/* While held, a bar along the bottom edge fills over the hold time. At rest the icon stands alone, as on the boards. */}
+        <span className={`pointer-events-none absolute inset-x-2 bottom-1.5 h-0.5 bg-border ${holding ? "" : "opacity-0"}`} aria-hidden>
+          <span
+            className={`block h-full origin-left bg-text ${holding ? "rq-hold" : ""}`}
+            style={{ transform: holding ? "scaleX(1)" : "scaleX(0)", transition: holding ? `transform ${FX.surrenderHoldMs}ms linear` : "none" }}
           />
-        </svg>
+        </span>
       </button>
       {holding && (
-        <div className="absolute top-full right-0 z-50 mt-1 rounded-md bg-black/85 px-2 py-1 text-xs font-semibold whitespace-nowrap text-white">
-          {LINES.holdToSurrender}
-        </div>
+        <div className="absolute top-full right-0 z-50 mt-1 bg-surface px-2 py-1 text-sm whitespace-nowrap text-text">{LINES.holdToSurrender}</div>
       )}
     </div>
   );
