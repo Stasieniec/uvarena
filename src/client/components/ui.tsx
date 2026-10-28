@@ -12,9 +12,9 @@ export type ButtonVariant = "primary" | "ranked" | "bot" | "secondary" | "ghost"
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-you text-bg hover:brightness-110 active:brightness-95 font-semibold",
-  ranked: "bg-gradient-to-b from-ranked to-[#b5262b] text-white font-semibold shadow-[0_0_0_1px_rgb(245_197_66/0.45)_inset] hover:brightness-110",
+  ranked: "bg-ranked text-white font-semibold shadow-[0_0_0_1px_rgb(232_185_73/0.3)_inset] hover:brightness-110",
   bot: "bg-bot text-white font-semibold hover:brightness-110",
-  gold: "bg-zeus text-bg font-semibold hover:brightness-110",
+  gold: "bg-gold text-bg font-semibold hover:brightness-110",
   secondary: "bg-surface-2 text-text border border-border hover:border-muted/60",
   ghost: "bg-transparent text-text hover:bg-surface-2",
   google: "bg-white text-[#1f1f1f] font-medium hover:bg-white/90",

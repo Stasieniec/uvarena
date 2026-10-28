@@ -32,7 +32,7 @@ export function QuestionText({ question, fill }: { question: Pick<QuestionPublic
               <span
                 className={cx(
                   "mx-0.5 inline-block min-w-16 rounded-md border-b-2 px-2 text-center",
-                  fill ? "border-correct bg-correct/10 text-correct" : "border-zeus bg-zeus/10 text-transparent",
+                  fill ? "border-correct bg-correct/10 text-correct" : "border-gold bg-gold/10 text-transparent",
                 )}
               >
                 {fill ?? "blank"}

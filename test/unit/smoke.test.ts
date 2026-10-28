@@ -11,7 +11,7 @@ describe("scaffold", () => {
   it("loads the shared config", () => {
     expect(APP_NAME.length).toBeGreaterThan(0);
     expect(MATCH.startHp).toBe(6000);
-    expect(SCORING.zeusRoundCap).toBe(4500);
+    expect(SCORING.bibiRoundCap).toBe(4500);
     expect(BOT_LADDER.map((b) => b.rating)).toEqual([1050, 1200, 1350, 1500, 1650, 1800, 1950, 2100]);
     expect(CLOSE_CODES.replaced).toBe(4001);
   });
@@ -35,8 +35,8 @@ describe("scaffold", () => {
       answer: { kind: "options", ids: ["x7Kq2a"] },
     });
     expect(parseClientMessage("ping")).toBeNull();
-    expect(parseClientMessage(JSON.stringify({ type: "arm", round: 1, powerup: "oracle" }))).toBeNull();
-    expect(parseServerMessage(JSON.stringify({ type: "opponent_powerup", serverNow: 1, round: 2, powerup: "hermes" }))?.type).toBe(
+    expect(parseClientMessage(JSON.stringify({ type: "arm", round: 1, powerup: "fifty" }))).toBeNull();
+    expect(parseServerMessage(JSON.stringify({ type: "opponent_powerup", serverNow: 1, round: 2, powerup: "fast" }))?.type).toBe(
       "opponent_powerup",
     );
   });

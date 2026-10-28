@@ -19,7 +19,7 @@ export function CoursePicker({ courses, value, onPick, busy }: { courses: Course
                 on ? "border-you bg-you/10" : "border-border bg-surface hover:border-muted/60",
               )}
             >
-              <span className="font-display flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-sm font-bold text-zeus">
+              <span className="font-display flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-sm font-bold text-gold">
                 {c.code.slice(0, 4)}
               </span>
               <span className="min-w-0 flex-1">

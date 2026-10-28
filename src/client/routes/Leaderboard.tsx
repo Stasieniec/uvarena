@@ -11,7 +11,7 @@ import { EmptyState, ErrorState, LoadingBlocks, PageHeader, SectionTitle, cx } f
 
 type Row = LeaderboardResponse["established"][number];
 
-const MEDAL = ["text-zeus", "text-[#cbd5e1]", "text-aegis"];
+const MEDAL = ["text-gold", "text-[#cbd5e1]", "text-[#c08457]"];
 
 function Rows({ rows, meId, provisional }: { rows: Row[]; meId: string; provisional?: boolean }) {
   return (

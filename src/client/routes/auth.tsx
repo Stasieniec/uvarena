@@ -25,7 +25,7 @@ function AuthLayout({ title, children, footer, hint }: { title: string; children
         <Link to="/" className="flex size-12 items-center justify-center rounded-xl text-muted hover:text-text" aria-label="Back">
           <BackIcon />
         </Link>
-        <span className="font-display text-lg font-bold text-zeus">{APP_NAME}</span>
+        <span className="font-display text-lg font-bold text-gold">{APP_NAME}</span>
       </div>
       <div className="mx-auto flex w-full flex-1 flex-col px-2 pt-4">
         <h1 className={`font-display text-3xl font-bold ${hint ? "mb-2" : "mb-6"}`}>{title}</h1>
@@ -164,7 +164,7 @@ export function SignUp() {
           <TextField label="Surname" autoComplete="family-name" value={form.lastName} onChange={set("lastName")} error={errors.lastName} />
         </div>
         <FormError message={formError} />
-        <Button type="submit" variant="gold" loading={busy} className="mt-2 text-lg">
+        <Button type="submit" variant="primary" loading={busy} className="mt-2 text-lg">
           Sign up
         </Button>
       </form>

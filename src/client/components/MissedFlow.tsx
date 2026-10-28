@@ -221,7 +221,7 @@ export function MissedFlow({
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4">
-        {q.type === "multi" ? <p className="mb-2 text-xs font-semibold tracking-wider text-zeus uppercase">Select all that apply</p> : null}
+        {q.type === "multi" ? <p className="mb-2 text-xs font-semibold tracking-wider text-gold uppercase">Select all that apply</p> : null}
         <QuestionText question={q} fill={fill} />
       </div>
 

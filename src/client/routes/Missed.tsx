@@ -186,7 +186,7 @@ export function MissedRun() {
         <EmptyState title="Nothing to review">Questions you get wrong in a match land here.</EmptyState>
       ) : done ? (
         <div className="pop-in flex flex-col items-center gap-4 py-10 text-center">
-          <p className="font-display text-4xl font-bold text-zeus">Done</p>
+          <p className="font-display text-4xl font-bold text-gold">Done</p>
           <p className="text-muted">
             {right} of {ids.length} right on the retry.
           </p>

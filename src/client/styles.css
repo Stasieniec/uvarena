@@ -1,12 +1,12 @@
 /*
  * Theme tokens (design.md "Tone and look"). Dark only in this release.
  * Tailwind v4: every --color-* and --font-* in @theme becomes a utility
- * (bg-you, text-zeus, font-display, ...) and a CSS variable.
+ * (bg-you, text-gold, font-display, ...) and a CSS variable.
  */
 @import "tailwindcss";
 
 @theme {
-  /* Surfaces: deep arcade navy */
+  /* Surfaces: deep navy */
   --color-bg: #0a1128;
   --color-surface: #121b3a;
   --color-surface-2: #1b2650;
@@ -20,18 +20,19 @@
   --color-opponent: #fb923c; /* orange: the opponent, their HP bar and answer dot */
   --color-opponent-dim: #7c2d12;
 
+  /* Accents: gold is for small highlights (multiplier, ratings, wins), never large fields */
+  --color-gold: #e8b949;
+
   /* Power-ups */
-  --color-zeus: #f5c542; /* gold: anything Zeus touches */
-  --color-aegis: #cd7f32; /* bronze shield */
-  --color-nemesis: #a855f7;
-  --color-oracle: #60a5fa;
-  --color-hermes: #e2e8f0;
-  --color-phoenix: #f97316;
+  --color-bibi: #f5c542; /* Bibi: gold and thunder */
+  --color-shield: #a8b4cc; /* Shield: plain steel */
+  --color-fifty: #8b7bff; /* 50:50: the quiz show's blue-violet stage */
+  --color-fast: #2f7bff; /* Gotta Go Fast: blue blur */
 
   /* Modes */
-  --color-ranked: #e5484d; /* ranked screens: red and gold */
-  --color-ranked-gold: #f5c542;
-  --color-bot: #3b82f6; /* bot screens: blue */
+  --color-ranked: #d9575b; /* ranked screens: muted red with gold accents */
+  --color-ranked-gold: #e8b949;
+  --color-bot: #4b83e6; /* bot screens: blue */
 
   /* Answers and damage */
   --color-correct: #22c55e;
@@ -39,8 +40,8 @@
   --color-hit-edge: #ff2d3a; /* red edge flash on big hits */
   --color-speed-chip: #94a3b8; /* small grey chip for a speed hit */
 
-  /* Type: Cinzel for power-up lines and WIN/LOSS, Inter for questions and buttons */
-  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  /* Type: Inter throughout; headings, numbers and power-up lines use its heavy weights */
+  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 

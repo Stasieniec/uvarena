@@ -74,12 +74,12 @@ export function VerifyBanner() {
     setState(error ? "failed" : "sent");
   };
   return (
-    <div className="mb-3 flex items-center gap-3 rounded-xl border border-zeus/30 bg-zeus/5 py-1 pr-1 pl-3 text-sm">
+    <div className="mb-3 flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/5 py-1 pr-1 pl-3 text-sm">
       <p className="flex-1 text-muted">
         {state === "sent" ? "Sent. Check your inbox." : state === "failed" ? "Could not send it. Try again later." : "Verify your email when you get a moment."}
       </p>
       {state === "idle" || state === "failed" ? (
-        <button type="button" onClick={resend} className="min-h-tap rounded-lg px-3 font-semibold text-zeus hover:bg-zeus/10">
+        <button type="button" onClick={resend} className="min-h-tap rounded-lg px-3 font-semibold text-gold hover:bg-gold/10">
           Resend
         </button>
       ) : null}

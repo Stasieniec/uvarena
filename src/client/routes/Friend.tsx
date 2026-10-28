@@ -135,7 +135,7 @@ function JoinTab({ initial }: { initial: string }) {
         autoFocus
       />
       {dropped ? (
-        <p className="text-center text-sm text-zeus" role="status">
+        <p className="text-center text-sm text-gold" role="status">
           Codes never use 0, O, 1 or I.
         </p>
       ) : null}

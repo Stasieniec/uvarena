@@ -126,7 +126,7 @@ export function Queue() {
               </span>
             </div>
             {state.kind === "found" ? (
-              <p className="font-display pop-in text-3xl font-bold text-ranked-gold">Opponent found</p>
+              <p className="font-display pop-in text-3xl font-bold text-text">Opponent found</p>
             ) : (
               <div>
                 <p className="font-display text-5xl font-bold tabular-nums" aria-live="off">

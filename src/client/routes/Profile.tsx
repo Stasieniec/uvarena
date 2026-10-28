@@ -29,7 +29,7 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 
 function accuracyTone(p: number): string {
   if (p < 50) return "bg-wrong";
-  if (p < 75) return "bg-zeus";
+  if (p < 75) return "bg-gold";
   return "bg-correct";
 }
 
@@ -41,9 +41,9 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border border-ranked-gold/30 bg-gradient-to-br from-[#3a1420] to-surface p-3">
+        <div className="rounded-2xl border border-ranked/30 bg-gradient-to-br from-[#2a1420] to-surface p-3">
           <p className="text-[11px] font-semibold tracking-[0.16em] text-ranked-gold uppercase">Ranked</p>
-          <p className="font-display text-3xl font-black tabular-nums text-ranked-gold">{formatRating(r.rating, r.provisional)}</p>
+          <p className="font-display text-3xl font-black tabular-nums text-text">{formatRating(r.rating, r.provisional)}</p>
         </div>
         <div className="rounded-2xl border border-bot/30 bg-gradient-to-br from-[#0f2350] to-surface p-3">
           <p className="text-[11px] font-semibold tracking-[0.16em] text-[#93c5fd] uppercase">Bot</p>
@@ -62,7 +62,7 @@ function CourseBlock({ stats }: { stats: CourseStats }) {
         <div className="mt-2 grid grid-cols-3 gap-2">
           <Stat label="Surrendered" value={r.surrendered} />
           <Stat label="Left early" value={r.abandoned} />
-          <Stat label="Best streak" value={r.bestStreak} tone="text-zeus" />
+          <Stat label="Best streak" value={r.bestStreak} tone="text-gold" />
         </div>
       </div>
 
