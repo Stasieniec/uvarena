@@ -8,7 +8,9 @@ Two players get the same question at the same moment. Answer right and faster th
 
 Bot matches are the same duel against a bot, with their own rating. Every question you miss goes into a list you can review later, with the explanation and a link to the lecture note.
 
-Launch courses: Agentic AI and Engineering Production-Ready ML/AI Systems. Each course has its own ratings and its own leaderboard. The game lives on its own subdomain, and notes.swasilewski.com carries on as it is.
+Course: Agentic AI. Engineering Production-Ready ML/AI Systems was dropped on 2026-10-28, since only Agentic AI has an exam this period; its quiz files stay in the vault, and a migration plus a bank import brings a course back. Each course has its own ratings and its own leaderboard. The game lives on its own subdomain, and notes.swasilewski.com carries on as it is.
+
+The look is a serious study platform. Only the power-ups are unhinged.
 
 A match takes about 3 to 5 minutes.
 
@@ -34,7 +36,7 @@ Each name was checked with a web search on 2026-10-22.
 
 ## First visit and sign-up
 
-The landing page is one screen: the name, one line ("Ranked duels on your course material"), a short looping animation of a Zeus strike, and two buttons: **Sign up** and **Log in**.
+The landing page is one screen: the name, one line ("Ranked duels on your course material"), a quiet looping picture of two HP bars trading hits around a question, and two buttons: **Sign up** and **Log in**. A small **Credits** link underneath (and at the bottom of Settings) opens the image credits for the power-up banners.
 
 Sign-up asks for email, password (at least 8 characters), username, first name and surname. **Continue with Google** skips the email and password, and then asks only for a username, with first name and surname filled in from Google.
 
@@ -42,13 +44,13 @@ Verification: you get a verification email, and you can play straight away. A sm
 
 A profile picture is optional. Until you add one you get your initials on a coloured circle. You can upload one later: pick a photo, crop it square, done.
 
-After sign-up you land on Home with the course picker open, so you choose Agentic AI or Engineering first.
+After sign-up you land on Home. With more than one course on offer the course picker opens first; with one, it is picked for you.
 
 ## Home
 
 From top to bottom on a phone:
 
-- **Your avatar and username**, a sound toggle, and a course switch: two pills, Agentic AI and Engineering. Everything below is for the selected course.
+- **Your avatar and username**, a sound toggle, and a course switch: one pill per course, shown only when more than one course is on offer. Everything below is for the selected course.
 - **Ranked** card: your ranked rating (for example "1500?", the question mark means provisional), with two buttons: **Find a duel** and **Duel a friend**. Below them, how many people are searching right now.
 - **Bot match** card: your bot rating and the next bot on your ladder, with a **Play** button.
 - **Power-ups**: your three picked power-ups as icons. Tap to change them.
@@ -61,25 +63,25 @@ If you have a match running (you refreshed, or switched phones), Home shows a re
 
 ## Modes
 
-Ranked play (against people) and bot matches are separate modes with separate ratings. Ranked looks red and gold, bot matches look blue, so you always know which one you are in.
+Ranked play (against people) and bot matches are separate modes with separate ratings. Ranked carries a muted red with small gold accents, bot matches a muted blue, so you always know which one you are in.
 
 ### Bot match
 
 1. Tap **Play** on the Bot match card. You see the bot ladder.
-2. At the top is **Echo**, who always plays at your level ("repeats your level back to you"). Below are eight named bots, weakest first. Each is unlocked by beating the one before it.
+2. At the top is **Echo**, who always plays at your level ("Plays at your level."). Below are eight student bots, weakest first. Each is unlocked by beating the one before it.
 3. Optional: a **Lectures** chip lets you limit questions to some lectures, for example only the ones taught so far.
 4. Tap a bot. The match intro shows both players and both power-up loadouts for 4 seconds, then round 1 starts.
 
 | Bot | Rating | Line |
 |---|---|---|
-| Icarus | 1050 | Flies at every answer. Lands in most of them. |
-| Narcissus | 1200 | Admires his own wrong answers. |
-| Sisyphus | 1350 | Almost there. Every time. |
-| Pandora | 1500 | Opens every option to see what happens. |
-| Odysseus | 1650 | Takes the long way, gets there. |
-| Cassandra | 1800 | Always right. Nobody believes her. |
-| Athena | 1950 | Did the reading. |
-| Prometheus | 2100 | Stole the answer key. |
+| Skimmed the slides | 1050 | Recognises most of the words. |
+| Attended once | 1200 | Remembers the room, mostly. |
+| Has the notes open | 1350 | Searches faster than they read. |
+| Did the reading | 1500 | Most of it. The first half twice. |
+| Went to every tutorial | 1650 | Knows which questions come back. |
+| Made the flashcards | 1800 | Has seen this one before. |
+| Asks questions after class | 1950 | Already asked about your answer. |
+| Wrote the exam | 2100 | Knows why the wrong options are there. |
 
 Stronger bots answer more correctly and faster. They get wrong the questions that people at their level get wrong, so they fall for the same tempting wrong options a classmate would.
 
@@ -118,10 +120,10 @@ Both players start at **6,000 HP**.
 
 ### One round
 
-1. **Arming (3 seconds).** "Round 6" appears with the multiplier. Your blind power-ups (Zeus, Aegis, Nemesis) glow. Tap one to arm it before you know the question. Your opponent cannot see what you armed.
+1. **Arming (3 seconds).** "Round 6" appears with the multiplier. Your blind power-ups (Bibi, Shield) glow. Tap one to arm it before you know the question. Your opponent cannot see what you armed.
 2. **Banners (1.5 seconds, only if someone armed something).** Armed power-ups are revealed with their full-screen line, to both players.
 3. **Question.** The question appears and the timer starts: 15 seconds for true/false, 20 for single choice, 30 for multiple select, plus up to 10 seconds of reading time for long questions.
-4. **Answering.** Tap an option and it is locked in. When either player answers, the other sees "Opponent answered" and their timer drops to **5 seconds** (or less if less was left). Someone who knows the answer barely notices. Someone searching their notes is in trouble.
+4. **Answering.** Tap an option and it is locked in. When either player answers, the other sees "Opponent answered" and their timer drops to **10 seconds** (or less if less was left), or 5 seconds if the first player used Gotta Go Fast. Someone who knows the answer barely notices. Someone searching their notes is in trouble.
 5. **Reveal (5 seconds).** Both answers flip. The right option turns green, a wrong pick turns red, and your opponent's pick is marked with a small dot of their colour. Damage flies across, then one line of explanation. If you got it wrong, a small tag says "Saved to missed questions".
 
 Running out the timer counts as a wrong answer.
@@ -143,7 +145,7 @@ The lower scorer takes the difference as damage, times the round multiplier:
 
 **Multiplier:** x1 for rounds 1 to 4, then up by 0.5 every round: x1.5 in round 5, x2 in round 6, x2.5 in round 7, and so on.
 
-**Cap:** one round deals at most **3,000** damage (half your starting HP), or **4,500** in a Zeus round. So no single answer ends a match from full HP.
+**Cap:** one round deals at most **3,000** damage (half your starting HP), or **4,500** in a Bibi round. So no single answer ends a match from full HP.
 
 Example: round 6 (x2). You answer right after 4 of 20 seconds: 900 points. Your opponent answers wrong: 0. They take (900 - 0) x 2 = 1,800.
 
@@ -164,67 +166,51 @@ The end screen shows:
 
 ## Power-ups
 
-Before a match you pick **3 of 6** power-ups. Each can be used once per match, and at most one per round (Phoenix, which is passive, does not count). Both loadouts are shown at the start of the match, so you know what your opponent could throw at you.
+Before a match you pick **3 of 4** power-ups. Each can be used once per match, and at most one per round. Both loadouts are shown at the start of the match, so you know what your opponent could throw at you.
 
-Everyone has all six from day one, in every mode, ranked included. Nothing is bought or unlocked.
+Everyone has all four from day one, in every mode, ranked included. Nothing is bought or unlocked.
 
 Blind power-ups are armed in the 3 seconds before the question. Quick ones are used after you see the question, before you answer.
 
-### Zeus (blind)
+The power-ups are the one place the app is loud. Each has its own banner for 1.5 seconds; the question is never covered while the timer runs.
 
-On screen: lightning down the middle, white flash, thunder, then **"ZEUS, STRIKE THEM DOWN!"** in giant gold capitals.
+### Bibi (blind)
+
+On screen: white flash, a bolt down the middle, thunder and a sub-bass boom, then a big face (`/powerups/bibi.png`) slamming in over **"BENJAMIN NETANYAHU, STRIKE HIM DOWN!"** in huge white type with a gold glow. Without the picture the line shows on its own.
 
 Effect: damage you deal this round is doubled, and the round's cap rises from 3,000 to 4,500.
 
-If you deal no damage (you are wrong, or slower), it fizzles: "Zeus is unimpressed." It is spent either way.
+If you deal no damage (you are wrong, or slower), it fizzles: "Bibi is unimpressed." It is spent either way.
 
-Counterplay: Aegis halves it, Nemesis cancels it, and answering right yourself makes it hit for little.
+Counterplay: Shield halves it, and answering right yourself makes it hit for little.
 
-### Aegis (blind)
+### Shield (blind)
 
-On screen: a bronze shield slams into place. **"THE AEGIS HOLDS."** Smaller underneath: "Athena sends her regards."
+On screen: plain and serious. A shield icon, **"Shield up."**, and underneath "Damage halved this round." A short metal clang. No joke.
 
 Effect: damage you take this round is halved (after the cap).
 
-Counterplay: it is a guess. If your opponent saved Zeus for later, you spent your shield on nothing.
+Counterplay: it is a guess. If your opponent saved Bibi for later, you spent your shield on nothing.
 
-### Nemesis (blind)
+### 50:50 (quick)
 
-On screen: the opponent's banner cracks and shatters. **"NEMESIS HAS READ YOUR PLANS."**
-
-Effect: cancels whatever your opponent armed this round, and their power-up is spent. It also stops their Phoenix this round.
-
-If they armed nothing, Nemesis only stops their Phoenix this round, if they have one: "NEMESIS IS WATCHING." Without a Phoenix to stop, it is wasted.
-
-Counterplay: arm nothing in the round you expect it. Two Nemeses cancel each other.
-
-### Oracle (quick)
-
-On screen, for you: wrong options crumble away. **"THE ORACLE HAS SPOKEN."** Your opponent sees a small banner: "They asked the Oracle."
+On screen, for you: the Milionerzy lifeline. A strip over the opponent bar with the show's dark blue and violet stage glow, the show logo on the left (`/powerups/milionerzy-logo.png`), the host's face on the right (`/powerups/milionerzy-host.png`), and **"FIFTY FIFTY."** in the middle, with the show's descending lifeline sound. Then two wrong options blink out and leave their empty frames, as on the show. Your opponent sees a small toast: "They used 50:50."
 
 Effect: removes wrong options. On a four-option question, two of the three wrong ones go. On multiple select, one wrong option goes. Not usable on true/false.
 
-Counterplay: the banner tells your opponent you are unsure, and the seconds you spend on it count.
+Counterplay: the toast tells your opponent you are unsure, and the seconds you spend on it count.
 
-### Hermes (quick)
+### Gotta Go Fast (quick)
 
-On screen: a streak of wind. **"HERMES IS ALREADY THERE."**
+On screen: a strip of Sonic-style blue speed blur and motion lines, **"GOTTA GO FAST."** in italic capitals, and a spin-up zoom. Your opponent sees "They used Gotta Go Fast."
 
-Effect: if you answer first this round, your opponent gets 2 seconds instead of 5.
+Effect: if you answer first this round, your opponent gets 5 seconds instead of 10.
 
-Counterplay: answer before them. If you answer second, Hermes did nothing.
-
-### Phoenix (passive)
-
-On screen, when it triggers: flames rise from your empty HP bar. **"FROM THE ASHES!"** Underneath: "1 HP. Do not get excited."
-
-Effect: the first hit that would knock you out leaves you at 1 HP instead. Once per match.
-
-Counterplay: it is visible in your loadout, so your opponent knows they need one more hit. Nemesis in the same round stops it.
+Counterplay: answer before them. If you answer second, it did nothing.
 
 ### Bots and power-ups
 
-Bots pick a loadout too and play it simply: Zeus on a random round from 5 onwards, Aegis when they drop under half HP, Oracle on questions they are unsure of. Weak bots play power-ups badly on purpose.
+Bots pick 3 of the 4 too and play them simply: Bibi on a random round from 5 onwards, Shield when they drop under half HP, 50:50 on questions they are unsure of, Gotta Go Fast on questions they know from round 3. Weak bots play power-ups badly on purpose.
 
 ## Ratings
 
@@ -341,14 +327,15 @@ A small flag on the reveal lets you report a question that looks wrong. Reports 
 
 ## Tone and look
 
-- **Dark arcade.** Deep navy background, bright teal for you, orange for the opponent, gold for anything Zeus touches. Ranked screens carry red and gold, bot screens blue.
-- **Type.** A carved Roman-capitals display font (Cinzel) for power-up lines and WIN/LOSS, a plain sans-serif for questions and buttons. Questions must read fast.
-- **Theatrical, briefly.** Power-up banners are huge and loud, and gone in 1.5 seconds. The question is never covered while the timer runs.
-- **Sound.** Short synthesised effects: thunder, shield clang, a tick in the last 5 seconds, a hit thud, a win fanfare. On by default, with a mute button on the match screen that the phone remembers.
+- **A serious study platform.** Deep navy background, teal for you, orange for the opponent. Gold is a small accent (the multiplier, a rank, a highlight), never a large field. Ranked screens carry a muted red with gold accents, bot screens a muted blue.
+- **Type.** Inter throughout: heavy weights for headings, ratings and WIN/LOSS, regular weights for questions and buttons. Questions must read fast.
+- **The power-ups are the exception.** Their banners are huge, loud and silly (see Power-ups), and gone in 1.5 seconds. The question is never covered while the timer runs. Nothing else in the app jokes.
+- **Sound.** Short synthesised effects: Bibi's thunder and boom, the Shield clang, the 50:50 lifeline drop, the Gotta Go Fast zoom, a tick in the last 5 seconds, a hit thud, a win fanfare. On by default, with a mute button on the match screen that the phone remembers.
 - **Vibration** on hits, on Android phones that support it.
 - **Reduced motion.** If your phone asks for less motion, shakes and flashes become fades.
 - **Phone first.** Answer buttons in the thumb zone, at least 48 pixels tall, no hover-only controls, and the screen stays awake during a match. It works on a laptop too, with the same layout in a centred column.
-- **Copy.** Dry and short. "Zeus is unimpressed." "Nobody else is searching." No exclamation-mark confetti outside the power-up lines.
+- **Copy.** Dry and short. "Bibi is unimpressed." "Nobody else is searching." No exclamation marks outside the power-up lines.
+- **Credits.** The banner pictures carry their licences' attribution on /credits (docs/CREDITS.md).
 
 ## Not in the first release
 
@@ -358,7 +345,7 @@ Built later, in rough order of value:
 - Points and a weekly points board, and daily streaks.
 - Playing a bot while staying in the ranked queue.
 - "Who is online", and a notification when a friend starts searching.
-- Three more power-ups: Second Wind (a second try at half score), Kraken Ink (hides the opponent's options for 4 seconds), Ambrosia (heal 1,200 when below half HP). Also a casual-only Pandora's Box.
+- More power-ups: a second try at half score, hiding the opponent's options for 4 seconds, a heal of 1,200 when below half HP.
 - Rating graphs on profiles.
 - Cooldowns for people who keep leaving matches.
 - Asynchronous challenges (answer the same 10 questions in your own time).
@@ -370,7 +357,7 @@ Built later, in rough order of value:
 
 **Private matches: rated or unrated?** (a) Rated by default with standard settings, unrated with any custom setting, at most 5 rated games per pair per day. (b) Unrated by default with a "rated" switch. My pick: **(a)**. Most games in a class this size will be friends challenging friends; with (b) almost everyone stays provisional all course.
 
-**Damage cap and Zeus.** (a) Cap 3,000 per round, and Zeus doubles damage but cannot exceed it, so Zeus is useless from about round 8. (b) Zeus doubles the cap too (6,000), so a late Zeus can end a match from full HP in one blind guess. (c) Cap 3,000, and Zeus lifts that round's cap to 4,500. My pick: **(c)**. Zeus always matters, and never decides a match on its own.
+**Damage cap and Bibi.** (a) Cap 3,000 per round, and Bibi doubles damage but cannot exceed it, so Bibi is useless from about round 8. (b) Bibi doubles the cap too (6,000), so a late Bibi can end a match from full HP in one blind guess. (c) Cap 3,000, and Bibi lifts that round's cap to 4,500. My pick: **(c)**. Bibi always matters, and never decides a match on its own.
 
 **Do 2x2 payoff matrix questions count as computing?** For example: "Here is a 2x2 game with small whole-number payoffs. Which profile is the pure Nash equilibrium?" It is comparison at a glance, and probably what the exam tests. My pick: **allow them**, 2x2 only, pure strategies only, payoffs under 10, at most about 1 in 10 of the game theory questions. No mixed equilibria.
 
@@ -382,10 +369,10 @@ Built later, in rough order of value:
 
 **Multiple-select scoring.** (a) All or nothing, without saying how many are right. (b) Partial credit per option. My pick: **(a)**. Under a timer, partial credit pays about half marks for tapping at random.
 
-**Countdown after the first answer.** 3, 5 or 8 seconds. My pick: **5**. It is the main thing that makes looking answers up during a match a losing move.
+**Countdown after the first answer.** Decided 2026-10-28: **10 seconds**, 5 with Gotta Go Fast (it was 5, and 2 with the old Hermes). Still short enough that looking answers up during a match is a losing move. In 2,000 simulated bot matches the median stays at 11 rounds, and the second answerer runs out of time in about 3% of rounds instead of 9%.
 
 **Where questions live in the vault.** (a) `docs/quiz/<course>/`, which the notes site already does not publish. (b) Next to the notes in `Courses/<course>/Quiz/`, which needs a change to the site so the answer files are not published. My pick: **(a)**. Nothing on notes.swasilewski.com changes, and a published answer file would let people look answers up mid-match.
 
-**Full names on profiles.** Visible to other signed-in players, or username only. My pick: **visible to signed-in players**. It is a class game, and people want to know who "zeus_main_99" is.
+**Full names on profiles.** Visible to other signed-in players, or username only. My pick: **visible to signed-in players**. It is a class game, and people want to know who "bibi_main_99" is.
 
 **Starter questions.** Before lecture questions exist, the game ships with about 60 starter questions per course, written from the course descriptions and the Engineering slides already on Canvas. Keep them once real lecture questions arrive, or retire them. My pick: **keep them, and retire any that a lecture question duplicates**.

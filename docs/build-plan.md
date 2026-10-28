@@ -2,6 +2,8 @@
 
 For the orchestrator and the coding subagents. The player-facing rules are in `design.md` next to this file; where the two disagree, `design.md` plus Stas's decisions win, and this file gets fixed. Working name `uvarena` is used for the subdomain, repo, Worker, D1 database and R2 bucket. If Stas picks another name, replace it everywhere before the first deploy (Durable Object class names do not contain it, so nothing permanent depends on it).
 
+Changed 2026-10-28 (design.md is current; where this plan still says otherwise, design.md wins): four power-ups, Bibi (id `bibi`, was Zeus), Shield (`shield`, was Aegis), 50:50 (`fifty`, was Oracle) and Gotta Go Fast (`fast`, was Hermes); Nemesis and Phoenix are removed everywhere, so arming has no cancellation step and a knockout is always final. The countdown after the first answer is 10 s, 5 s with Gotta Go Fast. The ladder bots are student archetypes. Engineering (`eprm`) left the app in migration 0001, and the bank import skips courses that are not active. Below, read Zeus, Aegis, Oracle and Hermes as their successors, and skip what is said about Nemesis and Phoenix.
+
 Sources: `../research/architecture.md`, `../research/game-mechanics.md`, `../research/questions-and-courses.md`. Versions below were checked with `npm view` on 2026-10-22 in this container (Node 22.22.0).
 
 ## First release scope
@@ -158,7 +160,7 @@ Generated once with `npx auth@latest generate` from `auth.cli.ts` into `db/auth-
 
 ### App tables
 
-**courses**: `id` text PK (`agai`, `eprm`), `code` (`AGAI`, `EPRM`), `title`, `short_title` (`Agentic AI`, `Engineering`), `active` int, `sort` int. Seeded by the first migration.
+**courses**: `id` text PK (`agai`), `code` (`AGAI`), `title`, `short_title` (`Agentic AI`), `active` int, `sort` int. Seeded by the first migration (which also seeded `eprm`, Engineering; migration 0001 removed it). A course is added or re-added by a migration that inserts its row, then a bank import. Only active courses are offered, and the client hides the course switch while there is one.
 
 **lectures**: `id` text PK (file stem, e.g. `AGAI-L05`, `AGAI-starter-games`), `course_id`, `title`, `sort` int, `note_url` text null. Written by the importer. Index `(course_id, sort)`.
 
@@ -634,7 +636,7 @@ Item fields (from `../research/questions-and-courses.md`, with `section` require
 - `ids`: replaces each item-level `id: new` with a fresh id (alphabet `23456789abcdefghjkmnpqrstuvwxyz`), unique across the vault and `bank/fingerprints.json`, by text substitution so comments and formatting survive.
 - `check`: validates every file and exits non-zero on errors. Errors and warnings exactly as in the research report's checklist ("Checked by the script"), plus: fingerprint changed without a rev bump; id from `fingerprints.json` missing (must be retired); `yaml` parsed strictly (YAML 1.2 core schema, so `no` stays a string; type errors are errors).
 - `export`: check, then write `bank/bank.json` (gitignored) and update `bank/fingerprints.json` (`{id: {rev, fingerprint}}`, committed). Fingerprint = sha256 of type, option ids, key. Content hash = sha256 of all displayed text.
-- `import --local | --remote`: export, then generate `bank/import.sql` and run `wrangler d1 execute DB --file bank/import.sql` with the flag. Upserts courses' lectures and questions with `ON CONFLICT(id) DO UPDATE` that never touches `rating`, `rating_n`, `attempts`, `correct`, except on a rev change, where `rating = start_rating, rating_n = 0`. Questions in D1 missing from the bank get `status = 'retired'` (never deleted). Inserts a `question_imports` row with the vault's `git rev-parse HEAD`. Prints added, changed, rev-bumped, retired, unchanged.
+- `import --local | --remote`: export, then generate `bank/import.sql` and run `wrangler d1 execute DB --file bank/import.sql` with the flag. Upserts courses' lectures and questions with `ON CONFLICT(id) DO UPDATE` that never touches `rating`, `rating_n`, `attempts`, `correct`, except on a rev change, where `rating = start_rating, rating_n = 0`. Questions in D1 missing from the bank get `status = 'retired'` (never deleted). Inserts a `question_imports` row with the vault's `git rev-parse HEAD`. Prints added, changed, rev-bumped, retired, unchanged. Only courses active in D1 are imported: quiz files of another course (today `docs/quiz/EPRM/`) are still checked, then skipped with one line, `import: skipped EPRM, not an active course in D1 (...)`.
 
 Note URLs: `NOTES_URL + "/Courses/<COURSE>/Lectures/" + slug(note) + "#" + anchor(section)`. Copy the slug rule from a live note URL on notes.swasilewski.com (spaces and " - " become hyphens, per the research report); anchors follow github-slugger (lowercase, punctuation removed, spaces to hyphens). Verify one generated URL with `curl -I` before the first import. No note, no URL, and the client hides the link.
 
