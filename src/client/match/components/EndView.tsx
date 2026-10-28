@@ -106,6 +106,64 @@ function RatingCard({ label, change, note, big = 64 }: { label: string; change: 
   );
 }
 
+const STEP_UP_PX = 28;
+const STEP_DOWN_PX = 16;
+
+/** One bar per answer: up in text colour above the line, down in faint below it, the change under each. */
+function StepBars({ steps }: { steps: number[] }) {
+  const biggest = Math.max(1, ...steps.map((v) => Math.abs(v)));
+  const px = (v: number) => Math.round((Math.abs(v) / biggest) * STEP_UP_PX);
+  return (
+    <div
+      role="img"
+      aria-label={`Rating change per answer: ${steps.map(fmtSigned).join(", ")}`}
+      className="mt-2.5 grid gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`, columnGap: steps.length > 14 ? 3 : 6 }}
+    >
+      {steps.map((v, i) => (
+        <div key={i} className="flex min-w-0 flex-col items-center gap-1">
+          <div className="flex w-full items-end" style={{ height: STEP_UP_PX }}>
+            <span className="w-full bg-text" style={{ height: v > 0 ? px(v) : 0 }} />
+          </div>
+          <div className="flex w-full items-start border-t border-faint" style={{ height: STEP_DOWN_PX }}>
+            <span className="w-full bg-faint" style={{ height: v < 0 ? Math.min(STEP_DOWN_PX, px(v)) : 0 }} />
+          </div>
+          {steps.length <= 14 && (
+            <span className={`rq-display text-sm leading-4 font-semibold ${v < 0 ? "text-muted" : "text-text"}`}>{fmtSigned(v)}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The bot rating with a bar per answer (bot matches finalized with steps). */
+function BotStepsCard({ change, steps }: { change: RatingChange; steps: number[] }) {
+  const shown = useCountTo(change.after, FX.ratingCountMs, change.before);
+  const q = change.provisional;
+  return (
+    <section aria-label="Bot rating" className="plate px-4 pt-3.5 pb-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col">
+          <span className="text-sm leading-5 text-muted">Bot rating, per answer</span>
+          <span className="rq-display flex items-center gap-1.5 text-2xl leading-7 font-semibold whitespace-nowrap">
+            {fmtRating(change.before, q)}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="to">
+              <path d="M5 12h14" />
+              <path d="m13 6 6 6-6 6" />
+            </svg>
+            {fmtRating(change.after, q)}
+          </span>
+        </div>
+        <span className="rq-display text-[56px] leading-[56px] font-bold" aria-label={`Change ${fmtSigned(Math.round(change.after) - Math.round(change.before))}`}>
+          {fmtSigned(Math.round(shown) - Math.round(change.before))}
+        </span>
+      </div>
+      <StepBars steps={steps} />
+    </section>
+  );
+}
+
 function UnlockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
@@ -237,7 +295,8 @@ export function EndView(props: Props) {
 
       <div className={`${bot ? "mt-6" : "mt-8"} flex flex-col gap-4`}>
         {result.ranked && <RatingCard label="Ranked rating" change={result.ranked} />}
-        {result.bot && (
+        {result.bot && result.botRatingSteps && result.botRatingSteps.length > 0 && <BotStepsCard change={result.bot} steps={result.botRatingSteps} />}
+        {result.bot && !result.botRatingSteps?.length && (
           <RatingCard label="Bot rating" big={56} change={result.bot} note={`Bot rating follows your answers, not the result. ${s.correct} of ${result.rounds} right.`} />
         )}
         {next && <NextBotCard next={next} pending={props.fightPending ?? false} error={props.fightError ?? null} />}

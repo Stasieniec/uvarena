@@ -244,6 +244,11 @@ describe("duel with the real engine", () => {
     expect(end).toMatchObject({ result: "loss", reason: "hp", ranked: null });
     const bot = end.bot as { before: number; after: number };
     expect(bot.after).toBeLessThan(bot.before);
+    // One step per round, none up (every answer timed out), summing to the shown change.
+    const steps = end.botRatingSteps as number[];
+    expect(steps).toHaveLength(end.rounds as number);
+    expect(steps.every((step) => step <= 0)).toBe(true);
+    expect(steps.reduce((sum, step) => sum + step, 0)).toBe(Math.round(bot.after) - Math.round(bot.before));
     expect(await matchRow(matchId)).toMatchObject({ status: "finished", winner: "b", player_b: null });
 
     c.send({ type: "rematch" });
