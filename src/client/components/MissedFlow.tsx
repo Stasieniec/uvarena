@@ -12,9 +12,9 @@ import { apiRequest, errorMessage } from "../lib/api";
 import { answerIds, buildAnswer, isRenderable, stableOrder, togglePick } from "../lib/answers";
 import { formatAgo } from "../lib/format";
 import { qk } from "../lib/queries";
-import { Icon, Primary, secondaryClass, textButtonClass } from "./after/ui";
+import { Icon } from "./after/ui";
 import { OptionList, QuestionText, markOptions, optionRows, type OptionMark } from "./QuestionView";
-import { FormError, Sheet, Toast, cx } from "./ui";
+import { FormError, Primary, Sheet, Toast, cx, secondaryClass, textButtonClass } from "./ui";
 
 /** How long the Undo after "Marked as learned" stays up. */
 export const UNDO_MS = 5000;

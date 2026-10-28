@@ -12,7 +12,7 @@ import { formatRating } from "../lib/format";
 import { qk, useBots, useHome } from "../lib/queries";
 import { CheckIcon, ChevronRightIcon, LockIcon } from "../components/icons";
 import { LectureMultiChip } from "../components/LectureFilter";
-import { Button, ErrorState, LoadingBlocks, PageHeader, RatingText, Spinner, cx } from "../components/ui";
+import { Button, ErrorState, LoadingPlates, PageHeader, RatingText, Spinner, cx } from "../components/ui";
 
 type Choice = "echo" | number;
 type Bot = BotsResponse["ladder"][number];
@@ -125,10 +125,10 @@ export function Bots() {
 
   return (
     <main className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <PageHeader title="Bot match" back="/" right={<LectureMultiChip course={course} value={lectures} onChange={setLectures} />} />
+      <PageHeader title="Bot match" back="/" className="-mx-4" right={<LectureMultiChip course={course} value={lectures} onChange={setLectures} />} />
 
       {bots.isPending ? (
-        <LoadingBlocks count={5} className="pt-2" />
+        <LoadingPlates count={5} className="pt-2" />
       ) : bots.error ? (
         <ErrorState error={bots.error} onRetry={() => void bots.refetch()} />
       ) : (

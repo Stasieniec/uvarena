@@ -2,7 +2,7 @@
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiRequestError, errorMessage } from "../lib/api";
-import { BackIcon, XIcon } from "./icons";
+import { BackIcon, ChevronDownIcon, XIcon } from "./icons";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -37,6 +37,7 @@ export const buttonBase =
 /** Which utility family a class sets, for the ones callers override (size, height, padding, line height). */
 function family(cls: string): string | null {
   if (/^min-h-/.test(cls)) return "min-h";
+  if (/^m-/.test(cls)) return "m";
   if (/^px-/.test(cls)) return "px";
   if (/^leading-/.test(cls)) return "leading";
   if (/^text-(xs|sm|base|lg|[0-9]?xl|\[[0-9.]+(px|rem)\])$/.test(cls)) return "text-size";
@@ -45,7 +46,7 @@ function family(cls: string): string | null {
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string): string {
   // The primary's 3 px margin would push a full-width button over the edge.
-  const fixed = FRAMED.has(variant) && extra ? extra.replace(/(^|\s)w-full(?=\s|$)/, "$1w-[calc(100%-6px)]") : extra;
+  const fixed = FRAMED.has(variant) && extra && !/(^|\s)m-0(?=\s|$)/.test(extra) ? extra.replace(/(^|\s)w-full(?=\s|$)/, "$1w-[calc(100%-6px)]") : extra;
   // A caller's size, padding or line height replaces the default instead of fighting it in the cascade.
   const overridden = new Set((fixed ?? "").split(/\s+/).map(family).filter(Boolean));
   const keep = (classes: string) =>
@@ -84,20 +85,16 @@ export function Spinner({ size = 24, className }: { size?: number; className?: s
   );
 }
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx("rounded-sm bg-surface p-4", className)}>{children}</section>;
-}
-
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cx("animate-pulse rounded-sm bg-plate", className)} aria-hidden />;
 }
 
-/** Placeholder blocks while a screen loads. */
-export function LoadingBlocks({ count = 3, className }: { count?: number; className?: string }) {
+/** Placeholder plates while a screen loads. */
+export function LoadingPlates({ count = 3, height = 72, className }: { count?: number; height?: number; className?: string }) {
   return (
-    <div className={cx("flex flex-col gap-3", className)} role="status" aria-label="Loading">
+    <div className={cx("flex flex-col gap-2.5", className)} role="status" aria-label="Loading">
       {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} className="h-20" />
+        <div key={i} className="animate-pulse rounded-xs bg-plate-dim" style={{ height }} />
       ))}
     </div>
   );
@@ -131,40 +128,56 @@ export function ErrorState({ error, onRetry, className }: { error: unknown; onRe
   );
 }
 
-export function EmptyState({ title, children, className }: { title: string; children?: ReactNode; className?: string }) {
-  return (
-    <div className={cx("flex flex-col items-center gap-2 px-5 py-8 text-center shadow-[inset_0_0_0_1px_var(--color-line)]", className)}>
-      <p className="text-base font-semibold text-text">{title}</p>
-      {children ? <div className="text-sm leading-5 text-muted">{children}</div> : null}
-    </div>
-  );
+function goBack(navigate: ReturnType<typeof useNavigate>) {
+  if (window.history.length > 1) navigate(-1);
+  else navigate("/");
 }
 
 /**
- * Top of a sub-screen, 56 px: a 44 px back button, the screen title in
- * Barlow Condensed 28, and an optional right-hand slot.
+ * Top of a screen, 56 px: a 44 px back button, the title, and an optional
+ * right-hand slot. The title is the Condensed 28 screen title, or with
+ * `small` an 18 px semibold one (detail screens: "Missed question", a
+ * player's name). `back` is a path, true for history back, or a handler.
  */
-export function PageHeader({ title, back, right, className }: { title: ReactNode; back?: string | true; right?: ReactNode; className?: string }) {
+export function PageHeader({
+  title,
+  back,
+  right,
+  small = false,
+  className,
+}: {
+  title: ReactNode;
+  back?: string | true | (() => void);
+  right?: ReactNode;
+  small?: boolean;
+  className?: string;
+}) {
   const navigate = useNavigate();
   const backClass = "flex size-11 shrink-0 items-center justify-center text-text";
+  const icon = <BackIcon size={22} />;
   return (
-    <header className={cx("sticky top-0 z-20 -mx-4 flex h-14 items-center gap-1 bg-bg px-1", className)}>
-      {back ? (
-        typeof back === "string" ? (
-          <Link to={back} className={backClass} aria-label="Back">
-            <BackIcon size={22} />
-          </Link>
-        ) : (
-          <button type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))} className={backClass} aria-label="Back">
-            <BackIcon size={22} />
-          </button>
-        )
-      ) : (
-        <span className="w-3" />
-      )}
-      <h1 className="font-display min-w-0 flex-1 truncate text-[28px] leading-8 font-bold">{title}</h1>
+    <header className={cx("sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1 bg-bg pr-1", back ? "pl-1" : "pl-4", className)}>
+      {typeof back === "string" ? (
+        <Link to={back} className={backClass} aria-label="Back">
+          {icon}
+        </Link>
+      ) : back ? (
+        <button type="button" onClick={back === true ? () => goBack(navigate) : back} className={backClass} aria-label="Back">
+          {icon}
+        </button>
+      ) : null}
+      <h1 className={cx("m-0 min-w-0 flex-1 truncate", small ? "text-lg leading-6 font-semibold" : "font-display text-[28px] leading-8 font-bold")}>{title}</h1>
       {right}
     </header>
+  );
+}
+
+/** A 44 px icon link for the header's right side. */
+export function HeaderIconLink({ to, label, children }: { to: string; label: string; children: ReactNode }) {
+  return (
+    <Link to={to} aria-label={label} className="flex size-11 items-center justify-center text-text">
+      {children}
+    </Link>
   );
 }
 
@@ -173,24 +186,25 @@ export function HeaderTag({ children }: { children: ReactNode }) {
   return <span className="mr-3 shrink-0 px-2 py-px text-sm leading-5 font-semibold shadow-[inset_0_0_0_1px_var(--color-muted)]">{children}</span>;
 }
 
-/** A row of mutually exclusive pills (course switch, filters). */
-export function Pills<T extends string>({
+/** Segmented control: a plate-dim track, 3 px inset; the active segment gets the line fill. */
+export function Segmented<T extends string>({
   options,
   value,
   onChange,
   label,
-  tone = "you",
 }: {
   options: { value: T; label: string }[];
   value: T | null;
   onChange: (v: T) => void;
   label: string;
-  tone?: "you" | "ranked" | "bot";
 }) {
-  // Broadcast segmented control: one look for every tone (colour marks a player only).
-  void tone;
   return (
-    <div role="radiogroup" aria-label={label} className="grid h-10 auto-cols-fr grid-flow-col gap-[3px] rounded-sm bg-plate-dim p-[3px]">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="grid h-10 gap-[3px] rounded-xs bg-plate-dim p-[3px]"
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    >
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -200,7 +214,7 @@ export function Pills<T extends string>({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o.value)}
-            className={cx("min-w-0 truncate rounded-sm px-3 text-[15px] font-semibold", on ? "bg-line text-text" : "text-muted hover:text-text")}
+            className={cx("min-w-0 truncate rounded-xs px-2 text-[15px] font-semibold", on ? "bg-line text-text" : "bg-transparent text-muted hover:text-text")}
           >
             {o.label}
           </button>
@@ -210,22 +224,56 @@ export function Pills<T extends string>({
   );
 }
 
+/** The filter chip look: 40 px plate, 1 px line inset (muted when active), Barlow 15 semibold. */
+const CHIP = "inline-flex h-10 max-w-full min-w-0 items-center gap-1.5 rounded-xs bg-plate pr-2.5 pl-3 text-[15px] font-semibold text-text [&>svg]:shrink-0 [&>svg]:text-muted";
+
 export function Chip({ children, onClick, active, className }: { children: ReactNode; onClick?: () => void; active?: boolean; className?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cx(
-        "inline-flex h-10 max-w-full items-center gap-1.5 rounded-sm bg-plate pr-2.5 pl-3 text-[15px] font-semibold text-text [&>svg]:text-muted",
-        active ? "shadow-[inset_0_0_0_1px_var(--color-muted)]" : "shadow-[inset_0_0_0_1px_var(--color-line)]",
-        className,
-      )}
+      className={cx(CHIP, active ? "shadow-[inset_0_0_0_1px_var(--color-muted)]" : "shadow-[inset_0_0_0_1px_var(--color-line)]", className)}
     >
       {children}
     </button>
   );
 }
 
+/** A filter chip that is a native select underneath. */
+export function SelectChip<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+  className,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+  label: string;
+  className?: string;
+}) {
+  const shown = options.find((o) => o.value === value)?.label ?? "";
+  return (
+    <label className={cx(CHIP, "relative shadow-[inset_0_0_0_1px_var(--color-line)]", className)}>
+      <span className="truncate">{shown}</span>
+      <ChevronDownIcon size={16} />
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)} className="absolute inset-0 cursor-pointer opacity-0">
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * A settings row with a switch: the label (16 semibold) and an optional muted
+ * line, then a 48 x 28 switch. On: text-colour track, dark knob right. Off:
+ * line track, muted knob left. `role="switch"` on a button.
+ */
 export function Switch({
   checked,
   onChange,
@@ -241,25 +289,28 @@ export function Switch({
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className={cx("flex min-h-14 cursor-pointer items-center justify-between gap-3 py-2", disabled && "cursor-not-allowed opacity-60")}>
-      <span className="min-w-0">
-        <span className="block text-base leading-[22px] font-semibold">{label}</span>
-        {description ? <span className="block text-sm leading-5 text-muted">{description}</span> : null}
+    <div className={cx("flex min-h-14 items-center justify-between gap-3 py-2", disabled && "opacity-60")}>
+      <span className="flex min-w-0 flex-col">
+        <span id={`${id}-label`} className="text-base leading-[22px] font-semibold">
+          {label}
+        </span>
+        {description ? <span className="text-sm leading-5 text-muted">{description}</span> : null}
       </span>
-      <span className="relative inline-flex shrink-0 items-center">
-        <input
-          id={id}
-          type="checkbox"
-          role="switch"
-          className="peer sr-only"
-          checked={checked}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.checked)}
-        />
-        <span className="h-7 w-12 rounded-sm bg-line peer-checked:bg-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
-        <span className="absolute left-[3px] size-[22px] rounded-[1px] bg-muted peer-checked:translate-x-5 peer-checked:bg-bg" />
-      </span>
-    </label>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${id}-label`}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={cx(
+          "flex h-7 w-12 shrink-0 rounded-xs p-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed",
+          checked ? "justify-end bg-text" : "justify-start bg-line",
+        )}
+      >
+        <span className={cx("size-[22px] rounded-[1px]", checked ? "bg-bg" : "bg-muted")} />
+      </button>
+    </div>
   );
 }
 
@@ -364,14 +415,98 @@ export function FormError({ message }: { message: string | null }) {
   );
 }
 
-export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+/** A section heading inside a screen: 16 semibold, with an optional muted note on the right. */
+export function SectionHeading({ children, right, className }: { children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <div className="mt-6 mb-2 flex items-center justify-between gap-2">
-      <h2 className="text-base leading-5 font-semibold text-text">{children}</h2>
-      {right}
+    <h2 className={cx("m-0 flex items-baseline justify-between gap-3 text-base leading-[22px] font-semibold", className)}>
+      {children}
+      {right ? <span className="text-sm font-normal text-muted">{right}</span> : null}
+    </h2>
+  );
+}
+
+/** Quiet message where a list would be. */
+export function Quiet({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cx("m-0 py-6 text-[15px] leading-[22px] text-muted", className)}>{children}</p>;
+}
+
+/** One label-value row with a hairline under it (none on the last). */
+export function StatRow({ label, children, last = false }: { label: ReactNode; children: ReactNode; last?: boolean }) {
+  return (
+    <div className={cx("flex h-10 items-center justify-between gap-3", !last && "border-b border-line")}>
+      <dt className="min-w-0 truncate text-[15px] text-muted">{label}</dt>
+      <dd className="m-0 shrink-0 text-[15px] font-semibold">{children}</dd>
     </div>
   );
 }
+
+/** A big Condensed number for stat rows and stat grids. */
+export function Num({ children, size = 24, className }: { children: ReactNode; size?: number; className?: string }) {
+  return (
+    <span className={cx("font-display font-bold", className)} style={{ fontSize: size, lineHeight: `${size + 4}px` }}>
+      {children}
+    </span>
+  );
+}
+
+/** Name tag in a player colour (ground text on it), Condensed 15 uppercase. */
+export function NameTag({ name, who, className }: { name: string; who: "you" | "opponent"; className?: string }) {
+  return (
+    <span
+      className={cx(
+        "inline-block max-w-full truncate px-2 py-px font-display text-[15px] leading-5 font-bold tracking-[0.04em] text-bg uppercase",
+        who === "you" ? "bg-you" : "bg-opponent",
+        className,
+      )}
+    >
+      {name}
+    </span>
+  );
+}
+
+/** The one yellow plate per screen, Condensed 24, in a 3 px wrapper that keeps its frame clear. */
+export function Primary({
+  children,
+  onClick,
+  disabled,
+  busy,
+  height = 56,
+  type = "button",
+  className,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  height?: number;
+  type?: "button" | "submit";
+  className?: string;
+}) {
+  return (
+    <div className={cx("p-[3px]", className)}>
+      <Button type={type} onClick={onClick} disabled={disabled} loading={busy} className="m-0 w-full min-h-0 px-4" style={{ height }}>
+        {children}
+      </Button>
+    </div>
+  );
+}
+
+/** The same yellow plate as a link. `small` is the 22 px version that sits beside a count. */
+export function PrimaryLink({ to, children, height = 56, small = false, className }: { to: string; children: ReactNode; height?: number; small?: boolean; className?: string }) {
+  return (
+    <div className={cx("p-[3px]", className)}>
+      <Link to={to} className={buttonClass("primary", cx("m-0 w-full min-h-0 px-3", small && "text-[22px] leading-[26px]"))} style={{ height }}>
+        {children}
+      </Link>
+    </div>
+  );
+}
+
+/** Secondary: a plate with the 3 px edge, Barlow 16 semibold, 48 px. */
+export const secondaryClass = buttonClass("secondary");
+
+/** Text button: transparent, text colour, 16 semibold, 48 px. */
+export const textButtonClass = buttonClass("ghost");
 
 /** A rating with its provisional "?" in the faint colour ("1540?"). */
 export function RatingText({ text }: { text: string }) {
@@ -382,5 +517,15 @@ export function RatingText({ text }: { text: string }) {
     </>
   ) : (
     <>{text}</>
+  );
+}
+
+/** A rating in Condensed with a faint "?" while provisional. */
+export function Rating({ value, provisional }: { value: number; provisional: boolean }) {
+  return (
+    <>
+      {Math.round(value)}
+      {provisional ? <span className="text-faint">?</span> : null}
+    </>
   );
 }

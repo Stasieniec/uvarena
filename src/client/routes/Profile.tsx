@@ -8,9 +8,10 @@ import { ELO, GLICKO } from "@shared/game/config";
 import { useCurrentCourse } from "../lib/course";
 import { botName, percent } from "../lib/format";
 import { useMeData, useUserMatches, useUserProfile } from "../lib/queries";
-import { Body, Disc, Header, HeaderIconLink, Icon, LoadingPlates, NameTag, Num, PrimaryLink, Quiet, Rating, Screen, SectionHeading, StatRow, dayLabel, signed } from "../components/after/ui";
+import { Body, Icon, Screen, dayLabel, signed } from "../components/after/ui";
+import { Avatar } from "../components/Avatar";
 import { CourseSwitch } from "../components/CourseSwitch";
-import { ErrorState, cx } from "../components/ui";
+import { ErrorState, HeaderIconLink, LoadingPlates, NameTag, Num, PageHeader, PrimaryLink, Quiet, Rating, SectionHeading, StatRow, cx } from "../components/ui";
 
 type Profile = UserProfileResponse;
 type CourseStats = Profile["courses"][number];
@@ -23,7 +24,7 @@ const LAST_MEETINGS = 3;
 function Identity({ user, you }: { user: Profile["user"]; you: boolean }) {
   return (
     <div className="flex items-center gap-3.5">
-      <Disc user={user} size={56} you={you} />
+      <Avatar user={user} size={56} you={you} />
       <span className="flex min-w-0 flex-col">
         <span className="truncate font-display text-[28px] leading-[30px] font-bold">{user.displayUsername}</span>
         <span className="truncate text-[15px] leading-5 text-muted">
@@ -222,7 +223,7 @@ function TheirStats({ stats }: { stats: CourseStats }) {
 function DuelButton({ name }: { name: string }) {
   return (
     <div className="pt-6">
-      <PrimaryLink to="/friend" height={56} large>
+      <PrimaryLink to="/friend">
         <Icon name="swords" size={20} stroke={2.4} />
         <span className="truncate">Duel {name}</span>
       </PrimaryLink>
@@ -243,13 +244,12 @@ export function MyProfile() {
   const { profile, course, shown } = useProfileData(username);
   return (
     <Screen>
-      <Header
+      <PageHeader
         title="Profile"
-        big
         right={
           <>
-            <HeaderIconLink to="/history" label="Match history" icon="history" />
-            <HeaderIconLink to="/settings" label="Settings" icon="gear" />
+            <HeaderIconLink to="/history" label="Match history"><Icon name="history" size={20} /></HeaderIconLink>
+            <HeaderIconLink to="/settings" label="Settings"><Icon name="gear" size={20} /></HeaderIconLink>
           </>
         }
       />
@@ -286,7 +286,7 @@ function PublicProfileView({ username }: { username: string }) {
   const them = data?.user.displayUsername ?? username;
   return (
     <Screen>
-      <Header title={them} back />
+      <PageHeader title={them} back small />
       <Body className="pb-6">
         {profile.isPending ? (
           <LoadingPlates count={4} height={64} />

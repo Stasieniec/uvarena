@@ -4,9 +4,10 @@ import { Link } from "react-router";
 import type { LeaderboardResponse } from "@shared/api-schemas";
 import { useCurrentCourse } from "../lib/course";
 import { useLeaderboard, useMeData } from "../lib/queries";
-import { Body, Disc, Header, LoadingPlates, Quiet, Rating, Screen, SectionHeading } from "../components/after/ui";
+import { Body, Screen } from "../components/after/ui";
+import { Avatar } from "../components/Avatar";
 import { CourseSwitch } from "../components/CourseSwitch";
-import { ErrorState, cx } from "../components/ui";
+import { ErrorState, LoadingPlates, PageHeader, Quiet, Rating, SectionHeading, cx } from "../components/ui";
 
 type Row = LeaderboardResponse["established"][number];
 
@@ -35,7 +36,7 @@ function Rows({ rows, meId, provisional = false }: { rows: Row[]; meId: string; 
               )}
             >
               <span className={cx("font-display text-xl font-bold", !provisional && r.rank <= TOP_RANKS ? "text-text" : "text-muted")}>{provisional ? "" : r.rank}</span>
-              <Disc user={r.user} size={32} you={self} />
+              <Avatar user={r.user} size={32} you={self} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-base leading-5 font-semibold">{r.user.displayUsername}</span>
                 <span className="truncate text-[13px] leading-[18px] text-muted">{gamesLine(r)}</span>
@@ -57,9 +58,9 @@ export function Leaderboard() {
   const board = useLeaderboard(courseId);
   return (
     <Screen>
-      <Header title="Leaderboard" big right={course ? <span className="max-w-[45%] truncate pr-3 text-sm leading-5 text-muted">{course.shortTitle}</span> : undefined} />
+      <PageHeader title="Leaderboard" right={course ? <span className="max-w-[45%] truncate pr-3 text-sm leading-5 text-muted">{course.shortTitle}</span> : undefined} />
       <Body className="pb-3">
-        <CourseSwitch tone="ranked" />
+        <CourseSwitch />
         {board.isPending ? (
           <LoadingPlates count={6} height={52} />
         ) : board.error ? (

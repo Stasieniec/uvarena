@@ -48,7 +48,7 @@ function HomeHeader() {
   return (
     <header className="-mx-4 flex h-14 items-center gap-3 pr-1 pl-4">
       <Link to="/profile" className="flex min-h-tap min-w-0 items-center gap-3" aria-label={`${name}, your profile`}>
-        <Avatar user={me.user} size={32} tone="you" />
+        <Avatar user={me.user} size={32} you />
         <span className="truncate text-base leading-5 font-semibold">{name}</span>
       </Link>
       <span className="flex-1" />

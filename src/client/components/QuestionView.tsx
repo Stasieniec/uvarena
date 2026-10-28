@@ -8,8 +8,8 @@ import type { QuestionPublic } from "@shared/api-schemas";
 import { FALSE_ID, TRUE_ID } from "../lib/answers";
 import { parseBlocks, parseInline, type InlineToken } from "../match/prompt";
 import { splitTables } from "./after/prompt-text";
-import { Icon, NameTag } from "./after/ui";
-import { cx } from "./ui";
+import { Icon } from "./after/ui";
+import { NameTag, cx } from "./ui";
 
 function Inline({ tokens, fill }: { tokens: InlineToken[]; fill?: string | null }): ReactNode {
   return tokens.map((t, i) => {

@@ -129,23 +129,26 @@ export const FlagIcon = (p: IconProps) => (
 export const GearIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
   </Svg>
 );
 
 export const ExternalIcon = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M14 4h6v6M20 4l-9 9" />
-    <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    <path d="M14 4h6v6" />
+    <path d="M20 4 10 14" />
+    <path d="M18 14v6H4V6h6" />
   </Svg>
 );
 
 export const SwordsIcon = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-    <path d="m13 19 6-6M16 16l4 4M19 21l2-2" />
-    <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
-    <path d="m5 14 4 4M7 17l-3 3M3 19l2 2" />
+    <path d="M4 4l9 9" />
+    <path d="M20 4l-9 9" />
+    <path d="M6 15l3 3" />
+    <path d="M18 15l-3 3" />
+    <path d="M4 20l3-3" />
+    <path d="M20 20l-3-3" />
   </Svg>
 );
 
@@ -198,5 +201,42 @@ export const ClockIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />
     <path d="M12 7v5l3 2" />
+  </Svg>
+);
+
+/** One circular arrow: "Retry these". */
+export const RetryIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 12a8 8 0 1 0 2.3-5.6" />
+    <path d="M4 4v4h4" />
+  </Svg>
+);
+
+export const HistoryIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 12a8 8 0 1 0 2.3-5.6" />
+    <path d="M4 4v4h4" />
+    <path d="M12 8v4l3 2" />
+  </Svg>
+);
+
+export const BookIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2V5z" />
+    <path d="M4 19a2 2 0 0 1 2-2h14" />
+  </Svg>
+);
+
+export const LogoutIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10 4H4v16h6" />
+    <path d="M14 8l4 4-4 4" />
+    <path d="M8 12h10" />
+  </Svg>
+);
+
+export const PencilIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 20h4L19 9l-4-4L4 16v4z" />
   </Svg>
 );

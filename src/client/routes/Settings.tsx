@@ -10,9 +10,10 @@ import { ApiRequestError, apiRequest, errorMessage, uploadAvatar } from "../lib/
 import { authClient } from "../lib/auth-client";
 import { readSoundPref, writeSoundPref } from "../lib/local-prefs";
 import { qk, useConfig, useMeData, useUpdatePrefs } from "../lib/queries";
-import { Body, Disc, Field, Header, Icon, Primary, Screen, secondaryClass, textButtonClass } from "../components/after/ui";
+import { Body, Icon, Screen } from "../components/after/ui";
+import { Avatar } from "../components/Avatar";
 import { AvatarCropper } from "../components/AvatarCropper";
-import { FormError, Sheet, cx } from "../components/ui";
+import { FormError, PageHeader, Primary, Sheet, Switch, TextField, buttonClass, cx } from "../components/ui";
 
 function PictureSection() {
   const me = useMeData();
@@ -41,13 +42,13 @@ function PictureSection() {
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center gap-3.5">
-        <Disc user={me.user} size={64} you />
-        <button type="button" className={cx(secondaryClass, "h-11")} onClick={() => input.current?.click()}>
+        <Avatar user={me.user} size={64} you />
+        <button type="button" className={buttonClass("secondary", "min-h-11 px-3.5 text-[15px]")} onClick={() => input.current?.click()}>
           <Icon name="camera" size={18} />
           {me.user.image ? "Change picture" : "Add a picture"}
         </button>
         {me.user.image ? (
-          <button type="button" className={cx(textButtonClass, "h-11 px-2 text-[15px]")} onClick={() => remove.mutate()} disabled={remove.isPending}>
+          <button type="button" className={buttonClass("ghost", "min-h-11 px-2 text-[15px]")} onClick={() => remove.mutate()} disabled={remove.isPending}>
             Remove
           </button>
         ) : null}
@@ -127,32 +128,16 @@ function ProfileForm() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3.5" noValidate>
-      <Field label="Username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => (setUsername(e.target.value), setSaved(false))} error={errors.username} />
+      <TextField label="Username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => (setUsername(e.target.value), setSaved(false))} error={errors.username} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="First name" autoComplete="given-name" value={firstName} onChange={(e) => (setFirstName(e.target.value), setSaved(false))} error={errors.firstName} />
-        <Field label="Surname" autoComplete="family-name" value={lastName} onChange={(e) => (setLastName(e.target.value), setSaved(false))} error={errors.lastName} />
+        <TextField label="First name" autoComplete="given-name" value={firstName} onChange={(e) => (setFirstName(e.target.value), setSaved(false))} error={errors.firstName} />
+        <TextField label="Surname" autoComplete="family-name" value={lastName} onChange={(e) => (setLastName(e.target.value), setSaved(false))} error={errors.lastName} />
       </div>
       <FormError message={other} />
       <Primary type="submit" height={52} disabled={!dirty} busy={save.isPending}>
         {saved && !dirty ? "Saved" : "Save"}
       </Primary>
     </form>
-  );
-}
-
-/** The sound switch: 48 x 28, text-colour track with a dark knob when on. */
-function Toggle({ checked, onChange, labelledBy }: { checked: boolean; onChange: (v: boolean) => void; labelledBy: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-labelledby={labelledBy}
-      onClick={() => onChange(!checked)}
-      className={cx("flex h-7 w-12 shrink-0 rounded-xs p-[3px]", checked ? "justify-end bg-text" : "justify-start bg-line")}
-    >
-      <span className={cx("size-[22px] rounded-[1px]", checked ? "bg-bg" : "bg-muted")} />
-    </button>
   );
 }
 
@@ -172,7 +157,7 @@ function EmailRow({ email, verified, canSend }: { email: string; verified: boole
         <span className="text-sm leading-5 text-muted">{line}</span>
       </span>
       {!verified && canSend && state !== "sent" ? (
-        <button type="button" className={cx(textButtonClass, "h-11 px-1 text-[15px]")} onClick={resend} disabled={state === "sending"}>
+        <button type="button" className={buttonClass("ghost", "min-h-11 px-1 text-[15px]")} onClick={resend} disabled={state === "sending"}>
           Resend email
         </button>
       ) : null}
@@ -205,20 +190,15 @@ export function Settings() {
 
   return (
     <Screen>
-      <Header title="Settings" big back="/profile" />
+      <PageHeader title="Settings" back="/profile" />
       <Body className="gap-3.5 pb-4">
         <PictureSection />
         <ProfileForm />
         <div className="flex flex-col">
-          <div className="flex min-h-14 items-center gap-3 border-b border-line">
-            <span className="flex flex-1 flex-col">
-              <span id="settings-sound" className="text-base leading-[22px] font-semibold">
-                Sound
-              </span>
-              <span className="text-sm leading-5 text-muted">Effects during matches, on this device</span>
-            </span>
-            <Toggle
-              labelledBy="settings-sound"
+          <div className="border-b border-line">
+            <Switch
+              label="Sound"
+              description="Effects during matches, on this device"
               checked={sound}
               onChange={(v) => {
                 setSound(v);
@@ -232,7 +212,7 @@ export function Settings() {
         <FormError message={logoutError} />
         <span className="flex-1" />
         <div className="flex items-center justify-between">
-          <button type="button" className={cx(textButtonClass, "px-0")} onClick={logout} disabled={loggingOut}>
+          <button type="button" className={buttonClass("ghost", "px-0")} onClick={logout} disabled={loggingOut}>
             <Icon name="logout" size={18} />
             {loggingOut ? "Logging out" : "Log out"}
           </button>

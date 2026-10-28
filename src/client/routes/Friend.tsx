@@ -12,7 +12,7 @@ import { qk, useMe } from "../lib/queries";
 import { CodePlates } from "../components/CodePlates";
 import { ArrowRightIcon, ClockIcon } from "../components/icons";
 import { LectureMultiChip } from "../components/LectureFilter";
-import { Button, ErrorState, FormError, FullScreenLoader, HeaderTag, PageHeader, Pills, Switch, buttonClass } from "../components/ui";
+import { Button, ErrorState, FormError, FullScreenLoader, HeaderTag, PageHeader, Segmented, Switch, buttonClass } from "../components/ui";
 import { withNext } from "./guards";
 import { effectiveRated } from "../lib/lobby";
 
@@ -36,7 +36,7 @@ function AlreadyInMatch({ error }: { error: unknown }) {
 function FriendPage({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) {
   return (
     <main className="flex min-h-dvh flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <PageHeader title={title} back="/" right={right} />
+      <PageHeader title={title} back="/" right={right} className="-mx-4" />
       <div className="flex flex-1 flex-col gap-3.5">{children}</div>
     </main>
   );
@@ -171,7 +171,7 @@ export function Friend() {
   const willBeRated = effectiveRated(rated, lectures, powerups);
   return (
     <FriendPage title="Duel a friend" right={tab === "create" ? <HeaderTag>{willBeRated ? "Rated" : "Unrated"}</HeaderTag> : null}>
-      <Pills
+      <Segmented
         label="Create or join"
         options={[
           { value: "create", label: "Create" },

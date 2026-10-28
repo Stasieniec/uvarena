@@ -1,7 +1,8 @@
 // /credits: the pictures the power-up banners use, with author, licence and
 // source, as their licences ask. Open to everyone, signed in or not. The full
 // record (and what was changed in each picture) is docs/CREDITS.md.
-import { Body, Header, Screen } from "../components/after/ui";
+import { Body, Screen } from "../components/after/ui";
+import { PageHeader } from "../components/ui";
 
 interface Credit {
   file: string;
@@ -58,7 +59,7 @@ function ExtLink({ href, children }: { href: string; children: string }) {
 export function Credits() {
   return (
     <Screen bottomBar={false}>
-      <Header title="Credits" big back />
+      <PageHeader title="Credits" back />
       <Body>
         <p className="m-0 text-[15px] leading-[22px] text-muted">Pictures used in the power-up banners.</p>
         {CREDITS.map((c) => (

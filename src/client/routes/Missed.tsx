@@ -8,12 +8,12 @@ import { apiRequest } from "../lib/api";
 import { useCurrentCourse } from "../lib/course";
 import { formatAgo } from "../lib/format";
 import { useMissedList, useMissedQuestion } from "../lib/queries";
-import { Body, Header, Icon, LoadingPlates, Primary, PrimaryLink, Quiet, Screen, Segmented, secondaryClass } from "../components/after/ui";
+import { Body, Icon, Screen } from "../components/after/ui";
 import { CourseSwitch } from "../components/CourseSwitch";
 import { LectureSingleChip } from "../components/LectureFilter";
 import { MissedFlow } from "../components/MissedFlow";
 import { plainPreview } from "../components/QuestionView";
-import { ErrorState, cx } from "../components/ui";
+import { ErrorState, LoadingPlates, PageHeader, Primary, PrimaryLink, Quiet, Segmented, cx, secondaryClass } from "../components/ui";
 
 export function runUrl(course: string, lecture: string | null): string {
   const p = new URLSearchParams({ course });
@@ -40,7 +40,7 @@ export function MissedList() {
 
   return (
     <Screen>
-      <Header title="Missed questions" big />
+      <PageHeader title="Missed questions" />
       <Body className="gap-3">
         <CourseSwitch />
         <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2.5">
@@ -70,7 +70,7 @@ export function MissedList() {
                 <span className="text-base leading-[22px] text-muted">{status === "open" ? "to review" : "learned"}</span>
               </span>
               {status === "open" && count > 0 && courseId ? (
-                <PrimaryLink to={runUrl(courseId, lecture)} className="w-[170px]">
+                <PrimaryLink to={runUrl(courseId, lecture)} height={48} small className="w-[170px]">
                   <Icon name="retry" size={20} stroke={2.4} />
                   Retry these
                 </PrimaryLink>
@@ -114,7 +114,7 @@ export function MissedQuestion() {
   const q = useMissedQuestion(questionId);
   return (
     <Screen>
-      <Header title="Missed question" back />
+      <PageHeader title="Missed question" back small />
       <Body className="pb-6">
         {q.isPending ? (
           <LoadingPlates count={4} height={56} />
@@ -160,8 +160,9 @@ export function MissedRun() {
 
   return (
     <Screen>
-      <Header
+      <PageHeader
         title="Retry"
+        small
         back={back}
         right={running ? <span className="pr-3 text-sm leading-5 text-muted">{`${Math.min(index + 1, ids.length)} of ${ids.length}`}</span> : undefined}
       />

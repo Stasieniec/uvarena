@@ -12,7 +12,7 @@ import { formatRating } from "../lib/format";
 import { qk, useMeData, useUpdatePrefs } from "../lib/queries";
 import { CoursePicker } from "../components/CoursePicker";
 import { ArrowRightIcon } from "../components/icons";
-import { Button, ErrorState, FormError, LoadingBlocks, TextField } from "../components/ui";
+import { Button, ErrorState, FormError, LoadingPlates, TextField } from "../components/ui";
 import { safeNext } from "./guards";
 
 function UsernameStep({ me }: { me: MeResponse }) {
@@ -99,9 +99,9 @@ function CourseStep({ next }: { next: string }) {
     if (only && !hasPicked && update.isIdle) pick(only);
     // pick is recreated every render; the course id and the mutation state decide.
   }, [only, hasPicked, update.isIdle]);
-  if (isLoading) return <LoadingBlocks count={2} />;
+  if (isLoading) return <LoadingPlates count={2} />;
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (only && !update.isError) return <LoadingBlocks count={2} />;
+  if (only && !update.isError) return <LoadingPlates count={2} />;
   return (
     <div className="flex flex-col gap-4">
       <h1 className="font-display text-5xl leading-[48px] font-bold">Pick a course</h1>

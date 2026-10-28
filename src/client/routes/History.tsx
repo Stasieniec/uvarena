@@ -10,10 +10,10 @@ import { FALSE_ID, TRUE_ID, answerIds } from "../lib/answers";
 import { useCurrentCourse } from "../lib/course";
 import { formatNumber, formatSeconds } from "../lib/format";
 import { useMatchDetail, useMeData, useUserMatches } from "../lib/queries";
-import { Body, Header, Icon, LoadingPlates, Quiet, Screen, SelectChip, damage, dayLabel, secondaryClass, signed, whenLabel } from "../components/after/ui";
+import { Body, Icon, Screen, damage, dayLabel, signed, whenLabel } from "../components/after/ui";
 import { powerupInfo } from "../components/powerups";
 import { OptionList, QuestionText, markOptions, optionRows, plainPreview } from "../components/QuestionView";
-import { ErrorState, cx } from "../components/ui";
+import { ErrorState, LoadingPlates, PageHeader, Quiet, SelectChip, cx, secondaryClass } from "../components/ui";
 
 type ModeFilter = "all" | "ranked" | "bot" | "private";
 
@@ -90,9 +90,8 @@ export function History() {
 
   return (
     <Screen>
-      <Header
+      <PageHeader
         title={isSelf ? "Match history" : `${username}'s matches`}
-        big
         back
         right={<SelectChip label="Mode" value={mode} options={MODE_OPTIONS} onChange={setMode} className="max-w-[9.5rem] shrink-0" />}
       />
@@ -259,7 +258,7 @@ export function MatchDetail() {
 
   return (
     <Screen>
-      <Header title={title} back />
+      <PageHeader title={title} back small />
       <Body className="pb-4">
         {match.isPending ? (
           <LoadingPlates count={5} height={96} />
