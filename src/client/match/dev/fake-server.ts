@@ -241,9 +241,12 @@ export class FakeMatchServer {
     }
     this.joined = false;
     this.setPhase("lobby", null);
+    // As the real room: a snapshot on connect (your rating and loadout), then the lobby frames.
+    this.emit(0, this.snapshot(0));
     this.emitLobby();
     this.at(this.now + lobby.joinAtMs, () => {
       this.joined = true;
+      this.emit(1, this.snapshot(1));
       this.emitLobby();
     });
     for (const s of [0, 1] as const) {

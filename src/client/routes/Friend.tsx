@@ -14,7 +14,7 @@ import { ArrowRightIcon, ClockIcon } from "../components/icons";
 import { LectureMultiChip } from "../components/LectureFilter";
 import { Button, ErrorState, FormError, FullScreenLoader, HeaderTag, PageHeader, Segmented, Switch, buttonClass } from "../components/ui";
 import { withNext } from "./guards";
-import { effectiveRated } from "../lib/lobby";
+import { effectiveRated, rememberLobbyCreated } from "../lib/lobby";
 
 function AlreadyInMatch({ error }: { error: unknown }) {
   const navigate = useNavigate();
@@ -63,6 +63,7 @@ function CreateTab({ settings }: { settings: CreateSettings }) {
     mutationFn: () => apiRequest("createLobby", { body: { courseId: courseId!, lectures, powerups, rated: willBeRated } }),
     // Straight into the lobby: it shows the code, Share, and who has joined.
     onSuccess: ({ matchId }) => {
+      rememberLobbyCreated(matchId);
       void qc.invalidateQueries({ queryKey: qk.me });
       navigate(`/match/${encodeURIComponent(matchId)}`);
     },

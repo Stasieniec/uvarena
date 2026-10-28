@@ -7,7 +7,9 @@ import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BotsResponse } from "@shared/api-schemas";
 import { apiRequest, errorMessage } from "../lib/api";
-import { qk, useCourses } from "../lib/queries";
+import { formatRating } from "../lib/format";
+import { lobbyCreatedAt } from "../lib/lobby";
+import { qk, useCourses, useMe } from "../lib/queries";
 import { createSocketTransport, matchSocketUrl } from "./browser";
 import { ClockSync } from "./clock";
 import { MatchView, type MatchExtras, type MatchNav } from "./MatchView";
@@ -54,6 +56,31 @@ function LiveMatch({ matchId }: MatchScreenProps) {
     retry: false,
   });
 
+  // Private lobby: your friend's full name and ranked rating (the lobby frame carries names only).
+  const inLobby = state.mode === "private" && state.phase === "lobby";
+  const friendName = inLobby ? (state.lobby?.players.find((p) => p.name !== state.you?.name)?.name ?? null) : null;
+  const friend = useQuery({
+    queryKey: qk.user(friendName ?? ""),
+    queryFn: ({ signal }) => apiRequest("user", { params: { username: friendName! }, signal }),
+    enabled: friendName !== null,
+    retry: false,
+  });
+  const me = useMe();
+  const lobbyPeople = useMemo(() => {
+    const people: NonNullable<MatchExtras["lobbyPeople"]> = {};
+    const u = me.data?.user;
+    if (u && state.you) people[state.you.name] = { fullName: `${u.firstName} ${u.lastName}`.trim() || null, rating: null };
+    const f = friend.data;
+    if (friendName && f) {
+      const ranked = f.courses.find((c) => c.courseId === state.courseId)?.ranked;
+      people[friendName] = {
+        fullName: `${f.user.firstName} ${f.user.lastName}`.trim() || null,
+        rating: ranked ? formatRating(ranked.rating, ranked.provisional) : null,
+      };
+    }
+    return people;
+  }, [me.data, friend.data, friendName, state.you, state.courseId]);
+
   const fight = useMutation({
     mutationFn: (v: { level: number; courseId: string }) => apiRequest("createBotMatch", { body: { courseId: v.courseId, bot: v.level, lectures: null } }),
     onSuccess: ({ matchId: next }) => {
@@ -86,6 +113,8 @@ function LiveMatch({ matchId }: MatchScreenProps) {
     fightPending: fight.isPending,
     fightError: fight.error ? errorMessage(fight.error) : null,
     courseTitle,
+    lobbyPeople,
+    lobbyCreatedAt: inLobby ? lobbyCreatedAt(matchId) : null,
   };
   return <MatchView state={state} actions={actions} clock={clock} nav={nav} extras={extras} />;
 }

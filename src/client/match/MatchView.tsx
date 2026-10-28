@@ -23,7 +23,7 @@ import { EndView, type NextBot } from "./components/EndView";
 import { FoundView, type HeadToHead } from "./components/FoundView";
 import { useNow, usePulse } from "./components/hooks";
 import { Hud, TopBar, type HitView } from "./components/Hud";
-import { LobbyView } from "./components/LobbyView";
+import { LobbyView, type LobbyPerson } from "./components/LobbyView";
 import { ArmingCallout, IntroView, modeLabel } from "./components/Phases";
 import { PowerupRow, type PowerupButtonState } from "./components/PowerupRow";
 import { QuestionCard, RevealBand } from "./components/QuestionCard";
@@ -49,6 +49,10 @@ export interface MatchExtras {
   fightError?: string | null;
   /** The match's course title, for the versus and end screens. */
   courseTitle?: string | null;
+  /** Private lobby: full names and ratings by username, which the lobby frame does not carry. */
+  lobbyPeople?: Record<string, LobbyPerson>;
+  /** Private lobby: when this device created it (clock time), for "expires in". */
+  lobbyCreatedAt?: number | null;
 }
 
 interface Props {
@@ -216,7 +220,16 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
       />
     );
   } else if (state.phase === "lobby") {
-    content = <LobbyView state={state} courseTitle={extras?.courseTitle ?? null} onReady={actions.ready} onHome={nav.home} />;
+    content = (
+      <LobbyView
+        state={state}
+        people={extras?.lobbyPeople}
+        createdAt={extras?.lobbyCreatedAt ?? null}
+        clock={clock}
+        onReady={actions.ready}
+        onHome={nav.home}
+      />
+    );
   } else if ((state.phase === "finished" || state.phase === "cancelled") && state.result) {
     content = (
       <EndView

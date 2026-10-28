@@ -504,6 +504,7 @@ export interface Moment {
 }
 
 export const MOMENTS: Record<string, Moment> = {
+  "lobby-alone": { scenario: "friend", round: 0, phase: "lobby", offsetMs: 500 },
   lobby: { scenario: "friend", round: 0, phase: "lobby", offsetMs: 2000 },
   intro: { scenario: "duel", round: 0, phase: "intro", offsetMs: 1500 },
   arming: { scenario: "duel", round: 5, phase: "arming", offsetMs: 700 },
