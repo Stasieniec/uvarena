@@ -69,8 +69,8 @@ export function SurrenderButton({ enabled, onSurrender }: { enabled: boolean; on
         title={LINES.holdToSurrender}
       >
         <FlagIcon />
-        {/* The hold fills a bar along the bottom edge over the hold time. */}
-        <span className="pointer-events-none absolute inset-x-2 bottom-1.5 h-0.5 bg-border" aria-hidden>
+        {/* While held, a bar along the bottom edge fills over the hold time. At rest the icon stands alone, as on the boards. */}
+        <span className={`pointer-events-none absolute inset-x-2 bottom-1.5 h-0.5 bg-border ${holding ? "" : "opacity-0"}`} aria-hidden>
           <span
             className={`block h-full origin-left bg-text ${holding ? "rq-hold" : ""}`}
             style={{ transform: holding ? "scaleX(1)" : "scaleX(0)", transition: holding ? `transform ${FX.surrenderHoldMs}ms linear` : "none" }}

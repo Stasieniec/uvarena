@@ -7,16 +7,19 @@
  * !important on a class selector, which wins.
  */
 
-.rq-display {
-  font-family: var(--font-display);
-}
+/* In the components layer, so a tracking-* or font size utility on the same element wins. */
+@layer components {
+  .rq-display {
+    font-family: var(--font-display);
+  }
 
-/* Names on plates and callouts: the only uppercase in the app. */
-.rq-plate-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Names on plates and callouts: the only uppercase in the app. */
+  .rq-plate-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
 }
 
 /* ---------- HUD strip ---------- */

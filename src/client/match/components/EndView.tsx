@@ -290,11 +290,11 @@ export function EndView(props: Props) {
         {counted && (
           <div className={`${bot ? "mt-3.5" : "mt-5"} grid grid-cols-2 gap-x-4 self-stretch`}>
             <div className="flex min-w-0 flex-col items-start gap-1.5">
-              <span className="rq-plate-name max-w-full truncate bg-you px-2 py-px text-[17px] leading-[22px] text-bg">{youName}</span>
+              <span className="rq-plate-name max-w-full truncate bg-you px-2 py-px text-[15px] leading-5 text-bg">{youName}</span>
               <span className={`rq-display font-bold text-you ${bot ? "text-[44px] leading-[48px]" : "text-5xl leading-[52px]"}`}>{fmtInt(result.hp.you)}</span>
             </div>
             <div className="flex min-w-0 flex-col items-end gap-1.5">
-              <span className="rq-plate-name max-w-full truncate bg-opponent px-2 py-px text-[17px] leading-[22px] text-bg">{opponentName}</span>
+              <span className="rq-plate-name max-w-full truncate bg-opponent px-2 py-px text-[15px] leading-5 text-bg">{opponentName}</span>
               <span className={`rq-display font-bold text-opponent ${bot ? "text-[44px] leading-[48px]" : "text-5xl leading-[52px]"}`}>{fmtInt(result.hp.opponent)}</span>
             </div>
           </div>
