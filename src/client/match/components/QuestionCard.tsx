@@ -51,12 +51,12 @@ export function QuestionCard({ state, question, clock }: { state: MatchUiState; 
       : long
         ? "text-xl leading-7"
         : "text-[22px] leading-[30px]";
-  // The prompt has been read by the reveal: a crowded one steps down to make room for the answers and the explanation.
-  const shown = reveal && (crowded || long) && !isTf ? "text-[17px] leading-6" : size;
-  const tfSize = text.length > 110 ? "text-2xl leading-8" : "text-[28px] leading-9";
+  // The prompt has been read by the reveal: it steps down to make room for the marks, the hit and the explanation.
+  const shown = reveal && !isTf ? "text-[17px] leading-6" : size;
+  const tfSize = reveal ? "text-xl leading-7" : text.length > 110 ? "text-2xl leading-8" : "text-[28px] leading-9";
 
   return (
-    <section aria-label="Question" className="relative shrink-0 overflow-hidden rounded-[3px] bg-surface px-4 pt-5 pb-[18px]">
+    <section aria-label="Question" className={`relative shrink-0 overflow-hidden rounded-[3px] bg-surface px-4 ${reveal ? "py-3" : "pt-5 pb-[18px]"}`}>
       <CardDrain state={state} clock={clock} />
       {question.type === "multi" && state.phase === "question" && <p className="mb-2 text-[15px] leading-5 font-semibold">{LINES.selectAll}</p>}
       <div role="heading" aria-level={1} className={`font-medium text-pretty ${isTf ? tfSize : shown}`}>

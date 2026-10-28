@@ -62,7 +62,7 @@ function Knockout({ state, hit }: { state: MatchUiState; hit: HitView }) {
   const youWon = r.hp.opponent === 0 && r.hp.you > 0;
   return (
     <div className="flex flex-col items-center" role="status" aria-live="assertive">
-      <span className="rq-ko rq-display text-[144px] leading-[128px] font-bold tracking-[-0.01em] text-gold italic">K.O.</span>
+      <span className="rq-ko rq-display text-[min(144px,17dvh)] leading-[0.89] font-bold tracking-[-0.01em] text-gold italic">K.O.</span>
       <span className="sr-only">{youWon ? `${state.opponent?.name ?? "Your opponent"} is out of HP.` : "You are out of HP."}</span>
       <span className="text-[15px] leading-[21px] text-muted">{line}</span>
     </div>
@@ -116,6 +116,8 @@ export function EventLane({ state, clock, hit, knockout, marked, opponentQuick, 
   if (takeover) return <div className="flex min-h-[112px] flex-1 flex-col">{takeover}</div>;
 
   const reveal = state.phase === "reveal" ? state.reveal : null;
+  // At rest the lane holds only the round number and may shrink away on a short phone; events keep 56 px.
+  let eventful = hit !== null || forfeitIn !== null;
   let body: ReactNode;
   if (reveal && hit && knockout) {
     body = <Knockout state={state} hit={hit} />;
@@ -145,6 +147,7 @@ export function EventLane({ state, clock, hit, knockout, marked, opponentQuick, 
       else if (state.opponentAnswered && state.yourAnswer === null) status = `${name} answered`;
     }
     const round = state.suddenDeath > 0 ? "Sudden death" : state.round > 0 ? `Round ${state.round}` : null;
+    eventful = snap !== null || quiet !== null || status !== null || opponentQuick !== null;
     body = (
       <>
         {snap !== null ? (
@@ -154,7 +157,7 @@ export function EventLane({ state, clock, hit, knockout, marked, opponentQuick, 
         ) : (
           round &&
           !quiet && (
-            <span key={`round-${state.round}`} className="rq-round rq-display text-[32px] leading-9 font-bold tracking-[0.02em] text-muted uppercase italic">
+            <span key={`round-${state.round}`} className="rq-round rq-round-rest rq-display text-[32px] leading-9 font-bold tracking-[0.02em] text-muted uppercase italic">
               {round}
             </span>
           )
@@ -169,7 +172,7 @@ export function EventLane({ state, clock, hit, knockout, marked, opponentQuick, 
   return (
     <div
       // A damage plate or K.O. keeps its full height (the answers scroll instead); otherwise the lane may shrink to 56 px.
-      className={`flex flex-1 flex-col items-center gap-1 px-4 text-center ${hit ? "" : "min-h-14"} ${reveal && hit && !knockout ? "justify-start pt-1.5 pb-3.5" : "justify-center py-2"}`}
+      className={`flex flex-1 flex-col items-center gap-1 px-4 text-center ${hit ? "" : eventful ? "min-h-14" : "rq-lane-rest min-h-0 overflow-hidden"} ${reveal && hit && !knockout ? "justify-start pt-1.5 pb-3.5" : "justify-center py-2"}`}
       aria-live="polite"
     >
       {body}

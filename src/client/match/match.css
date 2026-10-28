@@ -272,6 +272,16 @@
 .rq-found-drain { animation: rq-found-drain 2000ms linear both; }
 .rq-rm .rq-found-drain { animation-duration: 2000ms !important; }
 
+/* The resting lane can shrink to nothing on a short phone: the round number goes rather than being cut. */
+.rq-lane-rest {
+  container-type: size;
+}
+@container (max-height: 44px) {
+  .rq-round-rest {
+    display: none;
+  }
+}
+
 /* ---------- code ---------- */
 
 .rq-code {
