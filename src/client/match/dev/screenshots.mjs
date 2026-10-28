@@ -17,22 +17,23 @@ const SHOTS = {
   intro: 900,
   arming: 700,
   armed: 700,
-  zeus: 380,
-  "zeus-them": 380,
-  "zeus-bot": 380,
-  nemesis: 650,
-  aegis: 600,
-  "nemesis-wasted": 600,
+  bibi: 380,
+  "bibi-them": 380,
+  "bibi-bot": 380,
+  "both-armed": 650,
+  shield: 600,
+  "shield-you": 600,
   truefalse: 500,
   question: 500,
   multi: 500,
   "opponent-answered": 500,
   cloze: 500,
-  oracle: 900,
+  fifty: 300,
+  "fifty-gone": 900,
   code: 500,
   not: 500,
   "last-seconds": 500,
-  hermes: 350,
+  fast: 350,
   reveal: 1800,
   "speed-hit": 1250,
   "big-hit": 1180,
@@ -40,7 +41,6 @@ const SHOTS = {
   "wrong-reveal": 1800,
   fizzle: 1800,
   disconnected: 500,
-  phoenix: 1700,
   end: 1800,
   "end-loss": 1800,
   "end-bot": 1800,
@@ -64,7 +64,7 @@ for (const reduced of [false, true]) {
   });
   for (const [moment, wait] of Object.entries(SHOTS)) {
     if (only.length && !only.includes(moment)) continue;
-    if (reduced && !["zeus", "big-hit", "phoenix", "nemesis"].includes(moment)) continue;
+    if (reduced && !["bibi", "big-hit", "both-armed", "fifty-gone"].includes(moment)) continue;
     await page.goto(`${base}/src/client/match/dev/screen?moment=${moment}`, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     // Waits count from when the screen is up, so entry animations land on the same frame each run.

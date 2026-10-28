@@ -82,10 +82,8 @@ const REASON: Record<MatchDetailResponse["endReason"], string> = {
 
 function SideLine({ side, color, name }: { side: RoundSide; color: string; name: string }) {
   const used: PowerupId[] = [];
-  if (side.effective) used.push(side.effective);
-  else if (side.armed) used.push(side.armed);
+  if (side.armed) used.push(side.armed);
   if (side.quick) used.push(side.quick);
-  if (side.phoenix) used.push("phoenix");
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <span className="size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden />
@@ -99,7 +97,7 @@ function SideLine({ side, color, name }: { side: RoundSide; color: string; name:
       )}
       {side.ms !== null ? <span className="text-xs text-muted tabular-nums">{formatSeconds(side.ms)}</span> : null}
       {used.map((p) => (
-        <span key={p} className={cx(side.cancelled && p === side.armed && "opacity-40")} title={powerupInfo(p).name}>
+        <span key={p} title={powerupInfo(p).name}>
           <PowerupIcon id={p} size={16} />
         </span>
       ))}
@@ -109,9 +107,8 @@ function SideLine({ side, color, name }: { side: RoundSide; color: string; name:
 
 function powerupNotes(side: RoundSide, name: string): string[] {
   const out: string[] = [];
-  if (side.armed) out.push(`${name} armed ${powerupInfo(side.armed).name}${side.cancelled ? ", cancelled by Nemesis" : ""}.`);
+  if (side.armed) out.push(`${name} armed ${powerupInfo(side.armed).name}.`);
   if (side.quick) out.push(`${name} used ${powerupInfo(side.quick).name}.`);
-  if (side.phoenix) out.push(`Phoenix saved ${name} at 1 HP.`);
   return out;
 }
 

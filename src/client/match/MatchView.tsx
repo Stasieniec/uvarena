@@ -15,7 +15,7 @@ import { sfx } from "./sfx";
 import { canSurrender, canUseQuick, type MatchUiState } from "./state";
 import type { MatchActions } from "./useMatch";
 import { AnswerArea, LockInButton, useMultiPick } from "./components/AnswerArea";
-import { BannerOverlay, OpponentToast, PhoenixOverlay, QuickBanner } from "./components/Banners";
+import { BannerOverlay, OpponentToast, QuickBanner } from "./components/Banners";
 import { MuteButton, SurrenderButton } from "./components/Controls";
 import { EndView, type NextBot } from "./components/EndView";
 import { FoundView, type HeadToHead } from "./components/FoundView";
@@ -31,7 +31,7 @@ export interface MatchNav {
   playAgain(courseId: string | null): void;
   missed(courseId: string | null): void;
   match(matchId: string): void;
-  /** Start a match against a ladder bot (the end screen's "Fight Narcissus"). Absent: no button. */
+  /** Start a match against a ladder bot (the end screen's "Play the next bot"). Absent: no button. */
   fightBot?(level: number, courseId: string | null): void;
 }
 
@@ -56,7 +56,7 @@ interface Props {
 
 const LIVE_PHASES = new Set(["lobby", "intro", "arming", "banner", "question", "reveal"]);
 
-/** Reveal timeline steps: 1 answers flipped, 2 hit travelling, 3 hit landed, 4 explanation (and Phoenix). */
+/** Reveal timeline steps: 1 answers flipped, 2 hit travelling, 3 hit landed, 4 explanation. */
 type RevealStep = 1 | 2 | 3 | 4;
 
 function useRevealStep(state: MatchUiState): RevealStep {
@@ -157,8 +157,8 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
         amount,
         before: fx.before[victim],
         speed: reveal.yourCorrect && reveal.opponentCorrect,
-        zeus: reveal.zeus === attacker,
-        aegis: reveal.aegis === victim,
+        bibi: reveal.bibi === attacker,
+        shield: reveal.shield === victim,
         capped: reveal.capped,
         big: amount > FX.bigHit,
       },
@@ -167,7 +167,7 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
 
   const bigHit = hit?.view.big ? hit : null;
   // The knockout: the last hit always shakes, then KO lands on the emptied bar.
-  const knockout = hit && reveal && !reveal.phoenix && (reveal.hp.you === 0 || reveal.hp.opponent === 0) ? hit : null;
+  const knockout = hit && reveal && (reveal.hp.you === 0 || reveal.hp.opponent === 0) ? hit : null;
   const shaking = usePulse((bigHit || knockout) && !reduced ? (bigHit ?? knockout)!.view.seq : null, FX.shakeMs);
   const edge = usePulse((bigHit ?? knockout)?.victim === "you" ? (bigHit ?? knockout)!.view.seq : null, 900);
   const oppFlash = usePulse(bigHit?.victim === "opponent" ? bigHit.view.seq : null, 900);
@@ -302,7 +302,6 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
       {inDuel && reveal && live && step === 2 && !reduced && <Streak state={state} rootRef={rootRef} />}
       {inDuel && state.phase === "banner" && state.banner && <BannerOverlay banner={state.banner} opponent={state.opponent} />}
       {inDuel && quick && quickVisible && quick.who === "you" && <QuickBanner fx={quick} />}
-      {inDuel && reveal?.phoenix && live && step >= 4 && <PhoenixOverlay who={reveal.phoenix} seq={fx?.seq ?? 0} />}
       {inDuel && knockout && (
         <KnockoutOverlay
           key={`ko-${knockout.view.seq}`}
@@ -336,7 +335,7 @@ function phaseTotal(state: MatchUiState, fallback: number): number {
   return fallback;
 }
 
-/** The knockout: a beat of stillness on the emptied bar, then KO in carved capitals. */
+/** The knockout: a beat of stillness on the emptied bar, then KO in heavy capitals. */
 function KnockoutOverlay({ youWon, loserName }: { youWon: boolean; loserName: string | null }) {
   return (
     <div className="rq-ko pointer-events-none absolute inset-0 z-50 flex flex-col items-center justify-center" role="status" aria-live="assertive">
@@ -345,7 +344,7 @@ function KnockoutOverlay({ youWon, loserName }: { youWon: boolean; loserName: st
         className="rq-ko-word rq-display relative leading-none font-black"
         style={{
           fontSize: "min(42vw, 190px)",
-          color: youWon ? "var(--color-zeus)" : "var(--color-wrong)",
+          color: youWon ? "var(--color-gold)" : "var(--color-wrong)",
           textShadow: youWon ? "0 0 40px rgba(245,197,66,0.7), 0 6px 0 #6b4500" : "0 0 40px rgba(239,68,68,0.6), 0 6px 0 #000",
         }}
       >
@@ -384,8 +383,8 @@ function Streak({ state, rootRef }: { state: MatchUiState; rootRef: RefObject<HT
   if (!toThem && !toYou) return null;
   const h = rootRef.current?.clientHeight ?? 800;
   const travel = Math.max(200, h - 280);
-  const zeus = reveal.zeus === (toThem ? "you" : "opponent");
-  const color = zeus ? "var(--color-zeus)" : toThem ? "var(--color-you)" : "var(--color-opponent)";
+  const bibi = reveal.bibi === (toThem ? "you" : "opponent");
+  const color = bibi ? "var(--color-bibi)" : toThem ? "var(--color-you)" : "var(--color-opponent)";
   const style: CSSProperties = {
     ["--rq-travel" as string]: `${toThem ? -travel : travel}px`,
     background: `linear-gradient(${toThem ? "0deg" : "180deg"}, transparent, ${color} 40%, #fff)`,
@@ -481,7 +480,6 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
   };
 
   const buttons = you.loadout.map((id): { id: PowerupId; state: PowerupButtonState } => {
-    if (id === "phoenix") return { id, state: you.used.includes(id) ? "spent" : "passive" };
     if (you.used.includes(id) && !(state.phase === "arming" && state.armed === id)) return { id, state: "used" };
     if (POWERUPS.blind.includes(id)) {
       if (state.phase !== "arming") return { id, state: "idle" };
@@ -491,7 +489,7 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
     if (state.quickPending === id) return { id, state: "pending" };
     return {
       id,
-      state: canUseQuick(state, id as QuickPowerupId, POWERUPS.oracle.eligibleTypes, now) ? "usable" : "idle",
+      state: canUseQuick(state, id as QuickPowerupId, POWERUPS.fifty.eligibleTypes, now) ? "usable" : "idle",
     };
   });
 

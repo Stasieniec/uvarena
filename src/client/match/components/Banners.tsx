@@ -1,30 +1,22 @@
-// Power-up theatre: the full-screen banners of the banner phase (Zeus, Aegis,
-// Nemesis), your own Oracle and Hermes lines (a strip over the opponent bar,
-// never over the question), the small toast when the opponent uses one, and
-// Phoenix rising during the reveal.
+// Power-up theatre: the full-screen banners of the banner phase (Bibi,
+// Shield), your own 50:50 and Gotta Go Fast lines (a strip over the opponent
+// bar, never over the question), and the small toast when the opponent uses
+// one. The power-ups are the one loud thing in the app; everything else is plain.
 
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties } from "react";
 import { TIMING } from "@shared/game/config";
-import type { PowerupId } from "@shared/game/types";
+import type { BlindPowerupId } from "@shared/game/types";
 import type { BannerItem, PlayerView } from "@shared/protocol";
-import { LINES, bannerLine, bannerSub } from "../copy";
+import { LINES, POWERUP_IMAGES } from "../copy";
 import { FX } from "../fx";
 import type { BannerState, QuickFx } from "../state";
-import { LightningBolt, POWERUP_COLOR, PowerupIcon } from "./icons";
+import { LightningBolt, PowerupIcon } from "./icons";
 
-const LINE_COLOR: Record<PowerupId, string> = {
-  zeus: "var(--color-zeus)",
-  aegis: "var(--color-aegis)",
-  nemesis: "#c084fc",
-  oracle: "var(--color-oracle)",
-  hermes: "var(--color-hermes)",
-  phoenix: "var(--color-phoenix)",
-};
-
-function lineSize(text: string): string {
-  if (text.length <= 12) return "min(15vw, 72px)";
-  if (text.length <= 20) return "min(11vw, 52px)";
-  return "min(9.4vw, 44px)";
+/** An image that removes itself if the file is missing, so a banner never shows a broken picture. */
+function OptionalImage({ src, alt, className, style }: { src: string; alt: string; className?: string; style?: CSSProperties }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={src} alt={alt} className={className} style={style} draggable={false} onError={() => setFailed(true)} />;
 }
 
 /** Whose power-up this is. The opponent's is marked as incoming, so a threat never reads like your own. */
@@ -37,167 +29,175 @@ function Caption({ who, opponentName }: { who: BannerItem["who"]; opponentName: 
   );
 }
 
-function ZeusLine({ small }: { small: boolean }) {
-  const k = small ? 0.72 : 1;
+function BibiFace({ small }: { small: boolean }) {
+  const size = small ? "min(34vw, 150px)" : "min(56vw, 250px)";
   return (
-    <div className="rq-slam rq-display rq-zeus-text text-center leading-[0.95] font-black">
-      <div style={{ fontSize: `min(${21 * k}vw, ${96 * k}px)` }}>ZEUS,</div>
-      <div style={{ fontSize: `min(${11.5 * k}vw, ${54 * k}px)` }}>STRIKE THEM</div>
-      <div style={{ fontSize: `min(${17 * k}vw, ${78 * k}px)` }}>DOWN!</div>
-    </div>
-  );
-}
-
-function Line({
-  item,
-  small,
-  className = "rq-slam",
-  withSub = true,
-}: {
-  item: BannerItem;
-  small: boolean;
-  className?: string;
-  /** The italic sub-line; off for a cracked line, whose falling half would land on the next line. */
-  withSub?: boolean;
-}) {
-  if (item.powerup === "zeus" && item.outcome === "active") return <ZeusLine small={small} />;
-  const text = bannerLine(item.powerup, item.outcome);
-  const sub = bannerSub(item.powerup, item.outcome);
-  const color = LINE_COLOR[item.powerup];
-  const wasted = item.outcome === "nemesis_wasted";
-  return (
-    <div className={`${className} text-center`}>
-      <div
-        className="rq-display font-black text-balance"
-        style={{
-          fontSize: small ? `calc(${lineSize(text)} * 0.72)` : lineSize(text),
-          lineHeight: 1.02,
-          color,
-          opacity: wasted ? 0.7 : 1,
-          textShadow: `0 0 20px color-mix(in srgb, ${color} 60%, transparent), 0 3px 0 #000`,
-        }}
-      >
-        {item.powerup === "zeus" && item.outcome !== "active" ? LINES.zeus : text}
+    <div className="rq-face relative mb-3 flex items-center justify-center" style={{ width: size, height: size }}>
+      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(245,197,66,0.5),rgba(245,197,66,0)_70%)]" aria-hidden />
+      {/* The glow sits on a wrapper: a mask on the same element would clip it to a box. */}
+      <div className="relative h-full w-full" style={{ filter: "drop-shadow(0 0 16px rgba(245,197,66,0.7))" }}>
+        <OptionalImage
+          src={POWERUP_IMAGES.bibi}
+          alt="Benjamin Netanyahu"
+          className="h-full w-full object-contain"
+          style={{
+            maskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
+          }}
+        />
       </div>
-      {withSub && sub && <div className="mt-2 text-sm text-text/80 italic">{sub}</div>}
     </div>
   );
 }
 
-/** The cancelled power-up's line, cracking and falling apart before Nemesis lands. */
-function Cracked({ item, small, caption }: { item: BannerItem; small: boolean; caption: ReactNode }) {
-  // Two Nemeses cancel each other: both "read your plans" lines break.
-  const shown: BannerItem = { ...item, outcome: item.powerup === "nemesis" ? "nemesis_hit" : "active" };
-  const inner = (
-    <>
-      {caption}
-      <Line item={shown} small={small} className="" withSub={false} />
-    </>
-  );
+function BibiLine({ small }: { small: boolean }) {
+  const k = small ? 0.62 : 1;
+  const [first, second, third] = LINES.bibiParts;
   return (
-    <div className="relative">
-      <div className="rq-crack-top flex flex-col items-center">{inner}</div>
-      <div className="rq-crack-bottom absolute inset-0 flex flex-col items-center">{inner}</div>
-      <svg className="rq-crack-line pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-        <polyline points="0,55 12,47 32,60 55,44 78,58 100,46" fill="none" stroke="#fff" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
-      </svg>
+    <div className="rq-slam rq-display rq-bibi-text text-center leading-[0.92] font-black" style={{ animationDelay: "120ms" }}>
+      <div style={{ fontSize: `min(${8.6 * k}vw, ${40 * k}px)` }}>{first}</div>
+      <div style={{ fontSize: `min(${11.4 * k}vw, ${53 * k}px)` }}>{second}</div>
+      <div style={{ fontSize: `min(${12.5 * k}vw, ${58 * k}px)` }}>{third}</div>
     </div>
   );
 }
 
-function AegisShield() {
+function ShieldLine({ small }: { small: boolean }) {
   return (
-    <div className="rq-shield mb-3 flex justify-center">
-      <PowerupIcon id="aegis" size={112} />
+    <div className="rq-plain-in flex flex-col items-center text-center">
+      <PowerupIcon id="shield" size={small ? 44 : 64} />
+      <div className={`mt-3 font-bold text-text ${small ? "text-xl" : "text-3xl"}`}>{LINES.shieldTitle}</div>
+      <div className={`mt-1 text-muted ${small ? "text-sm" : "text-base"}`}>{LINES.shieldSub}</div>
     </div>
   );
+}
+
+function BlindLine({ powerup, small }: { powerup: BlindPowerupId; small: boolean }) {
+  if (powerup === "bibi") {
+    return (
+      <>
+        <BibiFace small={small} />
+        <BibiLine small={small} />
+      </>
+    );
+  }
+  return <ShieldLine small={small} />;
 }
 
 export function BannerOverlay({ banner, opponent }: { banner: BannerState; opponent: PlayerView | null }) {
   const items = banner.items;
-  const cancelled = items.filter((i) => i.outcome === "cancelled");
-  const hits = items.filter((i) => i.outcome === "nemesis_hit");
-  const rest = items.filter((i) => i.outcome !== "cancelled" && i.outcome !== "nemesis_hit");
-  const zeus = items.some((i) => i.powerup === "zeus" && i.outcome === "active");
-  const aegis = items.some((i) => i.powerup === "aegis" && i.outcome === "active");
+  const bibi = items.some((i) => i.powerup === "bibi");
   const small = items.length > 1;
   const name = opponent?.name ?? "Opponent";
   const incoming = items.every((i) => i.who === "opponent");
   const style = { "--rq-banner-ms": `${TIMING.bannerMs}ms` } as CSSProperties;
+  const background = bibi
+    ? "radial-gradient(ellipse at center, rgba(40,30,8,0.97) 0%, rgba(6,5,2,0.99) 75%)"
+    : incoming
+      ? "radial-gradient(ellipse at center, rgba(40,20,12,0.96) 0%, rgba(12,6,4,0.99) 75%)"
+      : "radial-gradient(ellipse at center, rgba(14,22,48,0.97) 0%, rgba(5,8,20,0.99) 75%)";
 
   return (
     <div
       key={banner.seq}
-      className="rq-banner absolute inset-0 z-50 flex flex-col items-center justify-center gap-7 overflow-hidden px-4"
+      className="rq-banner absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 overflow-hidden px-4"
       style={{
         ...style,
-        background: incoming
-          ? "radial-gradient(ellipse at center, rgba(60,24,10,0.96) 0%, rgba(18,6,4,0.99) 75%)"
-          : "radial-gradient(ellipse at center, rgba(12,19,44,0.96) 0%, rgba(4,7,18,0.99) 75%)",
-        boxShadow: incoming ? "inset 0 0 0 3px rgba(251,146,60,0.55), inset 0 0 60px 10px rgba(251,146,60,0.25)" : undefined,
+        background,
+        boxShadow: incoming ? "inset 0 0 0 3px rgba(251,146,60,0.55), inset 0 0 60px 10px rgba(251,146,60,0.2)" : undefined,
       }}
       role="status"
       aria-live="assertive"
     >
-      {zeus && (
+      {bibi && (
         <>
           <LightningBolt className="rq-bolt pointer-events-none absolute inset-y-0 left-1/2 h-full w-28 -translate-x-1/2" />
           <div className="rq-flash" />
         </>
       )}
-      {cancelled.map((c) => (
-        <div key={`c-${c.who}`} className="flex w-full flex-col items-center">
-          <Cracked item={c} small={small} caption={<Caption who={c.who} opponentName={name} />} />
-        </div>
-      ))}
-      {hits.map((h) => (
-        <div key={`h-${h.who}`} className={`flex w-full flex-col items-center ${cancelled.length ? "rq-after-crack" : ""}`}>
-          <Caption who={h.who} opponentName={name} />
-          <Line item={h} small={small} className={cancelled.length ? "" : "rq-slam"} />
-        </div>
-      ))}
-      {rest.map((r) => (
-        <div key={`r-${r.who}-${r.powerup}`} className="relative flex w-full flex-col items-center">
-          {r.powerup === "aegis" && r.outcome === "active" && aegis && <AegisShield />}
-          <Caption who={r.who} opponentName={name} />
-          <Line item={r} small={small} />
+      {items.map((item) => (
+        <div key={`${item.who}-${item.powerup}`} className="relative flex w-full flex-col items-center">
+          <Caption who={item.who} opponentName={name} />
+          <BlindLine powerup={item.powerup} small={small} />
         </div>
       ))}
     </div>
   );
 }
 
-/** Your Oracle or Hermes: a strip over the opponent bar, so the question stays readable. */
+function FiftyStrip() {
+  return (
+    <>
+      <div className="absolute inset-0 bg-[#050322]" aria-hidden />
+      <div className="rq-stage absolute inset-0" aria-hidden />
+      <div className="relative flex w-full items-center justify-between gap-2 px-3">
+        <OptionalImage src={POWERUP_IMAGES.fiftyLogo} alt="Milionerzy" className="h-16 w-16 shrink-0 object-contain" />
+        <div className="rq-slam flex min-w-0 flex-1 flex-col items-center">
+          <span
+            className="rq-display text-[min(7.4vw,34px)] font-black whitespace-nowrap text-white"
+            style={{ textShadow: "0 0 18px rgba(139,123,255,0.95), 0 2px 0 #000" }}
+          >
+            {LINES.fifty}
+          </span>
+        </div>
+        <OptionalImage
+          src={POWERUP_IMAGES.fiftyHost}
+          alt="The host"
+          className="h-16 w-16 shrink-0 rounded-full bg-[radial-gradient(circle,#2a2a8a,#0b0a3a)] object-cover object-top ring-2 ring-[#8b7bff]"
+        />
+      </div>
+    </>
+  );
+}
+
+const BLUR_LINES = [8, 20, 33, 47, 61, 74, 88];
+
+function FastStrip() {
+  return (
+    <>
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#03123d,#0a3bb0_55%,#03123d)]" aria-hidden />
+      {BLUR_LINES.map((top, i) => (
+        <div
+          key={top}
+          className="rq-blur absolute right-0 h-[3px] rounded-full"
+          style={{
+            top: `${top}%`,
+            width: `${45 + ((i * 23) % 40)}%`,
+            animationDelay: `${(i % 4) * 60}ms`,
+            background: "linear-gradient(90deg, transparent, #cfe1ff, #fff)",
+          }}
+          aria-hidden
+        />
+      ))}
+      <div className="rq-dash relative flex items-center gap-2.5 px-4">
+        <PowerupIcon id="fast" size={30} color="#fff" />
+        <span
+          className="rq-display text-[min(7.6vw,35px)] font-black whitespace-nowrap text-white italic"
+          style={{ textShadow: "-6px 0 0 rgba(47,123,255,0.65), -12px 0 0 rgba(47,123,255,0.35), 0 2px 0 #000" }}
+        >
+          {LINES.fast}
+        </span>
+      </div>
+    </>
+  );
+}
+
+/** Your 50:50 or Gotta Go Fast: a strip over the opponent bar, so the question stays readable. */
 export function QuickBanner({ fx }: { fx: QuickFx }) {
-  const text = fx.powerup === "oracle" ? LINES.oracle : LINES.hermes;
-  const color = POWERUP_COLOR[fx.powerup];
   return (
     <div
       key={fx.seq}
       className="rq-banner pointer-events-none absolute inset-x-0 top-0 z-40 flex h-[96px] items-center justify-center overflow-hidden"
-      style={{ "--rq-banner-ms": `${FX.quickBannerMs}ms`, background: "linear-gradient(180deg, rgba(4,7,18,0.97), rgba(4,7,18,0.88))" } as CSSProperties}
+      style={{ "--rq-banner-ms": `${FX.quickBannerMs}ms` } as CSSProperties}
       role="status"
     >
-      {fx.powerup === "hermes" &&
-        [10, 22, 78, 90].map((top, i) => (
-          <div
-            key={top}
-            className="rq-wind absolute left-0 h-[2px] w-2/3 rounded-full"
-            style={{ top: `${top}%`, animationDelay: `${i * 70}ms`, background: "linear-gradient(90deg, transparent, #fff, transparent)" }}
-          />
-        ))}
-      <div className="rq-slam flex items-center gap-2.5 px-4">
-        <PowerupIcon id={fx.powerup} size={28} />
-        <span className="rq-display text-[min(4.9vw,23px)] font-black whitespace-nowrap" style={{ color, textShadow: `0 0 16px ${color}` }}>
-          {text}
-        </span>
-      </div>
+      {fx.powerup === "fifty" ? <FiftyStrip /> : <FastStrip />}
     </div>
   );
 }
 
 export function OpponentToast({ fx }: { fx: QuickFx }) {
-  const text = fx.powerup === "oracle" ? LINES.oracleOpponent : LINES.hermesOpponent;
+  const text = fx.powerup === "fifty" ? LINES.fiftyOpponent : LINES.fastOpponent;
   return (
     <div
       key={fx.seq}
@@ -207,35 +207,6 @@ export function OpponentToast({ fx }: { fx: QuickFx }) {
     >
       <PowerupIcon id={fx.powerup} size={16} />
       {text}
-    </div>
-  );
-}
-
-const FLAMES = [6, 16, 27, 38, 49, 60, 71, 82, 92];
-
-/** Phoenix: flames rise from the saved player's bar, then the line. */
-export function PhoenixOverlay({ who, seq }: { who: "you" | "opponent"; seq: number }) {
-  const fromTop = who === "opponent";
-  return (
-    <div key={seq} className="rq-banner pointer-events-none absolute inset-0 z-50 overflow-hidden" style={{ "--rq-banner-ms": "1800ms" } as CSSProperties}>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(40,12,0,0.75),rgba(4,7,18,0.9))]" />
-      <div className={`absolute inset-x-0 h-40 ${fromTop ? "top-20" : "bottom-24"}`}>
-        {FLAMES.map((x, i) => (
-          <div key={x} className="rq-flame" style={{ left: `${x}%`, animationDelay: `${(i % 4) * 90}ms`, height: 54 + ((i * 17) % 40) }} />
-        ))}
-      </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-        <div className="mb-2 text-xs font-semibold tracking-[0.2em] uppercase" style={{ color: fromTop ? "var(--color-opponent)" : "var(--color-you)" }}>
-          Phoenix
-        </div>
-        <div
-          className="rq-slam rq-display font-black"
-          style={{ fontSize: "min(13vw, 62px)", lineHeight: 1, color: "#ffb347", textShadow: "0 0 24px var(--color-phoenix), 0 3px 0 #000" }}
-        >
-          {LINES.phoenix}
-        </div>
-        <div className="rq-rise mt-3 text-sm text-text/85 italic">{LINES.phoenixSub}</div>
-      </div>
     </div>
   );
 }

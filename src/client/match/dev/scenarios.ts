@@ -1,8 +1,9 @@
 // Scripted matches for the /dev/match preview and the match screen tests.
-// "duel" is a ranked match that touches every screen: a speed chip, Oracle,
-// Hermes, a Zeus strike over 2,000, Nemesis breaking an Aegis, an opponent
-// disconnect, Phoenix on a capped hit, and a win on HP. "bot" is a bot match
-// with a fizzled Zeus, an Aegis, your Hermes, a wasted Nemesis and a surrender.
+// "duel" is a ranked match that touches every screen: a speed chip, 50:50,
+// Gotta Go Fast, a Bibi strike over 2,000, Shield against Bibi in one round,
+// an opponent disconnect, a capped hit, and a win on HP. "bot" is a bot match
+// with a fizzled Bibi, the bot's Shield, your Gotta Go Fast, your Shield and
+// a surrender.
 // "friend" is the duel as a private match, starting in the lobby.
 
 import type { Scenario, ScenarioRound } from "./fake-server";
@@ -57,7 +58,7 @@ const DUEL_ROUNDS: ScenarioRound[] = [
     },
     sides: [
       { answer: { kind: "options", ids: ["a", "b", "d"] }, answerAtMs: 11500 },
-      { quick: "hermes", quickAtMs: 500, answer: { kind: "options", ids: ["a", "b", "c"] }, answerAtMs: 10000 },
+      { quick: "fast", quickAtMs: 500, answer: { kind: "options", ids: ["a", "b", "c"] }, answerAtMs: 10000 },
     ],
   },
   {
@@ -71,7 +72,7 @@ const DUEL_ROUNDS: ScenarioRound[] = [
       whyShort: "The model proposes a call as a name plus arguments; the application runs it.",
     },
     sides: [
-      { quick: "oracle", quickAtMs: 2500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 6000 },
+      { quick: "fifty", quickAtMs: 2500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 6000 },
       { answer: { kind: "options", ids: ["a"] }, answerAtMs: 5000 },
     ],
   },
@@ -91,7 +92,7 @@ const DUEL_ROUNDS: ScenarioRound[] = [
       whyShort: "404 Not Found says the server has no resource at that address.",
     },
     sides: [
-      { arm: "zeus", armAtMs: 1500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 5000 },
+      { arm: "bibi", armAtMs: 1500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 5000 },
       { answer: { kind: "options", ids: ["b"] }, answerAtMs: 8500 },
     ],
   },
@@ -111,8 +112,8 @@ const DUEL_ROUNDS: ScenarioRound[] = [
       whyShort: "A normal-form game lists players, actions and payoffs; move order belongs to the extensive form.",
     },
     sides: [
-      { arm: "aegis", armAtMs: 1000, answer: { kind: "options", ids: ["b"] }, answerAtMs: 7000 },
-      { arm: "nemesis", armAtMs: 2000, answer: { kind: "options", ids: ["d"] }, answerAtMs: 4000 },
+      { arm: "shield", armAtMs: 1000, answer: { kind: "options", ids: ["b"] }, answerAtMs: 7000 },
+      { arm: "bibi", armAtMs: 2000, answer: { kind: "options", ids: ["d"] }, answerAtMs: 4000 },
     ],
   },
   {
@@ -196,7 +197,7 @@ const BOT_ROUNDS: ScenarioRound[] = [
     },
     sides: [
       { answer: { kind: "options", ids: ["a"] }, answerAtMs: 3000 },
-      { arm: "zeus", armAtMs: 900, answer: { kind: "options", ids: ["a"] }, answerAtMs: 6000 },
+      { arm: "bibi", armAtMs: 900, answer: { kind: "options", ids: ["a"] }, answerAtMs: 6000 },
     ],
   },
   {
@@ -210,8 +211,8 @@ const BOT_ROUNDS: ScenarioRound[] = [
       whyShort: "Spark evaluates lazily and runs transformations only when an action needs a result.",
     },
     sides: [
-      { quick: "hermes", quickAtMs: 800, answer: { kind: "bool", value: false }, answerAtMs: 2500 },
-      { arm: "aegis", armAtMs: 1000, answer: { kind: "bool", value: false }, answerAtMs: 4400 },
+      { quick: "fast", quickAtMs: 800, answer: { kind: "bool", value: false }, answerAtMs: 2500 },
+      { arm: "shield", armAtMs: 1000, answer: { kind: "bool", value: false }, answerAtMs: 4400 },
     ],
   },
   {
@@ -225,8 +226,8 @@ const BOT_ROUNDS: ScenarioRound[] = [
       whyShort: "Waiting for an action lets Spark see the whole job and optimise it before running it.",
     },
     sides: [
-      { arm: "nemesis", armAtMs: 1500, answer: { kind: "options", ids: ["b"] }, answerAtMs: 7000 },
-      { quick: "oracle", quickAtMs: 1500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 5000 },
+      { arm: "shield", armAtMs: 1500, answer: { kind: "options", ids: ["b"] }, answerAtMs: 7000 },
+      { quick: "fifty", quickAtMs: 1500, answer: { kind: "options", ids: ["a"] }, answerAtMs: 5000 },
     ],
   },
   {
@@ -244,7 +245,7 @@ const BOT_ROUNDS: ScenarioRound[] = [
 ];
 
 // Crowded questions for the small-phone layout: five long multiple-select
-// options with a long explanation (both wrong, your Zeus fizzles), and a long
+// options with a long explanation (both wrong, your Bibi fizzles), and a long
 // single choice.
 const DENSE_ROUNDS: ScenarioRound[] = [
   {
@@ -265,7 +266,7 @@ const DENSE_ROUNDS: ScenarioRound[] = [
         "ReAct hallucinated far less than chain-of-thought but got stuck repeating itself, scored below it on HotpotQA alone, and did best combined with self-consistency.",
     },
     sides: [
-      { arm: "zeus", armAtMs: 900, answer: { kind: "options", ids: ["c"] }, answerAtMs: 7000 },
+      { arm: "bibi", armAtMs: 900, answer: { kind: "options", ids: ["c"] }, answerAtMs: 7000 },
       { answer: { kind: "options", ids: ["b", "c", "d"] }, answerAtMs: 9700 },
     ],
   },
@@ -304,7 +305,7 @@ const ECHO_PLAYER = {
   name: "Echo",
   avatarUrl: null,
   botLevel: -1,
-  loadout: ["zeus", "aegis", "oracle"],
+  loadout: ["bibi", "shield", "fifty"],
   rating: { value: 1500, provisional: true },
   ratingChange: null,
 } as const;
@@ -324,7 +325,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "stas",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1540, provisional: true },
         ratingChange: { before: 1540, after: 1702, provisional: true },
       },
@@ -334,7 +335,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "kvdberg",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["nemesis", "hermes", "phoenix"],
+        loadout: ["bibi", "fast", "fifty"],
         rating: { value: 1612, provisional: false },
         ratingChange: { before: 1612, after: 1588, provisional: false },
       },
@@ -346,7 +347,7 @@ export const SCENARIOS: Record<string, Scenario> = {
     id: "bot",
     title: "Bot match",
     matchId: "dev-bot",
-    courseId: "eprm",
+    courseId: "agai",
     mode: "bot",
     rated: true,
     players: [
@@ -356,17 +357,17 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "stas",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["nemesis", "hermes", "phoenix"],
+        loadout: ["shield", "fifty", "fast"],
         rating: { value: 1480, provisional: false },
         ratingChange: { before: 1480, after: 1466, provisional: false },
       },
       {
         userId: null,
         kind: "bot",
-        name: "Athena",
+        name: "Asks questions after class",
         avatarUrl: null,
         botLevel: 7,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1950, provisional: false },
         ratingChange: null,
       },
@@ -388,7 +389,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "stas",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1540, provisional: true },
         ratingChange: { before: 1540, after: 1702, provisional: true },
       },
@@ -398,7 +399,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "filip.p",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["nemesis", "hermes", "phoenix"],
+        loadout: ["shield", "fifty", "fast"],
         rating: { value: 1500, provisional: true },
         ratingChange: { before: 1500, after: 1338, provisional: true },
       },
@@ -420,7 +421,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "stas",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1540, provisional: true },
         ratingChange: { before: 1540, after: 1702, provisional: true },
       },
@@ -430,7 +431,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "tomek",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["nemesis", "hermes", "phoenix"],
+        loadout: ["shield", "fifty", "fast"],
         rating: { value: 1588, provisional: false },
         ratingChange: { before: 1588, after: 1570, provisional: false },
       },
@@ -452,7 +453,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "zoe",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["zeus", "oracle", "hermes"],
+        loadout: ["bibi", "fifty", "fast"],
         rating: { value: 1500, provisional: true },
         ratingChange: { before: 1500, after: 1462, provisional: true },
       },
@@ -474,17 +475,17 @@ export const SCENARIOS: Record<string, Scenario> = {
         name: "stas",
         avatarUrl: null,
         botLevel: null,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1500, provisional: true },
         ratingChange: { before: 1500, after: 1376, provisional: true },
       },
       {
         userId: null,
         kind: "bot",
-        name: "Narcissus",
+        name: "Attended once",
         avatarUrl: null,
         botLevel: 2,
-        loadout: ["zeus", "aegis", "oracle"],
+        loadout: ["bibi", "shield", "fifty"],
         rating: { value: 1200, provisional: false },
         ratingChange: null,
       },
@@ -507,22 +508,23 @@ export const MOMENTS: Record<string, Moment> = {
   intro: { scenario: "duel", round: 0, phase: "intro", offsetMs: 1500 },
   arming: { scenario: "duel", round: 5, phase: "arming", offsetMs: 700 },
   armed: { scenario: "duel", round: 5, phase: "arming", offsetMs: 2200 },
-  zeus: { scenario: "duel", round: 5, phase: "banner", offsetMs: 450 },
-  "zeus-them": { scenario: "duel", side: 1, round: 5, phase: "banner", offsetMs: 450 },
-  nemesis: { scenario: "duel", round: 6, phase: "banner", offsetMs: 1000 },
-  aegis: { scenario: "bot", round: 2, phase: "banner", offsetMs: 600 },
-  "nemesis-wasted": { scenario: "bot", round: 3, phase: "banner", offsetMs: 700 },
-  "zeus-bot": { scenario: "bot", round: 1, phase: "banner", offsetMs: 450 },
+  bibi: { scenario: "duel", round: 5, phase: "banner", offsetMs: 450 },
+  "bibi-them": { scenario: "duel", side: 1, round: 5, phase: "banner", offsetMs: 450 },
+  "both-armed": { scenario: "duel", round: 6, phase: "banner", offsetMs: 600 },
+  shield: { scenario: "bot", round: 2, phase: "banner", offsetMs: 600 },
+  "shield-you": { scenario: "bot", round: 3, phase: "banner", offsetMs: 600 },
+  "bibi-bot": { scenario: "bot", round: 1, phase: "banner", offsetMs: 450 },
   truefalse: { scenario: "duel", round: 1, phase: "question", offsetMs: 2000 },
   question: { scenario: "duel", round: 2, phase: "question", offsetMs: 2500 },
   multi: { scenario: "duel", round: 3, phase: "question", offsetMs: 6000 },
   "opponent-answered": { scenario: "duel", round: 3, phase: "question", offsetMs: 10600 },
   cloze: { scenario: "duel", round: 4, phase: "question", offsetMs: 1500 },
-  oracle: { scenario: "duel", round: 4, phase: "question", offsetMs: 3000 },
+  fifty: { scenario: "duel", round: 4, phase: "question", offsetMs: 2800 },
+  "fifty-gone": { scenario: "duel", round: 4, phase: "question", offsetMs: 4000 },
   code: { scenario: "duel", round: 5, phase: "question", offsetMs: 2000 },
   not: { scenario: "duel", round: 6, phase: "question", offsetMs: 2000 },
   "last-seconds": { scenario: "duel", round: 6, phase: "question", offsetMs: 5800 },
-  hermes: { scenario: "bot", round: 2, phase: "question", offsetMs: 1100 },
+  fast: { scenario: "bot", round: 2, phase: "question", offsetMs: 1100 },
   reveal: { scenario: "duel", round: 2, phase: "reveal", offsetMs: 2600 },
   "speed-hit": { scenario: "duel", round: 1, phase: "reveal", offsetMs: 1200 },
   "big-hit": { scenario: "duel", round: 5, phase: "reveal", offsetMs: 1150 },
@@ -530,9 +532,8 @@ export const MOMENTS: Record<string, Moment> = {
   "wrong-reveal": { scenario: "duel", round: 6, phase: "reveal", offsetMs: 2600 },
   fizzle: { scenario: "bot", round: 1, phase: "reveal", offsetMs: 2000 },
   disconnected: { scenario: "duel", round: 7, phase: "question", offsetMs: 2500 },
-  phoenix: { scenario: "duel", round: 9, phase: "reveal", offsetMs: 1500 },
-  end: { scenario: "duel", round: 10, phase: "finished", offsetMs: 2500 },
-  "end-loss": { scenario: "duel", side: 1, round: 10, phase: "finished", offsetMs: 2500 },
+  end: { scenario: "duel", round: 9, phase: "finished", offsetMs: 2500 },
+  "end-loss": { scenario: "duel", side: 1, round: 9, phase: "finished", offsetMs: 2500 },
   "end-bot": { scenario: "bot", round: 4, phase: "finished", offsetMs: 2500 },
   found: { scenario: "waiting", round: 0, phase: "lobby", offsetMs: 2500 },
   "found-intro": { scenario: "waiting", round: 0, phase: "intro", offsetMs: 300 },
@@ -544,6 +545,6 @@ export const MOMENTS: Record<string, Moment> = {
   "damage-x3": { scenario: "duel", round: 8, phase: "arming", offsetMs: 900 },
   "x3-question": { scenario: "duel", round: 8, phase: "question", offsetMs: 2000 },
   knockout: { scenario: "botwin", round: 6, phase: "reveal", offsetMs: 2200 },
-  "knockout-loss": { scenario: "duel", side: 1, round: 10, phase: "reveal", offsetMs: 2200 },
+  "knockout-loss": { scenario: "duel", side: 1, round: 9, phase: "reveal", offsetMs: 2200 },
   "end-bot-win": { scenario: "botwin", round: 6, phase: "finished", offsetMs: 2500 },
 };

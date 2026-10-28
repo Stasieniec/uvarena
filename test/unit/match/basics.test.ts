@@ -48,26 +48,30 @@ describe("format", () => {
     expect(fmtClock(38_200)).toBe("0:39");
     expect(fmtMultiplier(1.5)).toBe("x1.5");
     expect(fmtMultiplier(2)).toBe("x2");
-    expect(initials("zeus_main_99")).toBe("ZM");
+    expect(initials("bibi_main_99")).toBe("BM");
   });
 });
 
 describe("cues", () => {
   const s = initialMatchState();
-  it("thunders for an active Zeus and cracks for Nemesis", () => {
-    const zeus = cuesFor(s, { type: "banner", serverNow: 1, round: 1, phaseEndsAt: 2, items: [{ who: "you", powerup: "zeus", outcome: "active" }] });
-    expect(zeus.map((c) => c.sound)).toContain("thunder");
-    const nem = cuesFor(s, {
+  it("thunders for Bibi, clangs for Shield, and has a sound for each quick power-up", () => {
+    const bibi = cuesFor(s, { type: "banner", serverNow: 1, round: 1, phaseEndsAt: 2, items: [{ who: "you", powerup: "bibi" }] });
+    expect(bibi.map((c) => c.sound)).toContain("thunder");
+    const both = cuesFor(s, {
       type: "banner",
       serverNow: 1,
       round: 1,
       phaseEndsAt: 2,
       items: [
-        { who: "you", powerup: "aegis", outcome: "cancelled" },
-        { who: "opponent", powerup: "nemesis", outcome: "nemesis_hit" },
+        { who: "you", powerup: "shield" },
+        { who: "opponent", powerup: "bibi" },
       ],
     });
-    expect(nem.map((c) => c.sound)).toEqual(["crack"]);
+    expect(both.map((c) => c.sound)).toEqual(["thunder", "shield"]);
+    const fifty = cuesFor(s, { type: "powerup_result", serverNow: 1, round: 1, powerup: "fifty", hidden: ["x", "y"] });
+    expect(fifty.map((c) => c.sound)).toEqual(["lifeline"]);
+    const fast = cuesFor(s, { type: "powerup_result", serverNow: 1, round: 1, powerup: "fast", hidden: [] });
+    expect(fast.map((c) => c.sound)).toEqual(["zoom"]);
   });
 
   it("thuds and vibrates when you take a hit, fanfare on a win", () => {
@@ -89,9 +93,8 @@ describe("cues", () => {
       damageToYou: 2799,
       damageToOpponent: 0,
       capped: false,
-      zeus: null,
-      aegis: null,
-      phoenix: null,
+      bibi: null,
+      shield: null,
       hp: { you: 3201, opponent: 6000 },
       whyShort: "x",
       savedToMissed: true,

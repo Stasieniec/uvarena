@@ -39,22 +39,23 @@ describe("scripted preview matches", () => {
   it("the ranked duel ends in a win on HP, and the loser sees the mirror", () => {
     const a = playScenario("duel", 0).store.getState();
     expect(a.phase).toBe("finished");
-    expect(a.result).toMatchObject({ result: "win", reason: "hp", hp: { you: 3117, opponent: 0 }, rounds: 10 });
+    expect(a.result).toMatchObject({ result: "win", reason: "hp", hp: { you: 3117, opponent: 0 }, rounds: 9 });
     const b = playScenario("duel", 1).store.getState();
     expect(b.result).toMatchObject({ result: "loss", hp: { you: 0, opponent: 3117 } });
   });
 
-  it("the duel touches every banner, Phoenix, a disconnect and a cap", () => {
+  it("the duel touches every banner, a disconnect and a cap", () => {
     const { frames } = playScenario("duel", 0);
     const banners = frames.flatMap((f) => (f.type === "banner" ? f.items : []));
-    expect(banners).toContainEqual({ who: "you", powerup: "zeus", outcome: "active" });
-    expect(banners).toContainEqual({ who: "opponent", powerup: "nemesis", outcome: "nemesis_hit" });
+    expect(banners).toContainEqual({ who: "you", powerup: "bibi" });
+    expect(banners).toContainEqual({ who: "opponent", powerup: "bibi" });
+    expect(banners).toContainEqual({ who: "you", powerup: "shield" });
     const reveals = frames.filter((f) => f.type === "reveal");
-    expect(reveals.some((r) => r.type === "reveal" && r.phoenix === "opponent" && r.capped)).toBe(true);
+    expect(reveals.some((r) => r.type === "reveal" && r.capped)).toBe(true);
     expect(reveals.some((r) => r.type === "reveal" && r.damageToOpponent > 2000)).toBe(true);
     expect(frames.some((f) => f.type === "opponent_connection" && !f.connected)).toBe(true);
-    expect(frames.some((f) => f.type === "opponent_powerup" && f.powerup === "hermes")).toBe(true);
-    expect(frames.some((f) => f.type === "powerup_result" && f.powerup === "oracle" && f.hidden.length === 2)).toBe(true);
+    expect(frames.some((f) => f.type === "opponent_powerup" && f.powerup === "fast")).toBe(true);
+    expect(frames.some((f) => f.type === "powerup_result" && f.powerup === "fifty" && f.hidden.length === 2)).toBe(true);
   });
 
   it("the bot match ends in a surrender, the private match starts in the lobby", () => {
@@ -95,7 +96,7 @@ describe("the real engine through the match screen store", () => {
     const harness = new EngineHarness({
       questions,
       botLevel: 4,
-      loadout: ["zeus", "aegis", "oracle"],
+      loadout: ["bibi", "shield", "fifty"],
       seed: 7,
       now: () => now,
       schedule: (fn, ms) => {
@@ -111,7 +112,7 @@ describe("the real engine through the match screen store", () => {
     const store = new MatchStore();
     const types = new Set<string>();
     let reveals = 0;
-    let armedZeus = false;
+    let armedBibi = false;
     harness.start({
       onStatus: (status) => store.dispatch({ type: "status", status }),
       onMessage: (msg) => {
@@ -129,14 +130,14 @@ describe("the real engine through the match screen store", () => {
         }
       },
     });
-    // The player: arms Zeus once from round 5, answers the first option 1.5 s into each question.
+    // The player: arms Bibi once from round 5, answers the first option 1.5 s into each question.
     for (let guard = 0; guard < 2000 && timers.length; guard++) {
       timers.sort((a, b) => a.at - b.at);
       const s = store.getState();
-      if (s.phase === "arming" && s.round >= 5 && !armedZeus) {
-        armedZeus = true;
-        store.dispatch({ type: "local_arm", round: s.round, powerup: "zeus" });
-        harness.send({ type: "arm", round: s.round, powerup: "zeus" });
+      if (s.phase === "arming" && s.round >= 5 && !armedBibi) {
+        armedBibi = true;
+        store.dispatch({ type: "local_arm", round: s.round, powerup: "bibi" });
+        harness.send({ type: "arm", round: s.round, powerup: "bibi" });
       }
       if (s.phase === "question" && s.question && !s.yourAnswer && now >= s.question.shownAt + 1500) {
         const q = s.question;
@@ -159,7 +160,7 @@ describe("the real engine through the match screen store", () => {
     expect(end.phase).toBe("finished");
     expect(end.result).not.toBeNull();
     expect(end.result!.rounds).toBe(reveals);
-    expect(end.you!.used).toContain("zeus");
+    expect(end.you!.used).toContain("bibi");
     expect(types.size).toBeGreaterThan(1);
   });
 });

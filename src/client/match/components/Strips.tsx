@@ -18,8 +18,8 @@ export interface HitView {
   /** HP before the hit, for the chunk that breaks off. */
   before: number;
   speed: boolean;
-  zeus: boolean;
-  aegis: boolean;
+  bibi: boolean;
+  shield: boolean;
   capped: boolean;
   big: boolean;
 }
@@ -59,7 +59,7 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
       </div>
     );
   }
-  const color = hit.zeus ? "var(--color-zeus)" : "#fff";
+  const color = hit.bibi ? "var(--color-bibi)" : "#fff";
   const size = hit.big ? "text-5xl" : hit.amount >= 1000 ? "text-4xl" : "text-3xl";
   const victimColor = placement === "above" ? "var(--color-wrong)" : "var(--color-you)";
   return (
@@ -70,13 +70,13 @@ function HitNumber({ hit, placement }: { hit: HitView; placement: "below" | "abo
     >
       <div
         className={`rq-display leading-tight font-black tabular-nums ${size}`}
-        style={{ color, textShadow: `0 2px 0 #000, 0 0 18px ${hit.zeus ? "var(--color-zeus)" : victimColor}` }}
+        style={{ color, textShadow: `0 2px 0 #000, 0 0 18px ${hit.bibi ? "var(--color-bibi)" : victimColor}` }}
       >
         {`−${fmtInt(hit.amount)}`}
       </div>
-      {(hit.capped || hit.aegis) && (
+      {(hit.capped || hit.shield) && (
         <div className="mt-0.5 text-[11px] font-semibold tracking-wide text-white/80 uppercase">
-          {[hit.capped ? "Capped" : null, hit.aegis ? "Halved by Aegis" : null].filter(Boolean).join(" · ")}
+          {[hit.capped ? "Capped" : null, hit.shield ? "Halved by Shield" : null].filter(Boolean).join(" · ")}
         </div>
       )}
     </div>
@@ -151,7 +151,7 @@ export function OpponentStrip({ player, hp, hit, hitFlash, controls, forfeitIn }
   );
 }
 
-export type PowerupButtonState = "idle" | "armable" | "armed" | "usable" | "pending" | "used" | "passive" | "spent";
+export type PowerupButtonState = "idle" | "armable" | "armed" | "usable" | "pending" | "used";
 
 interface YourStripProps {
   player: PlayerView;
@@ -187,16 +187,16 @@ export function YourStrip({ player, hp, hit, buttons, onTap }: YourStripProps) {
 
 function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButtonState; onTap(): void }) {
   const tappable = state === "armable" || state === "armed" || state === "usable";
-  const dim = state === "used" || state === "spent";
+  const dim = state === "used";
   const label =
-    state === "armed" ? "Armed" : state === "used" || state === "spent" ? "Used" : state === "pending" ? "..." : POWERUP_KIND_LABEL[id];
+    state === "armed" ? "Armed" : state === "used" ? "Used" : state === "pending" ? "..." : POWERUP_KIND_LABEL[id];
   const cls = [
     "relative flex h-14 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left ring-1 transition-[transform,opacity] duration-150",
     tappable ? "active:scale-95 bg-surface-2 ring-white/15" : "bg-surface ring-white/5",
     state === "armable" || state === "usable" ? "rq-glow" : "",
-    state === "armed" ? "rq-armed bg-[color-mix(in_srgb,var(--color-zeus)_16%,var(--color-surface-2))]" : "",
+    state === "armed" ? "rq-armed bg-[color-mix(in_srgb,var(--color-gold)_16%,var(--color-surface-2))]" : "",
     dim ? "opacity-35 grayscale" : "",
-    state === "idle" || state === "passive" ? "opacity-70" : "",
+    state === "idle" ? "opacity-70" : "",
   ].join(" ");
   return (
     <button
@@ -211,8 +211,8 @@ function PowerupButton({ id, state, onTap }: { id: PowerupId; state: PowerupButt
     >
       <PowerupIcon id={id} size={24} />
       <span className="min-w-0 leading-tight">
-        <span className={`block truncate text-[13px] font-semibold ${dim ? "line-through" : ""}`}>{POWERUP_NAMES[id]}</span>
-        <span className={`block text-[11px] ${state === "armed" ? "font-semibold text-zeus" : "text-muted"}`}>{label}</span>
+        <span className={`block text-[13px] leading-[1.1] font-semibold ${dim ? "line-through" : ""}`}>{POWERUP_NAMES[id]}</span>
+        <span className={`block text-[11px] ${state === "armed" ? "font-semibold text-gold" : "text-muted"}`}>{label}</span>
       </span>
     </button>
   );

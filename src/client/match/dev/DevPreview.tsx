@@ -163,7 +163,7 @@ function EngineRun({ config, onRestart }: { config: Config; onRestart(): void })
 
 function EngineMatch({ questions, config, onRestart }: { questions: QuestionFull[]; config: Config; onRestart(): void }) {
   const harness = useMemo(
-    () => new EngineHarness({ questions, botLevel: config.engine!.botLevel, loadout: ["zeus", "aegis", "oracle"], seed: Date.now() >>> 0 }),
+    () => new EngineHarness({ questions, botLevel: config.engine!.botLevel, loadout: ["bibi", "shield", "fifty"], seed: Date.now() >>> 0 }),
     [questions, config],
   );
   const createTransport = useCallback(() => harness, [harness]);
@@ -198,7 +198,7 @@ function EngineMatch({ questions, config, onRestart }: { questions: QuestionFull
 function Index() {
   return (
     <div className="mx-auto max-w-[30rem] px-4 py-6 text-sm">
-      <h1 className="rq-display text-2xl font-bold text-zeus">Match preview</h1>
+      <h1 className="rq-display text-2xl font-bold text-gold">Match preview</h1>
       <p className="mt-1 text-muted">Scripted matches on the real match screen. No server involved.</p>
       <h2 className="mt-6 mb-2 font-semibold">Play</h2>
       <ul className="flex flex-col gap-1.5">
@@ -221,10 +221,10 @@ function Index() {
       <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
         {[
           ["Dummy", 0],
-          ["Icarus", 1],
-          ["Pandora", 4],
-          ["Athena", 7],
-          ["Oracle Bot", 9],
+          ["Skimmed the slides", 1],
+          ["Did the reading", 4],
+          ["Asks questions after class", 7],
+          ["Perfect Bot", 9],
         ].map(([name, level]) => (
           <li key={level}>
             <a className="text-you underline" href={`?engine=1&bot=${level}&controls=1`}>

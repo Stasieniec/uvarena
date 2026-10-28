@@ -6,6 +6,7 @@ import { AppShell } from "./components/AppShell";
 import { GuestOnly, RequireAuth, RequireOnboarded } from "./routes/guards";
 import { LogIn, ResetPassword, SignUp } from "./routes/auth";
 import { Bots } from "./routes/Bots";
+import { Credits } from "./routes/Credits";
 import { Friend, JoinLink } from "./routes/Friend";
 import { History, MatchDetail } from "./routes/History";
 import { Leaderboard } from "./routes/Leaderboard";
@@ -34,6 +35,7 @@ export function createAppRouter(): ReturnType<typeof createBrowserRouter> {
         // Handles signed-out visitors itself: log in, then back here.
         { path: "join/:code", element: <JoinLink /> },
         { path: "dev/match", element: <DevMatchRoute /> },
+        { path: "credits", element: <Credits /> },
         {
           element: <RequireAuth />,
           children: [

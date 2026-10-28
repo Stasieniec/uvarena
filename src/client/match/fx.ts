@@ -6,8 +6,6 @@ export const FX = {
   revealFlipMs: 350,
   revealStreakMs: 650,
   revealImpactMs: 1000,
-  /** Phoenix line shows this long after the impact. */
-  phoenixDelayMs: 250,
   /** Explanation line slides in after the impact. */
   revealLineMs: 1300,
   /** Hits above this shake the screen and flash a red edge (design.md). */

@@ -5,7 +5,7 @@ import type { ServerMessage } from "@shared/protocol";
 import { FX } from "./fx";
 import type { MatchUiState } from "./state";
 
-export type SoundName = "thunder" | "shield" | "crack" | "whoosh" | "tick" | "tickLast" | "thud" | "fanfare" | "sting";
+export type SoundName = "thunder" | "shield" | "lifeline" | "zoom" | "tick" | "tickLast" | "thud" | "fanfare" | "sting";
 
 export interface Cue {
   sound?: SoundName;
@@ -21,17 +21,13 @@ export function cuesFor(prev: MatchUiState, msg: ServerMessage): Cue[] {
   switch (msg.type) {
     case "banner": {
       const cues: Cue[] = [];
-      const active = (p: string) => msg.items.some((i) => i.powerup === p && i.outcome === "active");
-      if (msg.items.some((i) => i.outcome === "nemesis_hit" || i.outcome === "cancelled")) {
-        cues.push({ sound: "crack", delayMs: 450 });
-      }
-      if (active("zeus")) cues.push({ sound: "thunder", delayMs: 0, vibrate: [60, 40, 120] });
-      if (active("aegis")) cues.push({ sound: "shield", delayMs: active("zeus") ? 350 : 0 });
-      if (cues.length === 0) cues.push({ sound: "whoosh", delayMs: 0 });
+      const has = (p: string) => msg.items.some((i) => i.powerup === p);
+      if (has("bibi")) cues.push({ sound: "thunder", delayMs: 0, vibrate: [60, 40, 120] });
+      if (has("shield")) cues.push({ sound: "shield", delayMs: has("bibi") ? 350 : 0 });
       return cues;
     }
     case "powerup_result":
-      return [{ sound: "whoosh", delayMs: 0 }];
+      return [{ sound: msg.powerup === "fifty" ? "lifeline" : "zoom", delayMs: 0 }];
     case "opponent_answered":
       return [{ sound: "tick", delayMs: 0 }];
     case "reveal": {
@@ -49,10 +45,9 @@ export function cuesFor(prev: MatchUiState, msg: ServerMessage): Cue[] {
           vibrate: toYou > 0 ? (toYou > FX.bigHit ? [90, 50, 160] : [70]) : undefined,
         });
       }
-      if (msg.aegis && ((msg.aegis === "you" && toYou > 0) || (msg.aegis === "opponent" && toThem > 0))) {
+      if (msg.shield && ((msg.shield === "you" && toYou > 0) || (msg.shield === "opponent" && toThem > 0))) {
         cues.push({ sound: "shield", delayMs: FX.revealImpactMs + 60 });
       }
-      if (msg.phoenix) cues.push({ sound: "whoosh", delayMs: FX.revealImpactMs + FX.phoenixDelayMs });
       return cues;
     }
     case "match_end":

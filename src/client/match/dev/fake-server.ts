@@ -1,14 +1,13 @@
 // A small scripted stand-in for the MatchRoom, for the /dev/match preview and
 // the match screen tests. It follows the duel rules in build-plan.md (phases,
-// countdown, Hermes, Oracle, arming resolution, score, multiplier, cap, Zeus,
-// Aegis, Phoenix) closely enough to drive every screen, and emits exactly the
+// countdown, Gotta Go Fast, 50:50, arming, score, multiplier, cap, Bibi,
+// Shield) closely enough to drive every screen, and emits exactly the
 // protocol messages the real server sends, per side. It is not the engine:
 // dev builds only. Once the engine merges, the preview can run it instead.
 
 import { MATCH, POWERUPS, SCORING, TIMER_MS_BY_TYPE, TIMING } from "@shared/game/config";
 import type {
   AnswerKey,
-  BannerOutcome,
   BlindPowerupId,
   MatchMode,
   OptionText,
@@ -144,11 +143,8 @@ function opaqueId(side: Side, round: number, id: string): string {
 interface SideState {
   hp: number;
   used: PowerupId[];
-  phoenixUsed: boolean;
   connected: boolean;
   armed: BlindPowerupId | null;
-  effective: BlindPowerupId | null;
-  nemesisAgainst: boolean;
   quick: QuickPowerupId | null;
   answer: AnswerKey | null;
   answeredAt: number | null;
@@ -205,11 +201,8 @@ export class FakeMatchServer {
     const side = (i: Side): SideState => ({
       hp: MATCH.startHp,
       used: [],
-      phoenixUsed: false,
       connected: true,
       armed: null,
-      effective: null,
-      nemesisAgainst: false,
       quick: null,
       answer: null,
       answeredAt: null,
@@ -411,7 +404,6 @@ export class FakeMatchServer {
       hp: st.hp,
       loadout: p.loadout,
       used: st.used,
-      phoenixUsed: st.phoenixUsed,
       connected: st.connected,
       ready: st.ready,
       rating: p.rating,
@@ -434,8 +426,6 @@ export class FakeMatchServer {
     this.round += 1;
     for (const st of this.sides) {
       st.armed = null;
-      st.effective = null;
-      st.nemesisAgainst = false;
       st.quick = null;
       st.answer = null;
       st.answeredAt = null;
@@ -481,32 +471,17 @@ export class FakeMatchServer {
   }
 
   private endArming(): void {
-    const a: [BlindPowerupId | null, BlindPowerupId | null] = [this.sides[0].armed, this.sides[1].armed];
-    const items: { side: Side; powerup: BlindPowerupId; outcome: BannerOutcome }[] = [];
+    const items: { side: Side; powerup: BlindPowerupId }[] = [];
     for (const i of [0, 1] as const) {
-      const o = other(i);
-      const st = this.sides[i];
-      st.effective = a[o] === "nemesis" ? null : a[i];
-      st.nemesisAgainst = a[o] === "nemesis" && a[i] !== "nemesis";
-      const mine = a[i];
+      const mine = this.sides[i].armed;
       if (!mine) continue;
-      st.used.push(mine);
-      let outcome: BannerOutcome;
-      if (mine === "nemesis") {
-        if (a[o] === "nemesis") outcome = "cancelled";
-        else if (a[o]) outcome = "nemesis_hit";
-        else {
-          const opp = this.sides[o];
-          const phoenix = this.scenario.players[o].loadout.includes("phoenix") && !opp.phoenixUsed;
-          outcome = phoenix ? "nemesis_watch" : "nemesis_wasted";
-        }
-      } else outcome = a[o] === "nemesis" ? "cancelled" : "active";
-      items.push({ side: i, powerup: mine, outcome });
+      this.sides[i].used.push(mine);
+      items.push({ side: i, powerup: mine });
     }
     if (items.length === 0) return this.startQuestion();
     this.setPhase("banner", this.now + TIMING.bannerMs);
     const per = (s: Side): BannerItem[] =>
-      items.map((it) => ({ who: it.side === s ? "you" : "opponent", powerup: it.powerup, outcome: it.outcome }));
+      items.map((it) => ({ who: it.side === s ? "you" : "opponent", powerup: it.powerup }));
     this.banner = [per(0), per(1)];
     for (const s of [0, 1] as const) {
       this.emit(s, { type: "banner", serverNow: this.now, round: this.round, phaseEndsAt: this.phaseEndsAt!, items: per(s) });
@@ -615,14 +590,14 @@ export class FakeMatchServer {
       !st.armed &&
       !st.quick &&
       !st.answer &&
-      (powerup !== "oracle" || POWERUPS.oracle.eligibleTypes.includes(q.type));
+      (powerup !== "fifty" || POWERUPS.fifty.eligibleTypes.includes(q.type));
     if (!ok) return this.error(side, "powerup_unavailable", "Not available.");
     st.quick = powerup;
     st.used.push(powerup);
-    if (powerup === "oracle" && q.key.kind === "options") {
+    if (powerup === "fifty" && q.key.kind === "options") {
       const keyIds = new Set(q.key.ids);
       const wrong = q.options.filter((o) => !keyIds.has(o.id)).map((o) => o.id);
-      const hideCount = q.type === "multi" ? POWERUPS.oracle.multiWrongHidden : Math.max(0, wrong.length - POWERUPS.oracle.singleWrongKept);
+      const hideCount = q.type === "multi" ? POWERUPS.fifty.multiWrongHidden : Math.max(0, wrong.length - POWERUPS.fifty.singleWrongKept);
       st.hidden = wrong.slice(0, hideCount);
     }
     this.emit(side, {
@@ -646,7 +621,7 @@ export class FakeMatchServer {
     const o = other(side);
     if (this.firstSide === null) {
       this.firstSide = side;
-      const cd = st.quick === "hermes" ? TIMING.hermesCountdownMs : TIMING.countdownMs;
+      const cd = st.quick === "fast" ? TIMING.fastCountdownMs : TIMING.countdownMs;
       this.countdownEnd = Math.min(this.deadline, this.now + cd);
       this.emit(side, { type: "answer_ack", serverNow: this.now, round, countdownEnd: this.countdownEnd });
       this.emit(o, { type: "opponent_answered", serverNow: this.now, round, countdownEnd: this.countdownEnd });
@@ -674,33 +649,23 @@ export class FakeMatchServer {
     const scores = [0, 1].map((i) => score(correct[i]!, ms[i] ?? this.timerMs, this.timerMs)) as [number, number];
     const damage: [number, number] = [0, 0];
     let capped = false;
-    let zeus: Side | null = null;
-    let aegis: Side | null = null;
-    let phoenix: Side | null = null;
-    for (const i of [0, 1] as const) if (this.sides[i].effective === "zeus") zeus = i;
-    for (const i of [0, 1] as const) if (this.sides[i].effective === "aegis") aegis = i;
+    let bibi: Side | null = null;
+    let shield: Side | null = null;
+    for (const i of [0, 1] as const) if (this.sides[i].armed === "bibi") bibi = i;
+    for (const i of [0, 1] as const) if (this.sides[i].armed === "shield") shield = i;
     if (scores[0] !== scores[1]) {
       const att: Side = scores[0] > scores[1] ? 0 : 1;
       const def = other(att);
       const raw = (scores[att] - scores[def]) * mult;
-      const z = this.sides[att].effective === "zeus";
-      const cap = z ? SCORING.zeusRoundCap : SCORING.roundCap;
-      let dmg = Math.min(raw * (z ? SCORING.zeusFactor : 1), cap);
-      capped = raw * (z ? SCORING.zeusFactor : 1) >= cap;
-      if (this.sides[def].effective === "aegis") dmg = dmg * SCORING.aegisFactor;
+      const z = this.sides[att].armed === "bibi";
+      const cap = z ? SCORING.bibiRoundCap : SCORING.roundCap;
+      let dmg = Math.min(raw * (z ? SCORING.bibiFactor : 1), cap);
+      capped = raw * (z ? SCORING.bibiFactor : 1) >= cap;
+      if (this.sides[def].armed === "shield") dmg = dmg * SCORING.shieldFactor;
       dmg = Math.round(dmg);
       const d = this.sides[def];
-      let hp = d.hp - dmg;
-      const hasPhoenix = this.scenario.players[def].loadout.includes("phoenix");
-      if (hp <= 0 && hasPhoenix && !d.phoenixUsed && !d.nemesisAgainst) {
-        hp = SCORING.phoenixHp;
-        d.phoenixUsed = true;
-        d.used.push("phoenix");
-        phoenix = def;
-      }
-      // The hit as dealt; HP shows what is left (1 after a Phoenix save).
       damage[def] = dmg;
-      d.hp = Math.max(0, hp);
+      d.hp = Math.max(0, d.hp - dmg);
     }
     this.log.push({
       correct,
@@ -728,9 +693,8 @@ export class FakeMatchServer {
         damageToYou: damage[s],
         damageToOpponent: damage[o],
         capped,
-        zeus: who(zeus, s),
-        aegis: who(aegis, s),
-        phoenix: who(phoenix, s),
+        bibi: who(bibi, s),
+        shield: who(shield, s),
         hp: { you: this.sides[s].hp, opponent: this.sides[o].hp },
         whyShort: q.whyShort,
         savedToMissed: this.scenario.players[s].kind === "human" && !correct[s],

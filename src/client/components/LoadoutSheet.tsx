@@ -1,4 +1,4 @@
-// Power-up loadout picker: 3 of 6, saved to prefs.
+// Power-up loadout picker: 3 of 4, saved to prefs.
 import { useEffect, useState } from "react";
 import { POWERUPS } from "@shared/game/config";
 import type { PowerupId } from "@shared/game/types";
@@ -42,8 +42,7 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
       </p>
       <p className="mb-3 text-xs leading-snug text-muted">
         <span className="font-semibold text-text/80">Blind:</span> arm before you see the question.{" "}
-        <span className="font-semibold text-text/80">Quick:</span> use after.{" "}
-        <span className="font-semibold text-text/80">Passive:</span> works on its own.
+        <span className="font-semibold text-text/80">Quick:</span> use after you see it.
       </p>
       <ul className="flex flex-col gap-2">
         {POWERUP_ORDER.map((id) => {
@@ -84,7 +83,7 @@ export function LoadoutSheet({ open, onClose, current }: { open: boolean; onClos
       <FormError message={update.error ? errorMessage(update.error) : null} />
       <div className="sticky bottom-0 -mx-4 mt-3 bg-surface px-4 pt-2 pb-1 shadow-[0_-12px_16px_-8px_var(--color-surface)]">
         {nudge ? (
-          <p className="mb-2 text-center text-sm text-zeus" role="status">
+          <p className="mb-2 text-center text-sm text-gold" role="status">
             Pick {POWERUPS.loadoutSize}. Drop one first.
           </p>
         ) : null}

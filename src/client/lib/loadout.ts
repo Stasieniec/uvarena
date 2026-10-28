@@ -1,4 +1,4 @@
-// Loadout picking (3 of 6). Pure, unit tested.
+// Loadout picking (3 of 4). Pure, unit tested.
 import { POWERUPS } from "@shared/game/config";
 import { POWERUP_IDS, type PowerupId } from "@shared/game/types";
 

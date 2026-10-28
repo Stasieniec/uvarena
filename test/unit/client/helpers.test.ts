@@ -40,8 +40,8 @@ describe("format", () => {
 
   it("makes initials and bot names", () => {
     expect(initials("Filip", "Pieniak")).toBe("FP");
-    expect(initials("", "", "zeus_main")).toBe("ZE");
-    expect(botName(3)).toBe("Sisyphus");
+    expect(initials("", "", "bibi_main")).toBe("BI");
+    expect(botName(3)).toBe("Has the notes open");
     expect(botName(-1)).toBe("Echo");
     expect(botName(0)).toBeNull();
     expect(percent(9, 19)).toBe(47);
@@ -89,16 +89,16 @@ describe("crop math", () => {
 
 describe("loadout", () => {
   it("toggles without exceeding the loadout size", () => {
-    expect(toggleLoadout(["zeus", "aegis"], "oracle")).toEqual(["zeus", "aegis", "oracle"]);
-    expect(toggleLoadout(["zeus", "aegis", "oracle"], "hermes")).toEqual(["zeus", "aegis", "oracle"]);
-    expect(toggleLoadout(["zeus", "aegis", "oracle"], "aegis")).toEqual(["zeus", "oracle"]);
+    expect(toggleLoadout(["bibi", "shield"], "fifty")).toEqual(["bibi", "shield", "fifty"]);
+    expect(toggleLoadout(["bibi", "shield", "fifty"], "fast")).toEqual(["bibi", "shield", "fifty"]);
+    expect(toggleLoadout(["bibi", "shield", "fifty"], "shield")).toEqual(["bibi", "fifty"]);
   });
 
   it("accepts only complete, distinct loadouts", () => {
     expect(isCompleteLoadout(POWERUPS.defaultLoadout)).toBe(true);
-    expect(isCompleteLoadout(["zeus", "zeus", "aegis"])).toBe(false);
-    expect(isCompleteLoadout(["zeus", "aegis"])).toBe(false);
-    expect(isCompleteLoadout(["zeus", "aegis", "kraken"])).toBe(false);
+    expect(isCompleteLoadout(["bibi", "bibi", "shield"])).toBe(false);
+    expect(isCompleteLoadout(["bibi", "shield"])).toBe(false);
+    expect(isCompleteLoadout(["bibi", "shield", "kraken"])).toBe(false);
   });
 });
 
@@ -158,7 +158,7 @@ describe("queue timing", () => {
 });
 
 describe("sign-up validation", () => {
-  const good = { email: "a@b.nl", password: "longenough", username: "zeus_main.99", firstName: "Anna", lastName: "K" };
+  const good = { email: "a@b.nl", password: "longenough", username: "bibi_main.99", firstName: "Anna", lastName: "K" };
   it("accepts a valid form", () => {
     expect(validateSignUp(good)).toEqual({});
   });

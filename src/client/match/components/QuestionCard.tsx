@@ -172,7 +172,7 @@ function RevealHeader({ reveal }: { reveal: RevealPayload }) {
 }
 
 /**
- * The reveal's teaching lines: the Zeus fizzle, the one-line explanation, the
+ * The reveal's teaching lines: the Bibi fizzle, the one-line explanation, the
  * report flag and "Saved to missed questions". It sits under the answers and
  * keeps its full height; the answer list above it scrolls instead.
  */
@@ -186,10 +186,10 @@ export function RevealBand({
   onReport?(questionId: string): void;
 }) {
   const fizzled =
-    (reveal.zeus === "you" && reveal.damageToOpponent === 0) || (reveal.zeus === "opponent" && reveal.damageToYou === 0);
+    (reveal.bibi === "you" && reveal.damageToOpponent === 0) || (reveal.bibi === "opponent" && reveal.damageToYou === 0);
   return (
     <div className="rq-rise relative z-10 shrink-0 rounded-2xl border border-border bg-surface px-3.5 pt-2 pb-2.5 shadow-[0_-10px_24px_-6px_rgba(4,7,18,0.95)]">
-      {fizzled && <p className="rq-display mb-1 text-sm font-bold text-zeus">{LINES.zeusFizzle}</p>}
+      {fizzled && <p className="rq-display mb-1 text-sm font-bold text-bibi">{LINES.bibiFizzle}</p>}
       <p className="text-[13.5px] leading-snug text-text/90">{reveal.whyShort}</p>
       {(reveal.savedToMissed || onReport) && (
         <div className="mt-1 flex items-center justify-between gap-2">

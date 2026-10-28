@@ -13,7 +13,7 @@
 
 .rq-display {
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
 }
 
 /* ---------- screen shake and edges ---------- */
@@ -82,12 +82,20 @@
 }
 .rq-rise { animation: rq-rise 0.35s ease-out both; }
 
-.rq-zeus-text {
-  color: var(--color-zeus);
+.rq-gold-text {
+  color: var(--color-gold);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--color-gold) 45%, transparent);
+}
+
+/* Bibi: white flash, a bolt, the face slamming in, the line in huge type. */
+.rq-bibi-text {
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
   text-shadow:
-    0 0 18px color-mix(in srgb, var(--color-zeus) 80%, transparent),
-    0 0 42px color-mix(in srgb, var(--color-zeus) 55%, transparent),
-    0 3px 0 #8a5a00;
+    0 0 18px color-mix(in srgb, var(--color-bibi) 85%, transparent),
+    0 0 46px color-mix(in srgb, var(--color-bibi) 60%, transparent),
+    0 4px 0 #6b4500;
 }
 
 @keyframes rq-bolt {
@@ -101,42 +109,52 @@
 }
 .rq-bolt {
   animation: rq-bolt 1.1s ease-out both;
-  filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 26px var(--color-zeus));
+  filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 26px var(--color-bibi));
 }
 
-@keyframes rq-shield {
-  0% { opacity: 0; transform: translateY(-120px) scale(1.6) rotate(-8deg); }
-  60% { opacity: 1; transform: translateY(6px) scale(0.96) rotate(1deg); }
-  80% { transform: translateY(-2px) scale(1.02); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes rq-face {
+  0% { opacity: 0; transform: scale(2.2) rotate(-6deg); filter: brightness(3) blur(4px); }
+  35% { opacity: 1; transform: scale(0.95) rotate(1deg); filter: brightness(1.4) blur(0); }
+  45% { transform: scale(1.04) translateX(-4px); }
+  55% { transform: scale(1) translateX(4px); }
+  65% { transform: scale(1.02) translateX(-2px); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
 }
-.rq-shield { animation: rq-shield 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+.rq-face { animation: rq-face 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
 
-/* Nemesis: the cancelled line cracks and the halves fall away. */
-@keyframes rq-crack-top {
-  0%, 30% { transform: translate(0, 0) rotate(0); opacity: 1; }
-  100% { transform: translate(-28px, -70px) rotate(-9deg); opacity: 0; }
+@keyframes rq-plain-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
 }
-@keyframes rq-crack-bottom {
-  0%, 30% { transform: translate(0, 0) rotate(0); opacity: 1; }
-  100% { transform: translate(30px, 90px) rotate(8deg); opacity: 0; }
+.rq-plain-in { animation: rq-plain-in 0.3s ease-out both; }
+
+/* 50:50: the quiz show's stage, a slow pulse of blue-violet light. */
+@keyframes rq-stage {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
 }
-@keyframes rq-crack-line {
-  0%, 25% { opacity: 0; }
-  32% { opacity: 1; }
-  60% { opacity: 1; }
-  100% { opacity: 0; }
+.rq-stage {
+  background:
+    radial-gradient(ellipse 70% 120% at 50% 120%, rgb(139 123 255 / 0.55), transparent 70%),
+    radial-gradient(ellipse 60% 90% at 50% -40%, rgb(47 96 255 / 0.45), transparent 70%),
+    linear-gradient(180deg, #0b0a3a, #050322);
+  animation: rq-stage 0.9s ease-in-out infinite;
 }
-.rq-crack-top {
-  clip-path: polygon(0 0, 100% 0, 100% 46%, 78% 58%, 55% 44%, 32% 60%, 12% 47%, 0 55%);
-  animation: rq-crack-top 0.55s ease-in 0.2s both;
+
+/* Gotta Go Fast: blue motion lines streaking past. */
+@keyframes rq-blur {
+  0% { opacity: 0; transform: translateX(110%) scaleX(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-120%) scaleX(1.2); }
 }
-.rq-crack-bottom {
-  clip-path: polygon(0 55%, 12% 47%, 32% 60%, 55% 44%, 78% 58%, 100% 46%, 100% 100%, 0 100%);
-  animation: rq-crack-bottom 0.55s ease-in 0.2s both;
+.rq-blur { animation: rq-blur 0.5s cubic-bezier(0.3, 0, 0.6, 1) both; }
+
+@keyframes rq-dash {
+  0% { opacity: 0; transform: translateX(60px) skewX(-18deg); }
+  60% { opacity: 1; transform: translateX(-4px) skewX(-18deg); }
+  100% { opacity: 1; transform: translateX(0) skewX(-12deg); }
 }
-.rq-crack-line { animation: rq-crack-line 0.55s linear 0.2s both; }
-.rq-after-crack { animation: rq-slam 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.55s both; }
+.rq-dash { animation: rq-dash 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
 
 /* ---------- power-up buttons ---------- */
 
@@ -147,7 +165,7 @@
 .rq-glow { animation: rq-glow 1.1s ease-in-out infinite; }
 
 .rq-armed {
-  box-shadow: 0 0 0 2px var(--color-zeus), 0 0 22px 2px color-mix(in srgb, var(--color-zeus) 60%, transparent);
+  box-shadow: 0 0 0 2px var(--color-gold), 0 0 22px 2px color-mix(in srgb, var(--color-gold) 60%, transparent);
 }
 
 /* ---------- reveal and damage ---------- */
@@ -191,35 +209,19 @@
 }
 .rq-streak { animation: rq-streak-up 0.38s cubic-bezier(0.5, 0, 0.9, 0.5) both; }
 
-@keyframes rq-crumble {
-  0% { opacity: 1; transform: none; filter: none; }
-  35% { opacity: 0.8; transform: translateX(-3px) rotate(-1deg); }
-  100% { opacity: 0; transform: translateY(26px) rotate(3deg) scale(0.92); filter: blur(3px); }
+/* 50:50 on an option: the text blinks out and leaves the empty frame, like the show. */
+@keyframes rq-lifeline-text {
+  0%, 20% { opacity: 1; }
+  28% { opacity: 0; }
+  36% { opacity: 1; }
+  44%, 100% { opacity: 0; }
 }
-.rq-crumble { animation: rq-crumble 0.7s ease-in both; }
-
-@keyframes rq-wind {
-  0% { opacity: 0; transform: translateX(-110%); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(110%); }
+@keyframes rq-lifeline-frame {
+  0%, 40% { opacity: 1; }
+  100% { opacity: 0.35; }
 }
-.rq-wind { animation: rq-wind 0.7s ease-out both; }
-
-@keyframes rq-flame {
-  0% { opacity: 0; transform: translateY(20px) scaleY(0.4); }
-  25% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-140px) scaleY(1.3); }
-}
-.rq-flame {
-  position: absolute;
-  bottom: 0;
-  width: 26px;
-  height: 64px;
-  border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%;
-  background: radial-gradient(ellipse at 50% 80%, #fff7c2 0%, #ffd23f 25%, var(--color-phoenix) 55%, transparent 75%);
-  filter: blur(1px);
-  animation: rq-flame 1.2s ease-out both;
-}
+.rq-lifeline { animation: rq-lifeline-frame 0.7s linear both; }
+.rq-lifeline > * { animation: rq-lifeline-text 0.7s steps(1, end) both; }
 
 @keyframes rq-pulse {
   0%, 100% { opacity: 1; }
@@ -242,8 +244,8 @@
 .rq-hp-low { animation: rq-hp-low 0.9s ease-in-out infinite; }
 
 @keyframes rq-result {
-  0% { opacity: 0; transform: scale(1.8); letter-spacing: 0.4em; }
-  100% { opacity: 1; transform: scale(1); letter-spacing: 0.08em; }
+  0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  100% { opacity: 1; transform: none; }
 }
 .rq-result { animation: rq-result 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
 
@@ -288,16 +290,17 @@
 .rq-rm .rq-flash,
 .rq-rm .rq-bolt,
 .rq-rm .rq-streak,
-.rq-rm .rq-wind,
-.rq-rm .rq-crack-line {
+.rq-rm .rq-blur,
+.rq-rm .rq-stage {
   display: none;
 }
 .rq-rm .rq-slam,
 .rq-rm .rq-rise,
-.rq-rm .rq-shield,
+.rq-rm .rq-face,
+.rq-rm .rq-dash,
+.rq-rm .rq-plain-in,
 .rq-rm .rq-flip,
-.rq-rm .rq-result,
-.rq-rm .rq-after-crack {
+.rq-rm .rq-result {
   animation-name: rq-fade-in !important;
   animation-duration: 400ms !important;
   animation-timing-function: ease-out !important;
@@ -317,11 +320,7 @@
 }
 .rq-rm .rq-float,
 .rq-rm .rq-float-down,
-.rq-rm .rq-chunk,
-.rq-rm .rq-crumble,
-.rq-rm .rq-flame,
-.rq-rm .rq-crack-top,
-.rq-rm .rq-crack-bottom {
+.rq-rm .rq-chunk {
   animation-name: rq-fade-inout !important;
   animation-duration: 1200ms !important;
   animation-timing-function: linear !important;
@@ -333,11 +332,14 @@
 .rq-rm .rq-float-down {
   transform: translate(-50%, 8px) !important;
 }
-.rq-rm .rq-crumble,
-.rq-rm .rq-crack-top,
-.rq-rm .rq-crack-bottom {
+.rq-rm .rq-lifeline,
+.rq-rm .rq-lifeline > * {
   animation-name: rq-fade-out !important;
   animation-duration: 500ms !important;
+}
+.rq-rm .rq-lifeline {
+  animation-name: none !important;
+  opacity: 0.35;
 }
 @keyframes rq-fade-out {
   from { opacity: 1; }
@@ -345,7 +347,7 @@
 }
 .rq-rm .rq-armed,
 .rq-rm .rq-glow {
-  box-shadow: 0 0 0 2px var(--rq-glow, var(--color-zeus));
+  box-shadow: 0 0 0 2px var(--rq-glow, var(--color-gold));
 }
 
 /* The surrender ring fills over the hold time, also with reduced motion (it is a progress bar, not motion). */

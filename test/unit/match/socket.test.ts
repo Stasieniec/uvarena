@@ -93,7 +93,7 @@ describe("MatchSocket", () => {
     h.sock.start();
     expect(h.statuses).toEqual(["connecting"]);
     h.last().open();
-    h.last().receive(JSON.stringify({ type: "opponent_powerup", serverNow: 5, round: 1, powerup: "hermes" }));
+    h.last().receive(JSON.stringify({ type: "opponent_powerup", serverNow: 5, round: 1, powerup: "fast" }));
     h.last().receive("pong");
     h.last().receive("{not json");
     expect(h.messages).toEqual(["opponent_powerup"]);

@@ -79,19 +79,19 @@ export interface DamageFacts {
   damageToYou: number;
   damageToOpponent: number;
   capped: boolean;
-  zeus: "you" | "opponent" | null;
-  aegis: "you" | "opponent" | null;
+  bibi: "you" | "opponent" | null;
+  shield: "you" | "opponent" | null;
 }
 
 export interface DamageCaps {
-  zeusFactor: number;
+  bibiFactor: number;
   roundCap: number;
-  zeusRoundCap: number;
+  bibiRoundCap: number;
 }
 
 /**
  * One short line that accounts for the round's damage, for the reveal:
- * "You 900 · Them 0 · x2 = 1,800". Zeus, the cap and Aegis appear only when
+ * "You 900 · Them 0 · x2 = 1,800". Bibi, the cap and Shield appear only when
  * they changed the number. Null when there is nothing worth saying.
  */
 export function damageLine(r: DamageFacts, caps: DamageCaps): string | null {
@@ -105,13 +105,13 @@ export function damageLine(r: DamageFacts, caps: DamageCaps): string | null {
   }
   const attacker = toThem ? "you" : "opponent";
   const gap = Math.abs(r.yourScore - r.opponentScore);
-  const zeus = r.zeus === attacker;
+  const bibi = r.bibi === attacker;
   const victim = toThem ? "opponent" : "you";
   const dealt = toThem ? r.damageToOpponent : r.damageToYou;
-  const uncapped = gap * r.multiplier * (zeus ? caps.zeusFactor : 1);
-  let line = `${scores} · ${fmtMultiplier(r.multiplier)}${zeus ? ` · Zeus x${caps.zeusFactor}` : ""} = ${fmtInt(uncapped)}`;
-  if (r.capped) line += `, capped at ${fmtInt(zeus ? caps.zeusRoundCap : caps.roundCap)}`;
-  if (r.aegis === victim) line += `, Aegis halves it to ${fmtInt(dealt)}`;
+  const uncapped = gap * r.multiplier * (bibi ? caps.bibiFactor : 1);
+  let line = `${scores} · ${fmtMultiplier(r.multiplier)}${bibi ? ` · Bibi x${caps.bibiFactor}` : ""} = ${fmtInt(uncapped)}`;
+  if (r.capped) line += `, capped at ${fmtInt(bibi ? caps.bibiRoundCap : caps.roundCap)}`;
+  if (r.shield === victim) line += `, Shield halves it to ${fmtInt(dealt)}`;
   return line;
 }
 

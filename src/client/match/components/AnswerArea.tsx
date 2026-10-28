@@ -184,7 +184,7 @@ function Options({
               MARK_CLS[mark],
               reveal ? "rq-flip" : "",
               dim ? "opacity-40" : "",
-              isHidden && !reveal ? "rq-crumble pointer-events-none" : "",
+              isHidden && !reveal ? "rq-lifeline pointer-events-none" : "",
               isHidden && reveal ? "opacity-20" : "",
             ].join(" ")}
           >

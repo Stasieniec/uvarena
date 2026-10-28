@@ -38,12 +38,12 @@ export function modeTheme(mode: MatchMode | null): ModeTheme {
   if (mode === "bot") {
     return {
       accent: "#60a5fa",
-      frame: "rgba(59,130,246,0.75)",
-      cardShadow: "0 0 0 1px rgba(59,130,246,0.25), 0 0 28px -6px rgba(59,130,246,0.55), 0 8px 30px -12px rgba(0,0,0,0.7)",
+      frame: "rgba(75,131,230,0.5)",
+      cardShadow: "0 0 18px -8px rgba(75,131,230,0.45), 0 8px 30px -12px rgba(0,0,0,0.7)",
       timer: "#60a5fa",
-      round: "#bfdbfe",
-      glow: "rgba(59,130,246,0.32)",
-      edge: "rgba(59,130,246,0.45)",
+      round: "var(--color-text)",
+      glow: "rgba(75,131,230,0.18)",
+      edge: "rgba(75,131,230,0.3)",
     };
   }
   if (mode === "private") {
@@ -59,12 +59,12 @@ export function modeTheme(mode: MatchMode | null): ModeTheme {
   }
   return {
     accent: "var(--color-ranked)",
-    frame: "rgba(245,197,66,0.7)",
-    cardShadow: "0 0 0 1px rgba(229,72,77,0.45), 0 0 28px -6px rgba(229,72,77,0.6), 0 8px 30px -12px rgba(0,0,0,0.7)",
+    frame: "rgba(217,87,91,0.5)",
+    cardShadow: "0 0 18px -8px rgba(217,87,91,0.45), 0 8px 30px -12px rgba(0,0,0,0.7)",
     timer: "var(--color-ranked-gold)",
-    round: "var(--color-ranked-gold)",
-    glow: "rgba(229,72,77,0.34)",
-    edge: "rgba(229,72,77,0.5)",
+    round: "var(--color-text)",
+    glow: "rgba(217,87,91,0.16)",
+    edge: "rgba(217,87,91,0.3)",
   };
 }
 
@@ -86,19 +86,19 @@ export function DrainBar({ clock, end, total, color, className = "" }: { clock: 
 export function MultiplierBadge({ multiplier }: { multiplier: number }) {
   const text = fmtMultiplier(multiplier);
   if (multiplier <= 1) return <span className="text-text/80 tabular-nums">{text}</span>;
-  if (multiplier < 2) return <span className="font-bold text-zeus tabular-nums">{text}</span>;
+  if (multiplier < 2) return <span className="font-bold text-gold tabular-nums">{text}</span>;
   const steps = Math.min(4, (multiplier - 2) / 0.5);
   const hot = multiplier >= 3;
   const style: CSSProperties = {
     fontSize: `${15 + steps * 1.5}px`,
-    color: hot ? "#fff3c4" : "var(--color-zeus)",
+    color: hot ? "#fff3c4" : "var(--color-gold)",
     background: hot
       ? "linear-gradient(180deg, rgba(229,72,77,0.55), rgba(245,197,66,0.3))"
-      : "color-mix(in srgb, var(--color-zeus) 18%, transparent)",
-    ["--rq-glow" as string]: hot ? "var(--color-ranked)" : "var(--color-zeus)",
+      : "color-mix(in srgb, var(--color-gold) 18%, transparent)",
+    ["--rq-glow" as string]: hot ? "var(--color-ranked)" : "var(--color-gold)",
   };
   return (
-    <span className="rq-heat rounded-full px-2 py-px leading-tight font-black tabular-nums ring-1 ring-zeus/70" style={style}>
+    <span className="rq-heat rounded-full px-2 py-px leading-tight font-black tabular-nums ring-1 ring-gold/70" style={style}>
       {text}
     </span>
   );
@@ -184,27 +184,27 @@ export function ArmingCard({
         <>
           <div
             key={`d${round}`}
-            className="rq-slam rq-display rq-zeus-text mt-3 text-[min(11vw,50px)] leading-none font-black whitespace-nowrap"
+            className="rq-slam rq-display rq-gold-text mt-3 text-[min(11vw,50px)] leading-none font-black whitespace-nowrap"
             style={{ animationDelay: "260ms" }}
           >
             DAMAGE {fmtMultiplier(multiplier)}
           </div>
-          <div className="rq-rise mt-2 text-sm font-semibold text-zeus/90" style={{ animationDelay: "420ms" }}>
+          <div className="rq-rise mt-2 text-sm font-semibold text-gold/90" style={{ animationDelay: "420ms" }}>
             {`A wrong answer can cost ${fmtInt(worstHit(multiplier, SCORING.maxScore, SCORING.roundCap))}.`}
           </div>
         </>
       ) : (
         <div
           className="rq-rise rq-display mt-2 text-[min(13vw,56px)] leading-none font-black"
-          style={{ color: multiplier > 1 ? "var(--color-zeus)" : "var(--color-muted)", textShadow: multiplier > 1 ? "0 0 18px rgba(245,197,66,0.5)" : "none", animationDelay: "120ms" } as CSSProperties}
+          style={{ color: multiplier > 1 ? "var(--color-gold)" : "var(--color-muted)", textShadow: multiplier > 1 ? "0 0 18px rgba(245,197,66,0.5)" : "none", animationDelay: "120ms" } as CSSProperties}
         >
           {fmtMultiplier(multiplier)}
         </div>
       )}
-      {endsAt !== null && <DrainBar clock={clock} end={endsAt} total={totalMs} color="var(--color-zeus)" className="mt-6 w-40" />}
+      {endsAt !== null && <DrainBar clock={clock} end={endsAt} total={totalMs} color="var(--color-gold)" className="mt-6 w-40" />}
       <div className="mt-5 min-h-[44px] text-sm text-text/80">
         {armed ? (
-          <span className="inline-flex items-center gap-2 font-semibold text-zeus">
+          <span className="inline-flex items-center gap-2 font-semibold text-gold">
             <PowerupIcon id={armed} size={20} />
             {POWERUP_NAMES[armed]} armed. {POWERUP_HINTS[armed]}
           </span>
@@ -274,7 +274,7 @@ export function IntroView({
         {(mode === "bot" || !rated) && <div className="mt-1 text-xs text-muted">Your ranked rating stays where it is.</div>}
       </div>
       <IntroPlayer p={opponent} side="opponent" />
-      <div className="rq-slam rq-display text-6xl font-black text-zeus" style={{ textShadow: "0 0 30px rgba(245,197,66,0.5)", animationDelay: "500ms" }}>
+      <div className="rq-slam rq-display text-6xl font-black text-gold" style={{ textShadow: "0 0 30px rgba(245,197,66,0.5)", animationDelay: "500ms" }}>
         VS
       </div>
       <IntroPlayer p={you} side="you" />

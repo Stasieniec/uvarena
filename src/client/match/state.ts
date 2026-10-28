@@ -92,7 +92,7 @@ export interface MatchUiState {
   armedAcked: BlindPowerupId | null;
   banner: BannerState | null;
   question: QuestionView | null;
-  /** Your Oracle hides (your opaque ids). */
+  /** Your 50:50 hides (your opaque ids). */
   hidden: string[];
   /** Quick power-up the server confirmed this round. */
   quickUsed: QuickPowerupId | null;
@@ -377,7 +377,7 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
         ...s,
         quickUsed: m.powerup,
         quickPending: null,
-        hidden: m.powerup === "oracle" ? m.hidden : s.hidden,
+        hidden: m.powerup === "fifty" ? m.hidden : s.hidden,
         you: withUsed(s.you, m.powerup),
         quickFx: { seq: (s.quickFx?.seq ?? 0) + 1, round: m.round, at: m.serverNow, who: "you", powerup: m.powerup },
       };
@@ -396,10 +396,8 @@ export function reduceServer(s: MatchUiState, m: ServerMessage): MatchUiState {
       void _t;
       void _n;
       const before = { you: s.you?.hp ?? m.hp.you + m.damageToYou, opponent: s.opponent?.hp ?? m.hp.opponent + m.damageToOpponent };
-      let you = s.you ? { ...s.you, hp: m.hp.you } : null;
-      let opponent = s.opponent ? { ...s.opponent, hp: m.hp.opponent } : null;
-      if (m.phoenix === "you" && you) you = { ...withUsed(you, "phoenix")!, phoenixUsed: true };
-      if (m.phoenix === "opponent" && opponent) opponent = { ...withUsed(opponent, "phoenix")!, phoenixUsed: true };
+      const you = s.you ? { ...s.you, hp: m.hp.you } : null;
+      const opponent = s.opponent ? { ...s.opponent, hp: m.hp.opponent } : null;
       return {
         ...s,
         phase: "reveal",
@@ -515,7 +513,7 @@ export function canUseQuick(s: MatchUiState, p: QuickPowerupId, eligibleTypes: r
   // At most one non-passive power-up per round; an armed one counts even if cancelled.
   if (s.armedAcked || s.armed) return false;
   if (!s.you.loadout.includes(p) || s.you.used.includes(p)) return false;
-  if (p === "oracle" && !eligibleTypes.includes(s.question.type)) return false;
+  if (p === "fifty" && !eligibleTypes.includes(s.question.type)) return false;
   if (s.yourDeadline !== null && now > s.yourDeadline) return false;
   return true;
 }

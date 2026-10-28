@@ -1,7 +1,7 @@
-// Synthesised sound effects (Web Audio, no files): thunder, shield clang, the
-// last-seconds tick, the hit thud, the win fanfare, plus a crack for Nemesis,
-// a whoosh for quick power-ups and a short sting for a loss. The context is
-// created and resumed on the first tap, as browsers require.
+// Synthesised sound effects (Web Audio, no files): Bibi's thunder and boom,
+// the Shield clang, the 50:50 lifeline drop, the Gotta Go Fast zoom, the
+// last-seconds tick, the hit thud, the win fanfare and a short sting for a
+// loss. The context is created and resumed on the first tap, as browsers require.
 
 import type { SoundName } from "./cues";
 
@@ -43,10 +43,10 @@ class Sfx {
           return this.thunder(ctx, out, t);
         case "shield":
           return this.shield(ctx, out, t);
-        case "crack":
-          return this.crack(ctx, out, t);
-        case "whoosh":
-          return this.whoosh(ctx, out, t);
+        case "lifeline":
+          return this.lifeline(ctx, out, t);
+        case "zoom":
+          return this.zoom(ctx, out, t);
         case "tick":
           return this.tick(ctx, out, t, 1150, 0.18);
         case "tickLast":
@@ -116,10 +116,18 @@ class Sfx {
     rg.gain.exponentialRampToValueAtTime(0.7, t + 0.75);
     rg.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
     rumble.connect(lp).connect(rg).connect(out);
+    // The boom: a sub-bass drop under the crack.
+    const boom = ctx.createOscillator();
+    boom.type = "sine";
+    boom.frequency.setValueAtTime(90, t);
+    boom.frequency.exponentialRampToValueAtTime(30, t + 0.9);
+    boom.connect(this.env(ctx, t, 1.1, 0.01, 0.9)).connect(out);
+    boom.start(t);
+    boom.stop(t + 1);
   }
 
   private shield(ctx: Ctx, out: AudioNode, t: number): void {
-    // Inharmonic partials of struck bronze.
+    // Inharmonic partials of struck metal.
     for (const [f, a, d] of [
       [430, 0.35, 0.9],
       [1094, 0.22, 0.6],
@@ -142,26 +150,52 @@ class Sfx {
     n.connect(bp).connect(this.env(ctx, t, 0.5, 0.002, 0.05)).connect(out);
   }
 
-  private crack(ctx: Ctx, out: AudioNode, t: number): void {
-    for (let i = 0; i < 3; i++) {
-      const at = t + i * 0.045;
-      const n = this.noiseSource(ctx, at, 0.08);
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.value = 2400 - i * 500;
-      bp.Q.value = 2;
-      n.connect(bp).connect(this.env(ctx, at, 0.7, 0.002, 0.07)).connect(out);
+  private lifeline(ctx: Ctx, out: AudioNode, t: number): void {
+    // The quiz-show drop: two detuned tones sliding down, then a soft thump.
+    for (const [f, type] of [
+      [880, "sawtooth"],
+      [886, "square"],
+    ] as const) {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f / 4, t + 0.38);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(2400, t);
+      lp.frequency.exponentialRampToValueAtTime(400, t + 0.4);
+      o.connect(lp).connect(this.env(ctx, t, 0.16, 0.01, 0.42)).connect(out);
+      o.start(t);
+      o.stop(t + 0.5);
     }
+    const thump = ctx.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(120, t + 0.36);
+    thump.frequency.exponentialRampToValueAtTime(45, t + 0.6);
+    thump.connect(this.env(ctx, t + 0.36, 0.7, 0.005, 0.25)).connect(out);
+    thump.start(t + 0.36);
+    thump.stop(t + 0.7);
   }
 
-  private whoosh(ctx: Ctx, out: AudioNode, t: number): void {
-    const n = this.noiseSource(ctx, t, 0.6);
+  private zoom(ctx: Ctx, out: AudioNode, t: number): void {
+    // A spin-up: a rising saw under a rising band of noise.
+    const o = ctx.createOscillator();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(1800, t + 0.32);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 3200;
+    o.connect(lp).connect(this.env(ctx, t, 0.12, 0.02, 0.32)).connect(out);
+    o.start(t);
+    o.stop(t + 0.4);
+    const n = this.noiseSource(ctx, t, 0.5);
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
-    bp.Q.value = 1.2;
-    bp.frequency.setValueAtTime(400, t);
-    bp.frequency.exponentialRampToValueAtTime(3000, t + 0.35);
-    n.connect(bp).connect(this.env(ctx, t, 0.45, 0.12, 0.4)).connect(out);
+    bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(600, t);
+    bp.frequency.exponentialRampToValueAtTime(5000, t + 0.3);
+    n.connect(bp).connect(this.env(ctx, t, 0.4, 0.05, 0.35)).connect(out);
   }
 
   private tick(ctx: Ctx, out: AudioNode, t: number, freq: number, peak: number): void {

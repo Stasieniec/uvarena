@@ -1,7 +1,7 @@
 // Settings: picture (upload with square crop, or remove), username and names,
 // sound, account, log out.
 import { useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AVATAR_CONTENT_TYPES, PersonNameSchema, UsernameSchema, type MeResponse } from "@shared/api-schemas";
 import { LIMITS } from "@shared/game/config";
@@ -194,6 +194,9 @@ export function Settings() {
       <Button variant="danger" className="mt-6 w-full" onClick={logout} loading={loggingOut}>
         Log out
       </Button>
+      <Link to="/credits" className="mt-4 block py-2 text-center text-xs text-muted underline-offset-2 hover:underline">
+        Credits
+      </Link>
     </Page>
   );
 }

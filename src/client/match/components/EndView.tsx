@@ -44,11 +44,11 @@ interface Props {
 }
 
 const WORD_STYLE: Record<string, { color: string; glow: string }> = {
-  WIN: { color: "var(--color-zeus)", glow: "0 0 40px rgba(245,197,66,0.65), 0 4px 0 #6b4500" },
-  LOSS: { color: "#c7cbe0", glow: "0 0 30px rgba(239,68,68,0.45), 0 4px 0 #000" },
-  DRAW: { color: "var(--color-text)", glow: "0 0 30px rgba(255,255,255,0.3), 0 4px 0 #000" },
-  VOID: { color: "var(--color-muted)", glow: "0 4px 0 #000" },
-  CANCELLED: { color: "var(--color-muted)", glow: "0 4px 0 #000" },
+  WIN: { color: "var(--color-you)", glow: "0 0 32px rgba(45,212,191,0.3)" },
+  LOSS: { color: "var(--color-text)", glow: "none" },
+  DRAW: { color: "var(--color-text)", glow: "none" },
+  VOID: { color: "var(--color-muted)", glow: "none" },
+  CANCELLED: { color: "var(--color-muted)", glow: "none" },
 };
 
 function RatingLine({ label, change, note }: { label: string; change: RatingChange; note?: string }) {
@@ -74,7 +74,7 @@ function NextBotCard({ next, onFight, pending, error }: { next: NextBot; onFight
   if (next.level === null || next.name === null) {
     return (
       <div className="rq-rise rounded-2xl border border-bot/50 bg-gradient-to-br from-[#14306e] to-surface px-4 py-3 text-sm">
-        <span className="font-semibold text-[#bfdbfe]">{next.beatenName} beaten.</span> That was the top of the ladder.
+        <span className="font-semibold text-[#bfdbfe]">Beaten: {next.beatenName}.</span> That was the top of the ladder.
       </div>
     );
   }
@@ -96,7 +96,7 @@ function NextBotCard({ next, onFight, pending, error }: { next: NextBot; onFight
           onClick={() => onFight(level)}
           className="mt-3 h-12 w-full rounded-xl bg-bot font-bold text-white active:scale-[0.98] disabled:opacity-60"
         >
-          {pending ? "Starting" : `Fight ${next.name}`}
+          {pending ? "Starting" : "Play the next bot"}
         </button>
       )}
       {error && <p className="mt-2 text-xs text-wrong">{error}</p>}
@@ -202,9 +202,9 @@ export function EndView(props: Props) {
             disabled={!rematchOpen || rematch?.you === true || !connected}
             onClick={props.onRematch}
             className={`h-14 rounded-xl text-lg font-bold transition active:scale-[0.98] disabled:opacity-60 ${
-              rematch?.opponent && !rematch.you ? "rq-glow bg-zeus text-bg" : "bg-you text-bg"
+              rematch?.opponent && !rematch.you ? "rq-glow bg-gold text-bg" : "bg-you text-bg"
             }`}
-            style={{ "--rq-glow": "var(--color-zeus)" } as CSSProperties}
+            style={{ "--rq-glow": "var(--color-gold)" } as CSSProperties}
           >
             {rematchOpen || rematch?.matchId ? rematchLabel : "Rematch expired"}
           </button>

@@ -17,8 +17,8 @@ const base: DamageFacts = {
   damageToYou: 0,
   damageToOpponent: 1800,
   capped: false,
-  zeus: null,
-  aegis: null,
+  bibi: null,
+  shield: null,
 };
 
 describe("damageLine", () => {
@@ -31,14 +31,14 @@ describe("damageLine", () => {
     expect(damageLine(r, SCORING)).toBe("You 0 · Them 842 · x2.5 = 2,105");
   });
 
-  it("names Zeus and the cap when they changed the number", () => {
-    const r = { ...base, multiplier: 3, zeus: "you" as const, capped: true, damageToOpponent: 4500 };
-    expect(damageLine(r, SCORING)).toBe("You 900 · Them 0 · x3 · Zeus x2 = 5,400, capped at 4,500");
+  it("names Bibi and the cap when they changed the number", () => {
+    const r = { ...base, multiplier: 3, bibi: "you" as const, capped: true, damageToOpponent: 4500 };
+    expect(damageLine(r, SCORING)).toBe("You 900 · Them 0 · x3 · Bibi x2 = 5,400, capped at 4,500");
   });
 
-  it("names Aegis with the damage that got through", () => {
-    const r = { ...base, aegis: "opponent" as const, damageToOpponent: 900 };
-    expect(damageLine(r, SCORING)).toBe("You 900 · Them 0 · x2 = 1,800, Aegis halves it to 900");
+  it("names Shield with the damage that got through", () => {
+    const r = { ...base, shield: "opponent" as const, damageToOpponent: 900 };
+    expect(damageLine(r, SCORING)).toBe("You 900 · Them 0 · x2 = 1,800, Shield halves it to 900");
   });
 
   it("says when nothing happened", () => {
@@ -88,7 +88,6 @@ describe("noShowAt in the client state", () => {
       hp: 6000,
       loadout: [],
       used: [],
-      phoenixUsed: false,
       connected: true,
       ready: true,
       rating: null,

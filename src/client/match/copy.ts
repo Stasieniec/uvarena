@@ -1,50 +1,51 @@
 // Every line of match screen copy, from design.md. Dry and short; the power-up
 // lines are the only place with capitals and exclamation marks.
 
-import type { BannerOutcome, EndReason, PowerupId, QuestionType } from "@shared/game/types";
+import type { EndReason, PowerupId, QuestionType } from "@shared/game/types";
 
 export const POWERUP_NAMES: Record<PowerupId, string> = {
-  zeus: "Zeus",
-  aegis: "Aegis",
-  nemesis: "Nemesis",
-  oracle: "Oracle",
-  hermes: "Hermes",
-  phoenix: "Phoenix",
+  bibi: "Bibi",
+  shield: "Shield",
+  fifty: "50:50",
+  fast: "Gotta Go Fast",
 };
 
 /** One-line effect, for button titles and the intro loadouts. */
 export const POWERUP_HINTS: Record<PowerupId, string> = {
-  zeus: "Double the damage you deal this round.",
-  aegis: "Halve the damage you take this round.",
-  nemesis: "Cancel what they armed this round.",
-  oracle: "Remove wrong options.",
-  hermes: "Answer first and they get 2 seconds.",
-  phoenix: "Survive one knockout at 1 HP.",
+  bibi: "Double the damage you deal this round.",
+  shield: "Halve the damage you take this round.",
+  fifty: "Remove wrong options.",
+  fast: "Answer first and they get 5 seconds.",
 };
 
 export const POWERUP_KIND_LABEL: Record<PowerupId, string> = {
-  zeus: "Blind",
-  aegis: "Blind",
-  nemesis: "Blind",
-  oracle: "Quick",
-  hermes: "Quick",
-  phoenix: "Passive",
+  bibi: "Blind",
+  shield: "Blind",
+  fifty: "Quick",
+  fast: "Quick",
 };
 
+/**
+ * Banner pictures. The files are added to public/powerups/ separately; every
+ * banner still works without them.
+ */
+export const POWERUP_IMAGES = {
+  bibi: "/powerups/bibi.png",
+  fiftyLogo: "/powerups/milionerzy-logo.png",
+  fiftyHost: "/powerups/milionerzy-host.png",
+} as const;
+
 export const LINES = {
-  zeus: "ZEUS, STRIKE THEM DOWN!",
-  aegis: "THE AEGIS HOLDS.",
-  aegisSub: "Athena sends her regards.",
-  nemesisHit: "NEMESIS HAS READ YOUR PLANS.",
-  nemesisWatch: "NEMESIS IS WATCHING.",
-  nemesisWastedSub: "Nothing to read.",
-  oracle: "THE ORACLE HAS SPOKEN.",
-  oracleOpponent: "They asked the Oracle.",
-  hermes: "HERMES IS ALREADY THERE.",
-  hermesOpponent: "They called on Hermes.",
-  phoenix: "FROM THE ASHES!",
-  phoenixSub: "1 HP. Do not get excited.",
-  zeusFizzle: "Zeus is unimpressed.",
+  bibi: "BENJAMIN NETANYAHU, STRIKE HIM DOWN!",
+  /** The Bibi line as the banner sets it, one part per row. */
+  bibiParts: ["BENJAMIN NETANYAHU,", "STRIKE HIM", "DOWN!"],
+  shieldTitle: "Shield up.",
+  shieldSub: "Damage halved this round.",
+  fifty: "FIFTY FIFTY.",
+  fiftyOpponent: "They used 50:50.",
+  fast: "GOTTA GO FAST.",
+  fastOpponent: "They used Gotta Go Fast.",
+  bibiFizzle: "Bibi is unimpressed.",
   opponentAnswered: "Opponent answered",
   opponentDisconnected: "Opponent disconnected",
   savedToMissed: "Saved to missed questions",
@@ -79,25 +80,6 @@ export const TYPE_LABEL: Record<QuestionType, string> = {
   order: "Put in order",
   match: "Match",
 };
-
-/** The main line of a banner card. Null for outcomes that only show the other card. */
-export function bannerLine(powerup: PowerupId, outcome: BannerOutcome): string {
-  if (powerup === "nemesis") {
-    if (outcome === "nemesis_hit") return LINES.nemesisHit;
-    return LINES.nemesisWatch;
-  }
-  if (powerup === "zeus") return LINES.zeus;
-  if (powerup === "aegis") return LINES.aegis;
-  if (powerup === "oracle") return LINES.oracle;
-  if (powerup === "hermes") return LINES.hermes;
-  return LINES.phoenix;
-}
-
-export function bannerSub(powerup: PowerupId, outcome: BannerOutcome): string | null {
-  if (powerup === "aegis" && outcome === "active") return LINES.aegisSub;
-  if (powerup === "nemesis" && outcome === "nemesis_wasted") return LINES.nemesisWastedSub;
-  return null;
-}
 
 export type ResultWord = "WIN" | "LOSS" | "DRAW" | "VOID" | "CANCELLED";
 
