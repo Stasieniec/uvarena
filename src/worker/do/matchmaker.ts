@@ -25,6 +25,7 @@ import { createMatch } from "../match-factory";
 import { HEADERS, MatchFactoryError, type MatchmakerRpc, type QueueSocketAttachment } from "./contracts";
 import { isTestEnv } from "../middleware/test-mode";
 import { FrameGuard } from "./frame-guard";
+import { closeSocket, isLive } from "./socket-state";
 
 const KEY_COURSE = "courseId";
 const SEC = 1000;
@@ -117,12 +118,9 @@ interface RecentMatch {
   at: number;
 }
 
+/** Closes a queue socket and flags it, so it never counts as searching again (socket-state.ts). */
 function close(ws: WebSocket, code: number, reason: string): void {
-  try {
-    ws.close(code, reason);
-  } catch {
-    // Already closed.
-  }
+  closeSocket(ws, code, reason);
 }
 
 export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
@@ -141,9 +139,9 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
     return run;
   }
 
-  /** Open queue sockets, optionally ignoring one that is closing. */
+  /** Live queue sockets (open, not closed by this object), optionally ignoring one that is closing. */
   private openSockets(except?: WebSocket): WebSocket[] {
-    return this.ctx.getWebSockets().filter((ws) => ws !== except && ws.readyState === WebSocket.OPEN);
+    return this.ctx.getWebSockets().filter((ws) => ws !== except && isLive(ws));
   }
 
   private entry(ws: WebSocket): QueueSocketAttachment {
@@ -191,7 +189,7 @@ export class Matchmaker extends DurableObject<Env> implements MatchmakerRpc {
       let joinedAt = now;
       for (const old of this.ctx.getWebSockets(userId)) {
         // A newer socket replaces the older one but keeps its place in the queue.
-        if (old.readyState === WebSocket.OPEN) joinedAt = Math.min(joinedAt, this.entry(old).joinedAt);
+        if (isLive(old)) joinedAt = Math.min(joinedAt, this.entry(old).joinedAt);
         close(old, CLOSE_CODES.replaced, "searching on another device");
       }
       const attachment: QueueSocketAttachment = {

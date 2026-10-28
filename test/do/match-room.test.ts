@@ -79,6 +79,27 @@ describe("MatchRoom sockets", () => {
     cb.close();
   });
 
+  it("reports a disconnect even when a replaced socket's close never completed", async () => {
+    // A socket the room closed itself (here: replaced) must not count as the
+    // player's live connection while its close handshake hangs.
+    const { a, b, stub } = await ranked();
+    const ca = await openSocket(stub, a);
+    const cb = await openSocket(stub, b);
+    await cb.waitFor("intro");
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets(a)) ws.close = () => undefined;
+    });
+    const ca2 = await openSocket(stub, a);
+    await ca2.waitFor("snapshot");
+    const framesBefore = ca.frames.length;
+    ca2.close();
+    await until(() => cb.of("opponent_connection").some((m) => m.connected === false), "the disconnect reaches b");
+    expect((await readState(stub))?.players[0].connected).toBe(false);
+    expect(ca.frames.length).toBe(framesBefore);
+    ca.close();
+    cb.close();
+  });
+
   it("reports a disconnect to the opponent and a reconnect gets a snapshot", async () => {
     const { a, b, stub } = await ranked();
     const ca = await openSocket(stub, a);

@@ -229,6 +229,38 @@ describe("Matchmaker queue", () => {
     await roomStub(m.matchId as string).cancel("cancelled");
   });
 
+  it("never pairs a socket it closed itself, even when the close never completes", async () => {
+    // Production, 2026-10-28: a queue socket closed with `matched` whose close
+    // handshake never finished (the client's network dropped it) was still
+    // listed as OPEN a quarter of an hour later and got paired with a new
+    // player, who then waited out a no-show. Here the close is swallowed.
+    const { courseId } = await seedCourse();
+    const ghost = await seedUser();
+    const first = await seedUser();
+    const next = await seedUser();
+    const stub = env.MATCHMAKER.getByName(matchmakerName(courseId));
+    const cg = await queueSocket(courseId, ghost, 1500);
+    await cg.waitFor("queue_status");
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets(ghost)) ws.close = () => undefined;
+    });
+    const cf = await queueSocket(courseId, first, 1500);
+    const m = await cf.waitFor("matched");
+    await cg.waitFor("matched");
+    await roomStub(m.matchId as string).cancel("cancelled");
+    expect(await runInDurableObject(stub, (_i, state) => state.getWebSockets(ghost).filter((w) => w.readyState === WebSocket.OPEN).length)).toBe(1);
+
+    const cn = await queueSocket(courseId, next, 1500);
+    const status = await cn.waitFor("queue_status");
+    expect(status.searching).toBe(1);
+    expect(await stub.searching()).toBe(1);
+    await runDurableObjectAlarm(stub);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(cn.of("matched")).toHaveLength(0);
+    cn.close();
+    cg.close();
+  });
+
   it("refuses a socket for another course and one without a user", async () => {
     const { courseId } = await seedCourse();
     const a = await seedUser();

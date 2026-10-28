@@ -47,6 +47,7 @@ import { humanIds, isMatchFinalized, loadFinalizationContext, writeFinalization 
 import { isTestEnv } from "../middleware/test-mode";
 import { closeMatchRow } from "../match-liveness";
 import { FrameGuard } from "./frame-guard";
+import { closeSocket, isLive } from "./socket-state";
 
 // ---------------------------------------------------------------------------
 // Engine seam. The shell tests (test/do/match-room.test.ts) drive the room
@@ -110,11 +111,7 @@ function truncateReason(reason: string): string {
 }
 
 function safeClose(ws: WebSocket, code: number, reason: string): void {
-  try {
-    ws.close(code, truncateReason(reason));
-  } catch {
-    // Already closed.
-  }
+  closeSocket(ws, code, truncateReason(reason));
 }
 
 function safeSend(ws: WebSocket, msg: ServerMessage): void {
@@ -217,7 +214,7 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
     for (const { to, msg } of out) {
       const player = state.players[to];
       if (!player || player.kind !== "human" || !player.userId) continue;
-      for (const ws of this.ctx.getWebSockets(player.userId)) safeSend(ws, msg);
+      for (const ws of this.ctx.getWebSockets(player.userId)) if (isLive(ws)) safeSend(ws, msg);
     }
   }
 
@@ -528,7 +525,8 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
   }
 
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    if (message === PING) return;
+    // A socket this room closed (replaced, refused) no longer plays.
+    if (message === PING || !isLive(ws)) return;
     const refusal = this.frames.check(ws, message, Date.now());
     if (refusal) {
       // The close event reports the disconnect through socketGone.
@@ -572,7 +570,7 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
       const attachment = ws.deserializeAttachment() as MatchSocketAttachment | null;
       if (!attachment) return;
       const { userId } = attachment;
-      const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && s.readyState === WebSocket.OPEN);
+      const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && isLive(s));
       if (others.length > 0) return;
       const state = await this.loadState();
       if (!state) return;
@@ -587,12 +585,12 @@ export class MatchRoom extends DurableObject<Env> implements MatchRoomRpc {
   /** Closes sockets whose client stopped pinging, and reports those players as disconnected. */
   private async dropStaleSockets(): Promise<void> {
     const now = Date.now();
-    for (const ws of this.ctx.getWebSockets()) {
+    for (const ws of this.ctx.getWebSockets().filter(isLive)) {
       const lastPing = this.ctx.getWebSocketAutoResponseTimestamp(ws);
       if (lastPing === null || now - lastPing.getTime() <= STALE_SOCKET_MS) continue;
       safeClose(ws, CLOSE_GOING_AWAY, "connection timed out");
       const { userId } = ws.deserializeAttachment() as MatchSocketAttachment;
-      const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && s.readyState === WebSocket.OPEN);
+      const others = this.ctx.getWebSockets(userId).filter((s) => s !== ws && isLive(s));
       if (others.length > 0) continue;
       const state = await this.loadState();
       const side = state ? this.engine.sideOf(state, userId) : null;
