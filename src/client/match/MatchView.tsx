@@ -47,7 +47,7 @@ export interface MatchExtras {
   /** A "Fight" request is on its way. */
   fightPending?: boolean;
   fightError?: string | null;
-  /** The match's course title, for the versus and end screens. */
+  /** The match's course short title ("Agentic AI"), for the versus and end screens. */
   courseTitle?: string | null;
   /** Private lobby: full names and ratings by username, which the lobby frame does not carry. */
   lobbyPeople?: Record<string, LobbyPerson>;

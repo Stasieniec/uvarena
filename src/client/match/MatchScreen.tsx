@@ -105,7 +105,7 @@ function LiveMatch({ matchId }: MatchScreenProps) {
   );
 
   const courses = useCourses();
-  const courseTitle = courses.data?.courses.find((c) => c.id === state.courseId)?.title ?? null;
+  const courseTitle = courses.data?.courses.find((c) => c.id === state.courseId)?.shortTitle ?? null;
 
   const extras: MatchExtras = {
     record: profile.data?.headToHead ?? null,
