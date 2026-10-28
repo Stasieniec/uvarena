@@ -193,6 +193,18 @@ questions:
     expectError(withNote("Spark evaluates lazily", "Lazy Evaluation, Quantum Spark"), /topic "Quantum Spark" is neither a concept note/);
   });
 
+  it("finds a note in Book Notes or Exercises as well as Lectures", () => {
+    const r = check(
+      makeVault({
+        [EPRM_FILE]: eprmItem("Spark evaluates lazily", "Lazy Evaluation"),
+        "Courses/EPRM/Book Notes/EPRM-W02 - Distributed Data Processing.md": note,
+        "Concepts/Lazy Evaluation.md": "# Lazy Evaluation\n",
+      }),
+    );
+    expect(messages(r.diagnostics.list)).toEqual([]);
+    expect(r.files[0]!.header?.noteFolder).toBe("Book Notes");
+  });
+
   it("errors on a missing note", () => {
     expectError(makeVault({ [EPRM_FILE]: eprmItem("x", "y") }), /note "EPRM-W02 - Distributed Data Processing" not found/, 4);
   });

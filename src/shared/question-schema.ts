@@ -218,7 +218,7 @@ export type QuizFile = z.infer<typeof QuizFileSchema>;
 //   target texts.
 // - chance: single and cloze 1/k; truefalse 0.5; multi 1/(2^k - 1); order
 //   1/n!; match 1/targets^pairs.
-// - noteUrl: NOTES_URL + "/Courses/<COURSE>/Lectures/" + slug(note) + "#" +
+// - noteUrl: NOTES_URL + "/Courses/<COURSE>/" + slug(folder) + "/" + slug(note) + "#" +
 //   anchor(section), or null without a note.
 
 export const BankLectureSchema = z.object({

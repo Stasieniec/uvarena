@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { CONCEPTS_DIR, NOTE_DIR } from "./paths";
+import { CONCEPTS_DIR, NOTE_DIR, NOTE_FOLDERS } from "./paths";
 
 /**
  * Quartz's file slug: whitespace becomes "-", so "EPRM-W05 - Telemetry" becomes
@@ -56,6 +56,8 @@ function stripInline(s: string): string {
 
 export interface NoteInfo {
   stem: string;
+  /** Course subfolder the note lives in, e.g. "Lectures" or "Book Notes". */
+  folder: string;
   path: string;
   headings: string[];
   anchors: Set<string>;
@@ -74,12 +76,13 @@ export class Vault {
   note(course: string, stem: string): NoteInfo | null {
     const key = `${course}/${stem}`;
     if (!this.notes.has(key)) {
-      const path = join(this.root, NOTE_DIR(course), `${stem}.md`);
-      if (!existsSync(path)) {
+      const folder = NOTE_FOLDERS.find((f) => existsSync(join(this.root, NOTE_DIR(course, f), `${stem}.md`)));
+      if (folder === undefined) {
         this.notes.set(key, null);
       } else {
+        const path = join(this.root, NOTE_DIR(course, folder), `${stem}.md`);
         const headings = noteHeadings(readFileSync(path, "utf8"));
-        this.notes.set(key, { stem, path, headings, anchors: new Set(headings.map(headingAnchor)) });
+        this.notes.set(key, { stem, folder, path, headings, anchors: new Set(headings.map(headingAnchor)) });
       }
     }
     return this.notes.get(key) ?? null;

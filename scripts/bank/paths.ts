@@ -12,8 +12,13 @@ export const DEFAULT_IMPORT_SQL = join(REPO_ROOT, "bank", "import.sql");
 
 /** Quiz files live under this folder of the vault, one subfolder per course code. */
 export const QUIZ_DIR = join("docs", "quiz");
-/** Lecture notes the `note` field names: Courses/<COURSE>/Lectures/<note>.md. */
-export const NOTE_DIR = (course: string) => join("Courses", course, "Lectures");
+/**
+ * Folders of a course that hold the notes the `note` field can name, searched in
+ * this order: Courses/<COURSE>/<folder>/<note>.md. The folder is also the path
+ * segment of the note's URL on the notes site (spaces become hyphens).
+ */
+export const NOTE_FOLDERS = ["Lectures", "Book Notes", "Exercises"] as const;
+export const NOTE_DIR = (course: string, folder: string = NOTE_FOLDERS[0]) => join("Courses", course, folder);
 export const CONCEPTS_DIR = "Concepts";
 
 const FALLBACK_NOTES_URL = "https://notes.swasilewski.com";

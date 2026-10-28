@@ -20,7 +20,7 @@ import {
 import { fingerprint, type FileHeader } from "./convert";
 import { Diagnostics, formatDiagnostic, type Severity } from "./diagnostics";
 import { findQuizFiles, lineAt, loadFile, type LoadedFile } from "./load";
-import { CLI_PATH, QUIZ_DIR } from "./paths";
+import { CLI_PATH, NOTE_FOLDERS, QUIZ_DIR } from "./paths";
 import { checkItem, contentWords, LIMITS, stripCode } from "./rules";
 import { Vault } from "./vault";
 
@@ -236,7 +236,10 @@ function checkFile(abs: string, stem: string, vaultRoot: string, vault: Vault, d
   let noteInfo = null;
   if (note && (COURSE_CODES as readonly string[]).includes(course)) {
     noteInfo = vault.note(course, note);
-    if (!noteInfo) diags.error(abs, lineAt(file, ["note"]), `note "${note}" not found: expected Courses/${course}/Lectures/${note}.md in the vault`);
+    if (!noteInfo) {
+      const where = NOTE_FOLDERS.map((f) => `Courses/${course}/${f}/${note}.md`).join(", ");
+      diags.error(abs, lineAt(file, ["note"]), `note "${note}" not found: expected one of ${where} in the vault`);
+    }
   }
 
   if (headerOk && typeof data.title === "string") {
@@ -246,6 +249,7 @@ function checkFile(abs: string, stem: string, vaultRoot: string, vault: Vault, d
       title: data.title,
       sort: typeof data.sort === "number" ? data.sort : undefined,
       note,
+      noteFolder: noteInfo?.folder,
     };
   }
 

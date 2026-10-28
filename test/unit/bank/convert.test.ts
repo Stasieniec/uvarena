@@ -107,6 +107,9 @@ ${q.options.map((o) => `      - id: ${o.id}\n        text: t\n${q.key.kind === "
       "https://notes.example/Courses/EPRM/Lectures/EPRM-W02---Distributed-Data#spark-evaluates-lazily",
     );
     expect(itemNoteUrl("https://notes.example", "EPRM", undefined, "x")).toBeNull();
+    expect(itemNoteUrl("https://notes.example", "AGAI", "AGAI-Book Ch2 - Intelligent Agents", "Rationality", "Book Notes")).toBe(
+      "https://notes.example/Courses/AGAI/Book-Notes/AGAI-Book-Ch2---Intelligent-Agents#rationality",
+    );
   });
 
   it("reads headings outside code fences only", () => {

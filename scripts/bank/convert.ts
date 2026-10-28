@@ -13,6 +13,8 @@ export interface FileHeader {
   title: string;
   sort?: number;
   note?: string;
+  /** Course subfolder of the note ("Lectures" when absent). */
+  noteFolder?: string;
 }
 
 /** JSON with sorted object keys, so hashes do not depend on key order. */
@@ -157,13 +159,19 @@ export function defaultSort(lecture: string): number {
   return m ? Number(m[1]) : 1000;
 }
 
-export function lectureNoteUrl(base: string, course: string, note: string | undefined): string | null {
+export function lectureNoteUrl(base: string, course: string, note: string | undefined, folder = "Lectures"): string | null {
   if (!note) return null;
-  return `${base}/Courses/${course}/Lectures/${noteSlug(note)}`;
+  return `${base}/Courses/${course}/${noteSlug(folder)}/${noteSlug(note)}`;
 }
 
-export function itemNoteUrl(base: string, course: string, note: string | undefined, section: string | undefined): string | null {
-  const url = lectureNoteUrl(base, course, note);
+export function itemNoteUrl(
+  base: string,
+  course: string,
+  note: string | undefined,
+  section: string | undefined,
+  folder = "Lectures",
+): string | null {
+  const url = lectureNoteUrl(base, course, note, folder);
   if (!url) return null;
   return section ? `${url}#${headingAnchor(section)}` : url;
 }
@@ -174,7 +182,7 @@ export function toBankLecture(header: FileHeader, notesBase: string): BankLectur
     courseId: header.course.toLowerCase(),
     title: header.title.trim(),
     sort: header.sort ?? defaultSort(header.lecture),
-    noteUrl: lectureNoteUrl(notesBase, header.course, header.note),
+    noteUrl: lectureNoteUrl(notesBase, header.course, header.note, header.noteFolder),
   };
 }
 
@@ -227,7 +235,7 @@ export function toBankItem(item: QuizItem, header: FileHeader, sourcePath: strin
     why: item.why.trim(),
     whyShort: whyShort(item.why),
     optionWhy: optionWhy(item),
-    noteUrl: itemNoteUrl(notesBase, header.course, header.note, item.section),
+    noteUrl: itemNoteUrl(notesBase, header.course, header.note, item.section, header.noteFolder),
     timeS: item.time ?? null,
     words: texts.reduce((n, t) => n + countWords(t), 0),
     chance: chance(item),
