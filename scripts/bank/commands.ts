@@ -9,7 +9,7 @@ import { toBankItem, toBankLecture } from "./convert";
 import { d1ExecFile, d1Query, type D1Target } from "./d1";
 import { displayPath } from "./diagnostics";
 import { notesUrl } from "./paths";
-import { planImport, planSql, SELECT_LECTURES, SELECT_QUESTIONS, type ImportPlan } from "./sql";
+import { onlyActiveCourses, planImport, planSql, SELECT_ACTIVE_COURSES, SELECT_LECTURES, SELECT_QUESTIONS, type ImportPlan } from "./sql";
 
 export interface ExportArgs {
   vault: string;
@@ -100,9 +100,14 @@ export function summary(plan: ImportPlan): string {
 }
 
 export async function runImport(args: ImportArgs): Promise<ImportPlan | null> {
-  const bank = await runExport(args);
-  if (!bank) return null;
+  const exported = await runExport(args);
+  if (!exported) return null;
   const target: D1Target = args.target === "remote" ? { kind: "remote" } : { kind: "local", persistTo: args.persistTo };
+  const activeIds = d1Query(target, SELECT_ACTIVE_COURSES).map((r) => String(r.id));
+  const { bank, skipped } = onlyActiveCourses(exported, activeIds);
+  for (const s of skipped) {
+    console.log(`import: skipped ${s.code}, not an active course in D1 (${s.lectures} lecture(s), ${s.questions} question(s))`);
+  }
   const dbQuestions = d1Query(target, SELECT_QUESTIONS);
   const dbLectures = d1Query(target, SELECT_LECTURES);
   const now = Date.now();

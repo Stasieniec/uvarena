@@ -73,7 +73,7 @@ describe("POST /bot-matches", () => {
     const res = await worker.fetch(req, { ...env, TEST_MODE: undefined }, createExecutionContext());
     expect(res.status).toBe(400);
     expect(factory.createMatch).not.toHaveBeenCalled();
-    // In test mode level 0 (Dummy) and 9 (Oracle Bot) are fine.
+    // In test mode level 0 (Dummy) and 9 (Perfect Bot) are fine.
     expect((await call("/api/bot-matches", { cookie: s, json: { courseId: "agai", bot: 9 } })).status).toBe(200);
   });
 

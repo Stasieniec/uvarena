@@ -65,12 +65,12 @@ function HomeHeader() {
 function RankedCard({ home }: { home: HomeResponse }) {
   const others = Math.max(0, home.searching);
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-ranked-gold/30 bg-gradient-to-br from-[#3a1420] via-surface to-surface p-4 shadow-lg shadow-ranked/10">
-      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-ranked/20 blur-3xl" />
+    <section className="relative overflow-hidden rounded-3xl border border-ranked/35 bg-gradient-to-br from-[#2a1420] via-surface to-surface p-4">
+      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-ranked/10 blur-3xl" />
       <div className="relative flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.18em] text-ranked-gold uppercase">Ranked</p>
-          <p className="font-display mt-1 text-5xl font-black tabular-nums text-ranked-gold" aria-label={`Ranked rating ${formatRating(home.ranked.rating, home.ranked.provisional)}`}>
+          <p className="font-display mt-1 text-5xl font-black tabular-nums text-text" aria-label={`Ranked rating ${formatRating(home.ranked.rating, home.ranked.provisional)}`}>
             {formatRating(home.ranked.rating, home.ranked.provisional)}
           </p>
           <p className="mt-1 text-xs text-muted">
@@ -176,7 +176,8 @@ function HomeSkeleton() {
 function FirstCourseSheet() {
   const { courses, hasPicked, setCourse, isLoading } = useCurrentCourse();
   const [dismissed, setDismissed] = useState(false);
-  const open = !hasPicked && !dismissed && !isLoading && courses.length > 0;
+  // With one course there is nothing to pick: Home already shows it.
+  const open = !hasPicked && !dismissed && !isLoading && courses.length > 1;
   return (
     <Sheet open={open} onClose={() => setDismissed(true)} title="Pick a course">
       <p className="mb-3 text-sm text-muted">Everything on Home follows this. Switch any time with the pills.</p>

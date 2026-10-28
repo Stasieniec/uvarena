@@ -17,12 +17,9 @@ describe("worker scaffold", () => {
     expect(await res.json()).toMatchObject({ error: { code: "not_found" } });
   });
 
-  it("has the D1 schema and the seeded courses", async () => {
-    const { results } = await env.DB.prepare("SELECT id, code FROM courses ORDER BY sort").all();
-    expect(results).toEqual([
-      { id: "agai", code: "AGAI" },
-      { id: "eprm", code: "EPRM" },
-    ]);
+  it("has the D1 schema and the seeded course (Engineering was removed in 0001)", async () => {
+    const { results } = await env.DB.prepare("SELECT id, code, active FROM courses ORDER BY sort").all();
+    expect(results).toEqual([{ id: "agai", code: "AGAI", active: 1 }]);
     const tables = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all<{ name: string }>();
     const names = tables.results.map((t) => t.name);
     for (const t of ["user", "session", "questions", "matches", "missed_questions", "match_finalizations"]) {

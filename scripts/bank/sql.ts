@@ -48,6 +48,39 @@ export const LECTURE_COLUMNS = ["course_id", "title", "sort", "note_url"] as con
 export const MAX_STATEMENT_BYTES = 100_000;
 
 export const SELECT_QUESTIONS = `SELECT id, ${QUESTION_COLUMNS.join(", ")} FROM questions`;
+export const SELECT_ACTIVE_COURSES = "SELECT id, code FROM courses WHERE active = 1";
+
+export interface CourseFilter {
+  /** The bank with only the active courses' lectures and questions. */
+  bank: BankFile;
+  /** Course codes left out, with what was left out, in code order. */
+  skipped: { code: string; lectures: number; questions: number }[];
+}
+
+/**
+ * Keeps only the courses that are active in D1. The vault can hold quiz files
+ * for a course the app does not offer right now; those are skipped, not
+ * errors, and come back with the next import once the course is active again.
+ */
+export function onlyActiveCourses(bank: BankFile, activeCourseIds: readonly string[]): CourseFilter {
+  const active = new Set(activeCourseIds);
+  const skipped = new Map<string, { code: string; lectures: number; questions: number }>();
+  const skip = (courseId: string) => {
+    const entry = skipped.get(courseId) ?? { code: courseId.toUpperCase(), lectures: 0, questions: 0 };
+    skipped.set(courseId, entry);
+    return entry;
+  };
+  for (const l of bank.lectures) if (!active.has(l.courseId)) skip(l.courseId).lectures += 1;
+  for (const q of bank.questions) if (!active.has(q.courseId)) skip(q.courseId).questions += 1;
+  return {
+    bank: {
+      ...bank,
+      lectures: bank.lectures.filter((l) => active.has(l.courseId)),
+      questions: bank.questions.filter((q) => active.has(q.courseId)),
+    },
+    skipped: [...skipped.values()].sort((a, b) => a.code.localeCompare(b.code)),
+  };
+}
 export const SELECT_LECTURES = `SELECT id, ${LECTURE_COLUMNS.join(", ")} FROM lectures`;
 
 export function questionRow(q: BankItem): Record<QuestionColumn, SqlValue> {

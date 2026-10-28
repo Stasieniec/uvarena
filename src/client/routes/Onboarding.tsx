@@ -1,6 +1,6 @@
 // Onboarding: a username for Google sign-ups (names prefilled from Google),
 // then the course picker.
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MeResponse } from "@shared/api-schemas";
@@ -71,10 +71,17 @@ function CourseStep({ next }: { next: string }) {
   const navigate = useNavigate();
   const { courses, courseId, hasPicked, isLoading, error, refetch } = useCurrentCourse();
   const update = useUpdatePrefs();
-  if (isLoading) return <LoadingBlocks count={2} />;
-  if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
   const pick = (id: string) =>
     update.mutate({ courseId: id }, { onSuccess: () => navigate(next, { replace: true }) });
+  // One course on offer: nothing to choose, so it is picked for you.
+  const only = courses.length === 1 ? courses[0]!.id : null;
+  useEffect(() => {
+    if (only && !hasPicked && update.isIdle) pick(only);
+    // pick is recreated every render; the course id and the mutation state decide.
+  }, [only, hasPicked, update.isIdle]);
+  if (isLoading) return <LoadingBlocks count={2} />;
+  if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
+  if (only && !update.isError) return <LoadingBlocks count={2} />;
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted">Which course first? You can switch any time.</p>
@@ -91,7 +98,7 @@ export function Onboarding() {
   if (!me.needsOnboarding && me.prefs.courseId !== null) return <Navigate to={next} replace />;
   return (
     <main className="flex min-h-dvh flex-col px-6 pt-10 pb-8">
-      <p className="font-display text-lg font-bold text-zeus">{APP_NAME}</p>
+      <p className="font-display text-lg font-bold text-gold">{APP_NAME}</p>
       <h1 className="font-display mt-4 mb-6 text-3xl font-bold">{me.needsOnboarding ? "Welcome" : "Pick a course"}</h1>
       {me.needsOnboarding ? <UsernameStep me={me} /> : <CourseStep next={next} />}
     </main>

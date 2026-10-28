@@ -26,13 +26,15 @@
 // Covered: ranked queue and a full match (one player right and fast, the
 // other wrong), match_end, rating changes, stats, history, round detail,
 // missed questions and a retry, the leaderboard; a private match by code
-// (create, join, ready, surrender, rematch); bot matches against Echo and the
+// (create, join, ready, surrender, rematch) in Agentic AI, the only course on
+// offer (Engineering is refused); bot matches against Echo and the
 // first ladder bot; a disconnect and reconnect in the middle of a question.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { z } from "zod";
 import {
   BotsResponseSchema,
+  CoursesResponseSchema,
   CreateBotMatchResponseSchema,
   CreateLobbyResponseSchema,
   HomeResponseSchema,
@@ -404,7 +406,7 @@ async function rankedMatch(a: User, b: User): Promise<void> {
   const flagged = await http("POST", `/api/questions/${reveals[0]!.questionId}/report`, b, { reason: "other", matchId });
   check(flagged.status === 200, `the reveal's report flag can file a report (${flagged.status})`);
   const lastRound = detail.rounds.at(-1)!;
-  check(lastRound[sideB].hpAfter === 0 || lastRound[sideB].phoenix, "detail: b ends at 0 hp");
+  check(lastRound[sideB].hpAfter === 0, "detail: b ends at 0 hp");
 
   const missedB = await api(MissedListResponseSchema, "GET", "/api/missed?course=agai&status=open", b);
   const distinct = new Set(detail.rounds.map((r) => r.question.id)).size;
@@ -435,8 +437,13 @@ async function rankedMatch(a: User, b: User): Promise<void> {
 }
 
 async function privateMatch(a: User, b: User): Promise<void> {
-  console.log("\nPrivate match by code, Engineering: create, join, ready, surrender, rematch");
-  const lobby = await api(CreateLobbyResponseSchema, "POST", "/api/lobbies", a, { courseId: "eprm", powerups: true, rated: true });
+  console.log("\nPrivate match by code, Agentic AI: create, join, ready, surrender, rematch");
+  const statsOf = async () =>
+    (await api(UserProfileResponseSchema, "GET", `/api/users/${a.username}?course=agai`, a)).courses.find((c) => c.courseId === "agai")?.ranked;
+  const before = await statsOf();
+  const gone = await http("POST", "/api/lobbies", a, { courseId: "eprm", powerups: true, rated: true });
+  check(gone.status === 404, `a lobby for Engineering, which left the app, is refused (${gone.status})`);
+  const lobby = await api(CreateLobbyResponseSchema, "POST", "/api/lobbies", a, { courseId: "agai", powerups: true, rated: true });
   check(lobby.code.length === 6 && lobby.rated, `lobby created with code ${lobby.code}, rated`);
   const ca = await new MatchClient(a, lobby.matchId).open();
   const lobbySnap = await ca.waitFor("snapshot");
@@ -482,7 +489,7 @@ async function privateMatch(a: User, b: User): Promise<void> {
   const ra = await new MatchClient(a, acc.matchId).open();
   const rb = await new MatchClient(b, acc.matchId).open();
   const snap = await ra.waitFor("snapshot");
-  check(snap.mode === "private" && snap.courseId === "eprm", "rematch is a private Engineering match");
+  check(snap.mode === "private" && snap.courseId === "agai", "rematch is a private Agentic AI match");
   // Both accepted the rematch, so both start ready; Ready is only sent when the lobby asks for it.
   if (!snap.you.ready) ra.send({ type: "ready" });
   const snapB = await rb.waitFor("snapshot");
@@ -494,9 +501,9 @@ async function privateMatch(a: User, b: User): Promise<void> {
   frameErrors(ra, rb);
   ra.close();
   rb.close();
-  const profA = await api(UserProfileResponseSchema, "GET", `/api/users/${a.username}?course=eprm`, a);
-  const r = profA.courses.find((c) => c.courseId === "eprm")?.ranked;
-  check(r?.played === 2 && r.won === 1 && r.lost === 1 && r.surrendered === 1, "host's Engineering stats: 2 played, 1 won, 1 lost by surrender");
+  const r = await statsOf();
+  const d = (k: "played" | "won" | "lost" | "surrendered") => (r?.[k] ?? 0) - (before?.[k] ?? 0);
+  check(d("played") === 2 && d("won") === 1 && d("lost") === 1 && d("surrendered") === 1, "host's stats: 2 more played, 1 won, 1 lost by surrender");
 }
 
 async function botMatch(a: User, bot: "echo" | 1): Promise<void> {
@@ -593,6 +600,12 @@ async function main(): Promise<void> {
   check(me.user.username === a.username && !me.needsOnboarding && me.activeMatchId === null, "signed up, no onboarding, no running match");
 
   console.log(`users: ${a.username} ${a.userId}, ${b.username} ${b.userId}`);
+
+  const courses = await api(CoursesResponseSchema, "GET", "/api/courses", a);
+  check(courses.courses.map((c) => c.id).join(",") === "agai", "one course on offer: Agentic AI");
+  check(me.prefs.loadout.length === 3 && me.prefs.loadout.every((p) => ["bibi", "shield", "fifty", "fast"].includes(p)), `default loadout uses the four power-ups (${me.prefs.loadout.join(", ")})`);
+  const oldLoadout = await http("PUT", "/api/me/prefs", a, { loadout: ["nemesis", "phoenix", "fast"] });
+  check(oldLoadout.status === 400, `a loadout with a removed power-up is refused (${oldLoadout.status})`);
 
   await rankedMatch(a, b);
   if (PRODUCTION) {

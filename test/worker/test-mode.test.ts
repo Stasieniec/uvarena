@@ -36,7 +36,8 @@ describe("test mode gate", () => {
 describe("POST /test/seed and /test/reset", () => {
   it("seeds idempotently, the seeded users can sign in, and reset empties everything but courses", async () => {
     const first = await seed();
-    expect(first.questions).toBe(42);
+    // The fixture's 42 questions minus the 6 of Engineering, which is no longer a course.
+    expect(first.questions).toBe(36);
     expect(first.users.map((u) => u.username)).toEqual(["alice", "bob"]);
     const again = await seed();
     expect(again.users).toEqual(first.users);
@@ -48,7 +49,7 @@ describe("POST /test/seed and /test/reset", () => {
       const row = await env.DB.prepare(`SELECT count(*) AS n FROM "${table}"`).first<number>("n");
       expect(row, table).toBe(0);
     }
-    expect(await env.DB.prepare("SELECT count(*) AS n FROM courses").first<number>("n")).toBe(2);
+    expect(await env.DB.prepare("SELECT count(*) AS n FROM courses").first<number>("n")).toBe(1);
     expect((await seed()).users).toHaveLength(2);
   });
 });

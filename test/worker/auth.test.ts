@@ -19,10 +19,10 @@ describe("config", () => {
 
 describe("sign-up and /me", () => {
   it("signs up with username, first name and surname, and /me reflects it", async () => {
-    const s = await signUp("Zeus_Main.99");
+    const s = await signUp("Bibi_Main.99");
     const me = MeResponseSchema.parse(await json(await call("/api/me", { cookie: s })));
-    expect(me.user.username).toBe("zeus_main.99");
-    expect(me.user.displayUsername).toBe("Zeus_Main.99");
+    expect(me.user.username).toBe("bibi_main.99");
+    expect(me.user.displayUsername).toBe("Bibi_Main.99");
     expect(me.user.firstName).toBe("Ada");
     expect(me.user.lastName).toBe("Lovelace");
     expect(me.user.name).toBe("Ada Lovelace");
@@ -30,7 +30,7 @@ describe("sign-up and /me", () => {
     expect(me.user.emailVerified).toBe(false);
     expect(me.needsOnboarding).toBe(false);
     expect(me.activeMatchId).toBeNull();
-    expect(me.prefs).toEqual({ loadout: ["zeus", "aegis", "oracle"], sound: true, courseId: null });
+    expect(me.prefs).toEqual({ loadout: ["bibi", "shield", "fifty"], sound: true, courseId: null });
   });
 
   it("rejects a missing surname, a short password, a bad or taken username", async () => {

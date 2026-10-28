@@ -7,7 +7,9 @@ import { planImport, planSql, SELECT_LECTURES, SELECT_QUESTIONS, type ImportPlan
 import type { BankFile } from "../../../src/shared/question-schema";
 import { AGAI_FILE, agaiHeader, check, errors, makeVault, multi, single, truefalse } from "./helpers";
 
-const MIGRATION = readFileSync(new URL("../../../migrations/0000_init.sql", import.meta.url), "utf8");
+const MIGRATION = ["0000_init.sql", "0001_four_powerups_one_course.sql"]
+  .map((name) => readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"))
+  .join("\n");
 
 function freshDb(): DatabaseSync {
   const db = new DatabaseSync(":memory:");

@@ -10,7 +10,7 @@ import {
   UserMatchesResponseSchema,
   UserProfileResponseSchema,
 } from "@shared/api-schemas";
-import { call, insertMatch, insertRow, json, now, seed, signUp, type Session } from "./helpers";
+import { addCourse, call, insertMatch, insertRow, json, now, seed, signUp, type Session } from "./helpers";
 
 async function roundRow(matchId: string, roundNo: number, questionId: string, extra: Record<string, unknown> = {}) {
   await insertRow("match_rounds", {
@@ -31,7 +31,7 @@ async function roundRow(matchId: string, roundNo: number, questionId: string, ex
     damage_to_b: 900,
     hp_a_after: 6000,
     hp_b_after: 5100,
-    powerups_json: JSON.stringify({ armed: ["zeus", null], effective: ["zeus", null], cancelled: [false, false], quick: [null, null], phoenix: [false, false] }),
+    powerups_json: JSON.stringify({ armed: ["bibi", null], quick: [null, null] }),
     ...extra,
   });
 }
@@ -42,11 +42,25 @@ describe("GET /courses", () => {
     const s = await signUp("coursey");
     const body = CoursesResponseSchema.parse(await json(await call("/api/courses", { cookie: s })));
     const agai = body.courses.find((c) => c.id === "agai")!;
-    expect(body.courses.map((c) => c.id)).toEqual(["agai", "eprm"]);
+    expect(body.courses.map((c) => c.id)).toEqual(["agai"]);
     // 36 agai fixture questions, of which order (2) and match (2) are not playable yet.
     expect(agai.questionCount).toBe(32);
     expect(agai.lectures.map((l) => l.id)).toEqual(["AGAI-fixture-games", "AGAI-fixture-agents"]);
     expect(agai.lectures.reduce((n, l) => n + l.questionCount, 0)).toBe(32);
+    // The seed leaves out the fixture's Engineering questions: that course is gone.
+    const eprm = await env.DB.prepare("SELECT COUNT(*) AS n FROM questions WHERE course_id = 'eprm'").first<{ n: number }>();
+    expect(eprm?.n).toBe(0);
+  });
+
+  it("lists a course only while it is active, so one can be switched off and re-added", async () => {
+    const s = await signUp("courses2");
+    await addCourse("xtra", false);
+    const off = CoursesResponseSchema.parse(await json(await call("/api/courses", { cookie: s })));
+    expect(off.courses.map((c) => c.id)).toEqual(["agai"]);
+    await addCourse("xtra", true);
+    const on = CoursesResponseSchema.parse(await json(await call("/api/courses", { cookie: s })));
+    expect(on.courses.map((c) => c.id)).toEqual(["agai", "xtra"]);
+    expect(on.courses[1]).toMatchObject({ questionCount: 0, lectures: [] });
   });
 });
 
@@ -59,10 +73,10 @@ describe("GET /home and /bots", () => {
     expect(home.searching).toBe(0);
     expect(home.missedOpen).toBe(0);
     expect(home.recentMatches).toEqual([]);
-    expect(home.nextBot).toMatchObject({ level: 1, name: "Icarus", unlocked: true, beaten: false });
+    expect(home.nextBot).toMatchObject({ level: 1, name: "Skimmed the slides", unlocked: true, beaten: false });
 
     const bots = BotsResponseSchema.parse(await json(await call("/api/bots?course=agai", { cookie: s })));
-    expect(bots.echo).toEqual({ name: "Echo", line: "Repeats your level back to you.", rating: 1425 });
+    expect(bots.echo).toEqual({ name: "Echo", line: "Plays at your level.", rating: 1425 });
     expect(bots.ladder.filter((b) => b.unlocked).map((b) => b.level)).toEqual([1]);
     expect(bots.ladder).toHaveLength(8);
   });
@@ -77,7 +91,8 @@ describe("GET /home and /bots", () => {
     for (let i = 0; i < 4; i++) {
       await insertMatch({ id: `match_recent0${i}`, player_a: s.userId, player_b: opp.userId, ended_at: now() - 10_000 + i });
     }
-    await insertMatch({ id: "match_otherc01", course_id: "eprm", player_a: s.userId, player_b: opp.userId });
+    await addCourse("xtra");
+    await insertMatch({ id: "match_otherc01", course_id: "xtra", player_a: s.userId, player_b: opp.userId });
     // Just created: its room may not exist yet, so it counts as running.
     await insertMatch({ id: "match_running1", player_a: s.userId, player_b: opp.userId, status: "active", ended_at: null, winner: null, created_at: now() });
 
@@ -141,7 +156,7 @@ describe("GET /matches/:id", () => {
     expect(body.rounds).toHaveLength(2);
     expect(body.rounds[0]!.question.key).toEqual({ kind: "options", ids: ["a"] });
     expect(body.rounds[0]!.question.lectureTitle).toBe("Fixture: games");
-    expect(body.rounds[0]!.a).toMatchObject({ armed: "zeus", effective: "zeus", score: 900, correct: true });
+    expect(body.rounds[0]!.a).toMatchObject({ armed: "bibi", quick: null, score: 900, correct: true });
     expect(body.rounds[0]!.b).toMatchObject({ answer: null, correct: false, damageTaken: 900 });
   });
 
@@ -166,7 +181,7 @@ describe("GET /matches/:id", () => {
     const a = await signUp("botplayer");
     await insertMatch({ id: "match_botgame1", mode: "bot", rated: 0, player_a: a.userId, bot_level: 3, bot_rating: 1350, bot_rating_before: 1500, bot_rating_after: 1531, rating_a_before: null, rating_a_after: null, rating_b_before: null, rating_b_after: null });
     const body = MatchDetailResponseSchema.parse(await json(await call("/api/matches/match_botgame1", { cookie: a })));
-    expect(body.players[1]).toMatchObject({ user: null, bot: { level: 3, name: "Sisyphus" }, ratingBefore: 1350 });
+    expect(body.players[1]).toMatchObject({ user: null, bot: { level: 3, name: "Has the notes open" }, ratingBefore: 1350 });
     expect(body.players[0]).toMatchObject({ ratingBefore: 1500, ratingAfter: 1531 });
   });
 
@@ -205,10 +220,13 @@ describe("profiles and history", () => {
     expect(agai.casual).toEqual({ played: 2, won: 1, lost: 1, drawn: 0 });
     expect(agai.accuracy).toEqual([{ lectureId: "AGAI-fixture-games", title: "Fixture: games", answers: 3, correct: 2 }]);
 
-    const own = UserProfileResponseSchema.parse(await json(await call("/api/users/viewer?course=eprm", { cookie: viewer })));
+    await addCourse("xtra");
+    const own = UserProfileResponseSchema.parse(await json(await call("/api/users/viewer?course=xtra", { cookie: viewer })));
     expect(own.isSelf).toBe(true);
     expect(own.headToHead).toBeNull();
-    expect(own.courses.map((c) => c.courseId)).toEqual(["eprm"]);
+    expect(own.courses.map((c) => c.courseId)).toEqual(["xtra"]);
+    // Engineering left the app in migration 0001.
+    expect((await call("/api/users/viewer?course=eprm", { cookie: viewer })).status).toBe(404);
     expect((await call("/api/users/nobody_here", { cookie: viewer })).status).toBe(404);
   });
 

@@ -1,6 +1,7 @@
 // Test mode routes (TEST_MODE=1 and localhost only; 404 otherwise):
-// POST /test/seed: the two courses, the fixture lectures and questions from
-//   test/fixtures/questions.json, and users alice and bob (password
+// POST /test/seed: the active courses, their fixture lectures and questions
+//   from test/fixtures/questions.json (the fixture's other courses are left
+//   out, as the bank import leaves out inactive courses), and users alice and bob (password
 //   TEST_MODE.seedPassword) through Better Auth's own sign-up. Idempotent.
 // POST /test/reset: empties every table except courses (users and sessions
 //   included), so a test run starts clean. Run seed again afterwards.
@@ -22,11 +23,12 @@ export const testRoutes = new Hono<HonoEnv>();
 
 testRoutes.use("/test/*", testModeOnly);
 
-/** Same values as the seed in migrations/0000_init.sql (re-created if a test deleted them). */
-const COURSES = [
-  { id: "agai", code: "AGAI", title: "Agentic Artificial Intelligence", shortTitle: "Agentic AI", sort: 1 },
-  { id: "eprm", code: "EPRM", title: "Engineering Production-Ready ML/AI Systems", shortTitle: "Engineering", sort: 2 },
-] as const;
+/**
+ * The courses the migrations leave active, same values (re-created if a test
+ * deleted them). Engineering (eprm) was removed in migration 0001.
+ */
+const COURSES = [{ id: "agai", code: "AGAI", title: "Agentic Artificial Intelligence", shortTitle: "Agentic AI", sort: 1 }] as const;
+const COURSE_IDS = new Set<string>(COURSES.map((c) => c.id));
 
 function questionRow(q: BankItem, now: number): typeof questions.$inferInsert {
   return {
@@ -68,7 +70,12 @@ function questionRow(q: BankItem, now: number): typeof questions.$inferInsert {
 
 testRoutes.post("/test/seed", async (c) => {
   const db = getDb(c.env);
-  const bank = BankFileSchema.parse(fixtureJson);
+  const full = BankFileSchema.parse(fixtureJson);
+  const bank = {
+    ...full,
+    lectures: full.lectures.filter((l) => COURSE_IDS.has(l.courseId)),
+    questions: full.questions.filter((q) => COURSE_IDS.has(q.courseId)),
+  };
   const now = Date.now();
 
   const statements = [

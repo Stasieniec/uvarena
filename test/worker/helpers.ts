@@ -148,3 +148,16 @@ export async function insertMissed(userId: string, questionId: string, extra: Re
     ...extra,
   });
 }
+
+/**
+ * A second course, for tests of cross-course behaviour now that the
+ * migrations leave only Agentic AI. Inserted the way a migration would re-add
+ * one (no lectures or questions until a bank import).
+ */
+export async function addCourse(id = "xtra", active = true): Promise<void> {
+  await env.DB.prepare(
+    "INSERT INTO courses (id, code, title, short_title, active, sort) VALUES (?, ?, ?, ?, ?, 9) ON CONFLICT(id) DO UPDATE SET active = excluded.active",
+  )
+    .bind(id, id.toUpperCase(), `Course ${id}`, `Course ${id}`, active ? 1 : 0)
+    .run();
+}
