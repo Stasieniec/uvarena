@@ -229,8 +229,8 @@ export function Switch({
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span className="h-8 w-14 rounded-sm bg-surface-2 ring-1 ring-border transition peer-checked:bg-you peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
-        <span className="absolute left-1 size-6 rounded-xs bg-text transition peer-checked:translate-x-6 peer-checked:bg-bg" />
+        <span className="h-7 w-12 rounded-xs bg-line transition peer-checked:bg-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
+        <span className="absolute left-1 size-5 rounded-xs bg-muted transition peer-checked:translate-x-5 peer-checked:bg-bg" />
       </span>
     </label>
   );

@@ -9,7 +9,6 @@ import type { MatchClock } from "../clock";
 import { POWERUP_NAMES, endReasonLine, resultWord, type ResultWord } from "../copy";
 import { fmtClock, fmtInt, fmtRating, fmtSeconds, fmtSigned } from "../format";
 import { FX } from "../fx";
-import { Avatar } from "./Avatar";
 import { useCountTo, useNow } from "./hooks";
 import { modeLabel } from "./Phases";
 
@@ -19,6 +18,8 @@ export interface NextBot {
   level: number | null;
   name: string | null;
   line: string | null;
+  /** Its bot rating, for the ladder row. */
+  rating: number | null;
   /** This win unlocked it (it was locked before the match). */
   unlocked: boolean;
   beatenName: string;
@@ -53,33 +54,68 @@ const SHOWN_WORD: Record<ResultWord, string> = {
   CANCELLED: "CANCELLED",
 };
 
-function RatingCard({ label, change, note }: { label: string; change: RatingChange; note?: string }) {
+const RANK_LO = 1000;
+const RANK_HI = 2200;
+
+/** Where the rating sits on a 1,000 to 2,200 scale: the part it moved, and a marker at the new value. */
+function RankBar({ from, to }: { from: number; to: number }) {
+  const p = (v: number) => Math.max(0, Math.min(100, ((v - RANK_LO) / (RANK_HI - RANK_LO)) * 100));
+  const a = Math.min(from, to);
+  const b = Math.max(from, to);
+  return (
+    <div aria-hidden>
+      <div className="relative mt-3.5 h-2 bg-line">
+        <span className="absolute inset-y-0 left-0 bg-muted" style={{ width: `${p(a)}%` }} />
+        <span className="absolute inset-y-0" style={{ left: `${p(a)}%`, width: `${p(b) - p(a)}%`, background: to < from ? "var(--color-faint)" : "var(--color-text)" }} />
+        <span className="absolute -inset-y-1 w-[3px] bg-text" style={{ left: `calc(${p(to)}% - 1px)` }} />
+      </div>
+      <div className="mt-1.5 flex justify-between text-[13px] leading-[18px] text-muted">
+        <span>{RANK_LO}</span>
+        <span>{RANK_HI}</span>
+      </div>
+    </div>
+  );
+}
+
+function RatingCard({ label, change, note, big = 64 }: { label: string; change: RatingChange; note?: string; big?: number }) {
   const shown = useCountTo(change.after, FX.ratingCountMs, change.before);
   const q = change.provisional;
   return (
     <section aria-label={label} className="flex flex-col gap-2">
-      <div className="plate flex items-center justify-between gap-3 p-4">
-        <div className="flex min-w-0 flex-col">
-          <span className="text-sm leading-5 text-muted">{label}</span>
-          <span className="rq-display flex items-center gap-1.5 text-2xl leading-7 font-semibold whitespace-nowrap">
-            {fmtRating(change.before, q)}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="to">
-              <path d="M5 12h14" />
-              <path d="m13 6 6 6-6 6" />
-            </svg>
-            {fmtRating(change.after, q)}
+      <div className="plate p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-sm leading-5 text-muted">{label}</span>
+            <span className="rq-display flex items-center gap-1.5 text-2xl leading-7 font-semibold whitespace-nowrap">
+              {fmtRating(change.before, q)}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="to">
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+              {fmtRating(change.after, q)}
+            </span>
+          </div>
+          <span className="rq-display font-bold" style={{ fontSize: big, lineHeight: `${big}px` }} aria-label={`Change ${fmtSigned(change.after - change.before)}`}>
+            {fmtSigned(shown - change.before)}
           </span>
         </div>
-        <span className="rq-display text-[64px] leading-[64px] font-bold" aria-label={`Change ${fmtSigned(change.after - change.before)}`}>
-          {fmtSigned(shown - change.before)}
-        </span>
+        <RankBar from={change.before} to={change.after} />
       </div>
       {note && <p className="text-sm leading-5 text-muted">{note}</p>}
     </section>
   );
 }
 
-function NextBotCard({ next, onFight, pending, error }: { next: NextBot; onFight?(level: number): void; pending: boolean; error: string | null }) {
+function UnlockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
+      <rect x="5" y="11" width="14" height="10" rx="1" />
+      <path d="M8 11V7a4 4 0 0 1 7.5-2" />
+    </svg>
+  );
+}
+
+function NextBotCard({ next, pending, error }: { next: NextBot; pending: boolean; error: string | null }) {
   if (next.level === null || next.name === null) {
     return (
       <p className="text-[15px] leading-[22px]">
@@ -88,15 +124,16 @@ function NextBotCard({ next, onFight, pending, error }: { next: NextBot; onFight
     );
   }
   return (
-    <div className="plate flex items-center gap-3 px-4 py-3">
-      <Avatar name={next.name} url={null} size={40} ring="var(--color-border)" bot />
-      <div className="min-w-0 flex-1">
-        <div className="text-sm leading-5 text-muted">{next.unlocked ? "Unlocked" : "Next on the ladder"}</div>
-        <div className="text-[17px] leading-6 font-semibold">{next.name}</div>
-        {next.line && <div className="text-sm leading-5 text-muted">{next.line}</div>}
+    <div className="flex items-center gap-3 py-3 pr-3 pl-4 shadow-[inset_0_0_0_1px_var(--color-line)]">
+      <UnlockIcon />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm leading-5 text-muted">{next.unlocked ? "Next bot unlocked" : "Next on the ladder"}</span>
+        <span className="text-[17px] leading-[22px] font-semibold">{next.name}</span>
+        {next.line && <span className="text-sm leading-5 text-muted">{next.line}</span>}
+        {error && <span className="text-sm text-wrong">{error}</span>}
+        {pending && <span className="text-sm text-muted">Starting</span>}
       </div>
-      {error && onFight && <p className="text-sm text-wrong">{error}</p>}
-      {pending && <span className="text-sm text-muted">Starting</span>}
+      {next.rating !== null && <span className="rq-display text-[28px] leading-8 font-bold">{next.rating}</span>}
     </div>
   );
 }
@@ -146,21 +183,24 @@ export function EndView(props: Props) {
 
   const next = props.nextBot ?? null;
   const fightLevel = next && next.level !== null && props.onFightBot ? next.level : null;
+  const bot = mode === "bot";
 
   // One primary action: the queue after ranked, the next bot after a ladder win, otherwise the rematch.
-  type Action = { label: string; onClick(): void; disabled?: boolean };
+  type Action = { label: string; onClick(): void; disabled?: boolean; arrow?: boolean };
   let primary: Action | null = null;
   const secondary: Action[] = [];
   const rematchAction: Action | null = showRematch ? { label: rematchLabel, onClick: props.onRematch, disabled: rematchDisabled } : null;
   if (mode === "ranked") {
     primary = { label: result.result === "cancelled" ? "Back to the queue" : "Play again", onClick: props.onPlayAgain };
   } else if (fightLevel !== null) {
-    primary = { label: props.fightPending ? "Starting" : "Play the next bot", onClick: () => props.onFightBot!(fightLevel), disabled: props.fightPending };
-    if (rematchAction) secondary.push(rematchAction);
+    primary = { label: props.fightPending ? "Starting" : `Play ${next!.name}`, onClick: () => props.onFightBot!(fightLevel), disabled: props.fightPending, arrow: true };
+    if (rematchAction) secondary.push({ ...rematchAction, label: rematchAction.disabled ? rematchAction.label : "Rematch" });
   } else if (rematchAction) {
     primary = rematchAction;
   }
-  if (result.missedCount > 0) secondary.push({ label: `Review missed (${result.missedCount})`, onClick: props.onReviewMissed });
+  if (result.missedCount > 0) {
+    secondary.push({ label: secondary.length > 0 ? `Missed (${result.missedCount})` : `Review missed (${result.missedCount})`, onClick: props.onReviewMissed });
+  }
   secondary.push({ label: "Home", onClick: props.onHome });
 
   return (
@@ -174,39 +214,39 @@ export function EndView(props: Props) {
         {counted && <span className="shrink-0">{result.rounds === 1 ? "1 round" : `${result.rounds} rounds`}</span>}
       </div>
 
-      <section aria-label="Result" className="mt-8 flex flex-col items-center">
+      <section aria-label="Result" className={`${bot ? "mt-6" : "mt-12"} flex flex-col items-center`}>
         <span
-          className={`rq-land rq-display font-bold tracking-[0.01em] italic ${word.length > 7 ? "text-[64px] leading-[64px]" : "text-[88px] leading-[88px]"}`}
+          className={`rq-land rq-display font-bold tracking-[0.01em] italic ${word.length > 7 ? "text-[64px] leading-[64px]" : bot ? "text-[80px] leading-[80px]" : "text-[88px] leading-[88px]"}`}
         >
           {word}
         </span>
         {reason && <p className="mt-2 text-center text-[15px] leading-[22px] text-muted">{reason}</p>}
         {counted && (
-          <div className="mt-5 grid grid-cols-2 gap-x-4 self-stretch">
+          <div className={`${bot ? "mt-3.5" : "mt-5"} grid grid-cols-2 gap-x-4 self-stretch`}>
             <div className="flex min-w-0 flex-col items-start gap-1.5">
               <span className="rq-plate-name max-w-full truncate bg-you px-2 py-px text-[17px] leading-[22px] text-bg">{youName}</span>
-              <span className="rq-display text-5xl leading-[52px] font-bold text-you">{fmtInt(result.hp.you)}</span>
+              <span className={`rq-display font-bold text-you ${bot ? "text-[44px] leading-[48px]" : "text-5xl leading-[52px]"}`}>{fmtInt(result.hp.you)}</span>
             </div>
             <div className="flex min-w-0 flex-col items-end gap-1.5">
               <span className="rq-plate-name max-w-full truncate bg-opponent px-2 py-px text-[17px] leading-[22px] text-bg">{opponentName}</span>
-              <span className="rq-display text-5xl leading-[52px] font-bold text-opponent">{fmtInt(result.hp.opponent)}</span>
+              <span className={`rq-display font-bold text-opponent ${bot ? "text-[44px] leading-[48px]" : "text-5xl leading-[52px]"}`}>{fmtInt(result.hp.opponent)}</span>
             </div>
           </div>
         )}
       </section>
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className={`${bot ? "mt-6" : "mt-8"} flex flex-col gap-4`}>
         {result.ranked && <RatingCard label="Ranked rating" change={result.ranked} />}
         {result.bot && (
-          <RatingCard label="Bot rating" change={result.bot} note={`Bot rating follows your answers, not the result. ${s.correct} of ${result.rounds} right.`} />
+          <RatingCard label="Bot rating" big={56} change={result.bot} note={`Bot rating follows your answers, not the result. ${s.correct} of ${result.rounds} right.`} />
         )}
-        {next && <NextBotCard next={next} onFight={props.onFightBot} pending={props.fightPending ?? false} error={props.fightError ?? null} />}
+        {next && <NextBotCard next={next} pending={props.fightPending ?? false} error={props.fightError ?? null} />}
         {counted && !result.ranked && !result.bot && mode !== "bot" && <p className="text-sm leading-5 text-muted">Unrated. Your ranked rating did not move.</p>}
         {result.pairCapped && <p className="text-sm leading-5 text-muted">You two have played your rated games for today. This one did not move ratings.</p>}
       </div>
 
-      {counted && (
-        <dl className="mt-4 mb-0 flex flex-col">
+      {counted && !next && (
+        <dl className="mt-5 mb-0 flex flex-col">
           <StatRow label="Questions right">
             <Big>
               {s.correct}
@@ -228,14 +268,20 @@ export function EndView(props: Props) {
 
       <div className="mt-auto flex flex-col gap-1.5 pt-6">
         {primary && (
-          <div className="p-1">
+          <div className="p-[3px]">
             <button
               type="button"
               onClick={primary.onClick}
               disabled={primary.disabled}
-              className={`h-14 w-full rounded-xs text-2xl leading-7 ${primary.disabled ? "rq-display bg-surface font-bold text-muted" : "btn-primary"}`}
+              className="btn-primary flex h-14 w-full items-center justify-center gap-2.5 rounded-xs text-2xl leading-7"
             >
-              {primary.label}
+              <span className="truncate">{primary.label}</span>
+              {primary.arrow && (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
+                  <path d="M5 12h14" />
+                  <path d="m13 6 6 6-6 6" />
+                </svg>
+              )}
             </button>
           </div>
         )}

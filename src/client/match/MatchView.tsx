@@ -15,8 +15,8 @@ import { sfx } from "./sfx";
 import { canSurrender, canUseQuick, type MatchUiState } from "./state";
 import type { MatchActions } from "./useMatch";
 import { AnswerArea, LockInButton, useMultiPick } from "./components/AnswerArea";
-import { BannerOverlay, QuickBanner } from "./components/Banners";
-import { CalloutBand } from "./components/Callout";
+import { BlindBanner, QuickStrip } from "./components/Banners";
+import { EventLane } from "./components/Callout";
 import { ClockPlate } from "./components/Clock";
 import { MuteButton, SurrenderButton } from "./components/Controls";
 import { EndView, type NextBot } from "./components/EndView";
@@ -24,9 +24,9 @@ import { FoundView, type HeadToHead } from "./components/FoundView";
 import { useNow, usePulse } from "./components/hooks";
 import { Hud, TopBar, type HitView } from "./components/Hud";
 import { LobbyView } from "./components/LobbyView";
-import { ArmingCallout, IntroView, KnockoutOverlay, modeLabel } from "./components/Phases";
+import { ArmingCallout, IntroView, modeLabel } from "./components/Phases";
 import { PowerupRow, type PowerupButtonState } from "./components/PowerupRow";
-import { QuestionPrompt, RevealBand } from "./components/QuestionCard";
+import { QuestionCard, RevealBand } from "./components/QuestionCard";
 import "./match.css";
 
 export interface MatchNav {
@@ -96,9 +96,9 @@ function nextBotAfterWin(state: MatchUiState, extras: MatchExtras | undefined): 
   const level = state.opponent?.botLevel ?? null;
   if (level === null || level < 1) return null;
   const next = BOT_LADDER.find((b) => b.level === level + 1);
-  if (!next) return { level: null, name: null, line: null, unlocked: false, beatenName: state.opponent?.name ?? "" };
+  if (!next) return { level: null, name: null, line: null, rating: null, unlocked: false, beatenName: state.opponent?.name ?? "" };
   const before = extras?.ladderBefore?.find((b) => b.level === next.level);
-  return { level: next.level, name: next.name, line: next.line, unlocked: before ? !before.unlocked : false, beatenName: state.opponent?.name ?? "" };
+  return { level: next.level, name: next.name, line: next.line, rating: next.rating, unlocked: before ? !before.unlocked : false, beatenName: state.opponent?.name ?? "" };
 }
 
 export function MatchView({ state, actions, clock, nav, extras }: Props) {
@@ -169,9 +169,8 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
     };
   }, [reveal, fx, live, step]);
 
-  // The knockout: the last hit always shakes the hit plate, then K.O. lands once the bar has drained.
-  const knockout = hit && reveal && (reveal.hp.you === 0 || reveal.hp.opponent === 0) ? hit : null;
-  const shake = !!hit && (hit.view.big || knockout !== null) && !reduced;
+  // The knockout: the last hit empties a bar and K.O. takes the event lane.
+  const knockout = hit !== null && reveal !== null && (reveal.hp.you === 0 || reveal.hp.opponent === 0);
 
   const forfeitNow = useNow(clock, 500, state.opponentForfeitAt !== null);
   const forfeitIn =
@@ -254,7 +253,6 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
         clock={clock}
         displayHp={displayHp}
         hit={hit}
-        shake={shake}
         knockout={knockout}
         step={step}
         forfeitIn={forfeitIn}
@@ -276,7 +274,7 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
   return (
     <div
       ref={rootRef}
-      className={`rq-match relative mx-auto flex h-dvh w-full max-w-[30rem] flex-col overflow-hidden bg-bg text-text select-none ${reduced ? "rq-rm" : ""}`}
+      className={`rq-match relative mx-auto flex h-dvh w-full max-w-column flex-col overflow-hidden bg-bg text-text select-none ${reduced ? "rq-rm" : ""}`}
       onContextMenu={(e) => {
         if (inDuel) e.preventDefault();
       }}
@@ -378,15 +376,14 @@ interface DuelProps {
   clock: MatchClock;
   displayHp: { you: number; opponent: number };
   hit: { victim: "you" | "opponent"; view: HitView } | null;
-  shake: boolean;
-  knockout: { victim: "you" | "opponent"; view: HitView } | null;
+  knockout: boolean;
   step: RevealStep;
   forfeitIn: string | null;
   onTick(sec: number): void;
   controls: ReactNode;
 }
 
-function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, forfeitIn, onTick, controls }: DuelProps) {
+function Duel({ state, actions, clock, displayHp, hit, knockout, step, forfeitIn, onTick, controls }: DuelProps) {
   const you = state.you!;
   const opponent = state.opponent!;
   const now = useNow(clock, 250, state.phase === "question");
@@ -409,6 +406,9 @@ function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, fo
   };
 
   const buttons = you.loadout.map((id): { id: PowerupId; state: PowerupButtonState } => {
+    // Firing: your blind power-up during its banner, your quick one on the question it was used on.
+    if (state.phase === "banner" && state.banner?.items.some((i) => i.who === "you" && i.powerup === id)) return { id, state: "armed" };
+    if (state.phase === "question" && state.quickUsed === id) return { id, state: "armed" };
     if (you.used.includes(id) && !(state.phase === "arming" && state.armed === id)) return { id, state: "used" };
     if (POWERUPS.blind.includes(id)) {
       if (state.phase !== "arming") return { id, state: "idle" };
@@ -431,6 +431,28 @@ function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, fo
   const multiplier = question?.multiplier ?? state.multiplier;
   const marked = step >= 1;
 
+  // What takes the event lane over: a blind banner, the arming callout, or your quick power-up strip.
+  let takeover: ReactNode = null;
+  if (state.phase === "banner" && state.banner) {
+    takeover = <BlindBanner banner={state.banner} you={you} opponent={opponent} />;
+  } else if (state.phase === "arming" || state.phase === "banner") {
+    takeover = (
+      <ArmingCallout
+        round={state.round}
+        multiplier={state.multiplier}
+        suddenDeath={state.suddenDeath > 0}
+        armable={state.phase === "arming" ? state.armable : []}
+        armed={state.armed ?? state.armedAcked}
+        opponentName={opponent.name}
+        clock={clock}
+        endsAt={state.phase === "arming" ? state.phaseEndsAt : null}
+        totalMs={phaseTotal(state, state.settings?.powerups === false ? TIMING.armingMsNoPowerups : TIMING.armingMs)}
+      />
+    );
+  } else if (quick && quickVisible && quick.who === "you") {
+    takeover = <QuickStrip fx={quick} />;
+  }
+
   return (
     <>
       <div className="pt-[env(safe-area-inset-top)]">
@@ -441,7 +463,6 @@ function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, fo
         opponent={opponent}
         hp={displayHp}
         hit={hit}
-        shake={shake}
         answered={{
           you: state.phase === "question" && state.yourAnswer !== null,
           opponent: state.phase === "question" && state.opponentAnswered,
@@ -449,55 +470,31 @@ function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, fo
         multiplier={multiplier}
         clock={<ClockPlate state={state} clock={clock} onTick={onTick} />}
       />
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <CalloutBand
-          state={state}
-          clock={clock}
-          hit={hit?.view ?? null}
-          marked={marked}
-          opponentQuick={quick && quickVisible && quick.who === "opponent" ? quick : null}
-          forfeitLine={forfeitIn !== null ? `${LINES.opponentDisconnected}${forfeitIn ? ` · ${forfeitIn}` : ""}` : null}
-          arming={
-            <ArmingCallout
-              round={state.round}
-              multiplier={state.multiplier}
-              suddenDeath={state.suddenDeath > 0}
-              armable={state.phase === "arming" ? state.armable : []}
-              armed={state.phase === "arming" || state.phase === "banner" ? (state.armed ?? state.armedAcked) : null}
-              clock={clock}
-              endsAt={state.phase === "arming" ? state.phaseEndsAt : null}
-              totalMs={phaseTotal(state, state.settings?.powerups === false ? TIMING.armingMsNoPowerups : TIMING.armingMs)}
-              covered={state.phase === "banner" && state.banner !== null}
-            />
-          }
-        />
-        <main className="flex min-h-0 shrink flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom),24px)]">
-          {showQuestion && (
-            <>
-              <QuestionPrompt state={state} question={question!} />
-              <AnswerScroll scrollKey={`${state.round}`}>
-                <AnswerArea state={state} question={question!} marked={marked} onAnswer={actions.answer} picked={picked} onToggle={togglePick} />
-              </AnswerScroll>
-              {question!.type === "multi" && state.phase === "question" && <LockInButton state={state} picked={picked} onAnswer={actions.answer} />}
-              {state.phase === "reveal" && state.reveal && step >= 4 && (
-                <RevealBand reveal={state.reveal} reported={reported.has(state.reveal.questionId)} onReport={report} />
-              )}
-            </>
-          )}
-          <div className={showQuestion ? "mt-1" : ""}>
-            <PowerupRow buttons={buttons} onTap={onTap} off={you.loadout.length === 0} />
-          </div>
-        </main>
-        {state.phase === "banner" && state.banner && <BannerOverlay banner={state.banner} opponent={opponent} />}
-        {quick && quickVisible && quick.who === "you" && <QuickBanner fx={quick} />}
-        {knockout && (
-          <KnockoutOverlay
-            key={`ko-${knockout.view.seq}`}
-            youWon={knockout.victim === "opponent"}
-            loserName={knockout.victim === "opponent" ? (opponent.name ?? "Your opponent") : null}
-          />
+      <EventLane
+        state={state}
+        clock={clock}
+        hit={hit?.view ?? null}
+        knockout={knockout}
+        marked={marked}
+        opponentQuick={quick && quickVisible && quick.who === "opponent" ? quick : null}
+        forfeitIn={forfeitIn}
+        takeover={takeover}
+      />
+      <main className={`flex min-h-0 shrink flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom),24px)] ${showQuestion ? "" : "pt-4"}`}>
+        {showQuestion && (
+          <>
+            <QuestionCard state={state} question={question!} clock={clock} />
+            <AnswerScroll scrollKey={`${state.round}`}>
+              <AnswerArea state={state} question={question!} marked={marked} onAnswer={actions.answer} picked={picked} onToggle={togglePick} />
+            </AnswerScroll>
+            {question!.type === "multi" && state.phase === "question" && <LockInButton state={state} picked={picked} onAnswer={actions.answer} />}
+            {state.phase === "reveal" && state.reveal && step >= 4 && (
+              <RevealBand reveal={state.reveal} reported={reported.has(state.reveal.questionId)} onReport={report} />
+            )}
+          </>
         )}
-      </div>
+        <PowerupRow buttons={buttons} onTap={onTap} off={you.loadout.length === 0} />
+      </main>
     </>
   );
 }

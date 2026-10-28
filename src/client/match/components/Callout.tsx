@@ -1,18 +1,19 @@
-// The band between the HUD and the question. It carries the question's time
-// drain along its top edge, and the event words when something happens: "10 SECONDS" when
-// the opponent answers (5 under Gotta Go Fast), the yellow damage plate that
-// drops from the clock on a hit, and the short status lines.
+// The event lane: the flexible space between the HUD and the question card.
+// It takes the spare height and is where events land, so nothing floats over
+// text. At rest it shows the round number; when the opponent answers,
+// "10 SECONDS" (5 under Gotta Go Fast); on a hit, the yellow damage plate that
+// drops from the clock; the K.O.; and the opponent's disconnect countdown.
+// Your quick power-up strips and the blind banners take the lane over.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SCORING, TIMING } from "@shared/game/config";
 import type { RevealPayload } from "@shared/protocol";
 import type { MatchClock } from "../clock";
 import { LINES } from "../copy";
-import { damageLine, fmtInt, hitLine, hitNote } from "../format";
+import { damageLine, fmtInt, fmtMultiplier, hitLine, hitNote } from "../format";
 import { FX } from "../fx";
 import type { MatchUiState, QuickFx } from "../state";
 import type { HitView } from "./Hud";
-import { useFrame } from "./hooks";
 import { PowerupIcon } from "./icons";
 
 /** "10 SECONDS" for 700 ms when the opponent answers first and your clock snaps down. */
@@ -33,40 +34,37 @@ function useSnapCallout(state: MatchUiState, clock: MatchClock): number | null {
   return shown && shown.round === round ? shown.seconds : null;
 }
 
-/** The question's time as a thin drain: text colour, red under 5 seconds, muted once you answered. */
-function QuestionDrain({ state, clock }: { state: MatchUiState; clock: MatchClock }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const q = state.question;
-  useFrame(clock, state.phase === "question" && q !== null, (now) => {
-    const el = ref.current;
-    if (!el || !q) return;
-    const answered = state.yourAnswer !== null;
-    const end = answered ? (state.countdownEnd ?? now) : (state.yourDeadline ?? q.deadline);
-    const left = Math.max(0, end - now);
-    el.style.transform = `scaleX(${Math.min(1, left / q.timerMs)})`;
-    el.style.background = answered ? "var(--color-muted)" : left <= FX.tickFromS * 1000 ? "var(--color-wrong)" : "var(--color-text)";
-  });
+function DamagePlate({ reveal, hit, opponentName }: { reveal: RevealPayload; hit: HitView; opponentName: string }) {
+  const line = hitLine(reveal, opponentName, SCORING);
+  const note = hitNote(reveal, SCORING);
+  // A hit where both were right (speed only) is a quiet plate; a Bibi hit is twice the size.
+  const quiet = hit.speed && !hit.bibi;
   return (
-    <div className="h-1 w-full overflow-hidden bg-border" aria-hidden>
-      <div ref={ref} className="h-full origin-left bg-text" style={{ transform: "scaleX(1)" }} />
+    <div key={hit.seq} className="rq-drop">
+      <div
+        className={`flex flex-col items-center text-center ${hit.big ? "rq-hit-shake" : ""} ${quiet ? "bg-surface text-text" : "bg-gold text-bg"} ${hit.bibi ? "px-6 pt-2.5 pb-3" : "px-4 pt-1.5 pb-2"}`}
+        role="status"
+      >
+        {hit.bibi && <span className="rq-plate-name bg-bg px-2 text-[15px] leading-5 text-gold">
+            Bibi <span className="normal-case">x{SCORING.bibiFactor}</span>
+          </span>}
+        <span className={`rq-display font-bold ${hit.bibi ? "text-[64px] leading-[64px]" : "text-[32px] leading-9"}`}>{`−${fmtInt(hit.amount)}`}</span>
+        {line && <span className={`font-semibold ${hit.bibi ? "text-base leading-[22px]" : "text-sm leading-5"}`}>{line}</span>}
+        {note && <span className={`text-[13px] leading-[18px] ${quiet ? "text-muted" : ""}`}>{note}</span>}
+      </div>
     </div>
   );
 }
 
-function DamagePlate({ reveal, hit, opponentName }: { reveal: RevealPayload; hit: HitView; opponentName: string }) {
-  const line = hitLine(reveal, opponentName, SCORING);
-  const note = hitNote(reveal, SCORING);
-  // Twice the size on a Bibi hit. A hit where both were right (speed only) is a quiet plate.
-  const quiet = hit.speed && !hit.bibi;
+function Knockout({ state, hit }: { state: MatchUiState; hit: HitView }) {
+  const r = state.reveal!;
+  const line = `−${fmtInt(hit.amount)} · ${state.you?.name ?? "You"} ${fmtInt(r.yourScore)} · ${state.opponent?.name ?? "Them"} ${fmtInt(r.opponentScore)} · ${fmtMultiplier(r.multiplier)}`;
+  const youWon = r.hp.opponent === 0 && r.hp.you > 0;
   return (
-    <div
-      key={hit.seq}
-      className={`rq-drop flex flex-col items-center px-4 pt-1.5 pb-2 text-center ${quiet ? "bg-surface text-text" : "bg-gold text-bg"}`}
-      role="status"
-    >
-      <span className={`rq-display font-bold ${hit.bibi ? "text-[64px] leading-[68px]" : "text-[32px] leading-9"}`}>{`−${fmtInt(hit.amount)}`}</span>
-      {line && <span className={`font-semibold ${hit.bibi ? "text-lg leading-6" : "text-sm leading-5"}`}>{line}</span>}
-      {note && <span className={`text-[13px] leading-[18px] ${quiet ? "text-muted" : ""}`}>{note}</span>}
+    <div className="flex flex-col items-center" role="status" aria-live="assertive">
+      <span className="rq-ko rq-display text-[144px] leading-[128px] font-bold tracking-[-0.01em] text-gold italic">K.O.</span>
+      <span className="sr-only">{youWon ? `${state.opponent?.name ?? "Your opponent"} is out of HP.` : "You are out of HP."}</span>
+      <span className="text-[15px] leading-[21px] text-muted">{line}</span>
     </div>
   );
 }
@@ -80,68 +78,101 @@ function QuickLine({ fx }: { fx: QuickFx }) {
   );
 }
 
+function WifiOff() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 3l18 18" />
+      <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+      <path d="M5 12.5a10 10 0 0 1 4.5-2.4" />
+      <path d="M19 12.5a10 10 0 0 0-2.6-1.8" />
+      <path d="M2 8.8a15 15 0 0 1 4.4-2.6" />
+      <path d="M22 8.8a15 15 0 0 0-9.6-3.8" />
+      <path d="M12 20h.01" />
+    </svg>
+  );
+}
+
 interface Props {
   state: MatchUiState;
   clock: MatchClock;
-  /** A hit that has landed this reveal (after the answers were marked). */
+  /** A hit that has landed this reveal. */
   hit: HitView | null;
+  /** The last hit emptied a bar. */
+  knockout: boolean;
   /** The reveal's answers are marked. */
   marked: boolean;
   /** The opponent's quick power-up line, while it shows. */
   opponentQuick: QuickFx | null;
-  /** "Opponent disconnected · 0:38", or null. */
-  forfeitLine: string | null;
-  /** The arming callout, during arming and the banner. */
-  arming: ReactNode;
+  /** Null while the opponent is connected; "" when away without a forfeit clock; "0:38" otherwise. */
+  forfeitIn: string | null;
+  /** What takes the whole lane over: the arming callout, a blind banner, or your quick power-up strip. */
+  takeover: ReactNode | null;
 }
 
-export function CalloutBand({ state, clock, hit, marked, opponentQuick, forfeitLine, arming }: Props) {
+export function EventLane({ state, clock, hit, knockout, marked, opponentQuick, forfeitIn, takeover }: Props) {
   const snap = useSnapCallout(state, clock);
   const name = state.opponent?.name ?? "Opponent";
-  const status = (() => {
-    if (state.phase !== "question") return null;
-    if (state.answerRejected) return LINES.tooLate;
-    if (state.yourAnswer !== null) return state.opponentAnswered ? null : `Waiting for ${name}`;
-    if (state.opponentAnswered) return `${name} answered`;
-    return null;
-  })();
 
-  if (state.phase === "arming" || state.phase === "banner") {
-    return <div className="flex min-h-0 flex-1 flex-col">{arming}</div>;
-  }
+  if (takeover) return <div className="flex min-h-[112px] flex-1 flex-col">{takeover}</div>;
 
   const reveal = state.phase === "reveal" ? state.reveal : null;
-  const quietLine = reveal && marked && reveal.damageToYou === 0 && reveal.damageToOpponent === 0 ? damageLine(reveal, SCORING) : null;
+  let body: ReactNode;
+  if (reveal && hit && knockout) {
+    body = <Knockout state={state} hit={hit} />;
+  } else if (reveal && hit) {
+    body = <DamagePlate reveal={reveal} hit={hit} opponentName={name} />;
+  } else if (forfeitIn !== null) {
+    body = (
+      <>
+        <span className="flex items-center gap-2 text-[17px] leading-6 font-semibold">
+          <WifiOff />
+          {`${name} disconnected`}
+        </span>
+        {forfeitIn && (
+          <span className="rq-display text-[56px] leading-[56px] font-bold" aria-label={`${forfeitIn} to come back`}>
+            {forfeitIn}
+          </span>
+        )}
+        <span className="text-sm leading-5 text-muted">Rounds keep going. If they are not back, you win.</span>
+      </>
+    );
+  } else {
+    const quiet = reveal && marked && reveal.damageToYou === 0 && reveal.damageToOpponent === 0 ? damageLine(reveal, SCORING) : null;
+    let status: string | null = null;
+    if (state.phase === "question") {
+      if (state.answerRejected) status = LINES.tooLate;
+      else if (state.yourAnswer !== null && !state.opponentAnswered) status = `Waiting for ${name}`;
+      else if (state.opponentAnswered && state.yourAnswer === null) status = `${name} answered`;
+    }
+    const round = state.suddenDeath > 0 ? "Sudden death" : state.round > 0 ? `Round ${state.round}` : null;
+    body = (
+      <>
+        {snap !== null ? (
+          <span key={`snap-${state.round}`} className="rq-callout rq-display rq-outline text-[40px] leading-[44px] font-bold tracking-[0.02em] uppercase italic">
+            {`${snap} seconds`}
+          </span>
+        ) : (
+          round &&
+          !quiet && (
+            <span key={`round-${state.round}`} className="rq-round rq-display text-[32px] leading-9 font-bold tracking-[0.02em] text-muted uppercase italic">
+              {round}
+            </span>
+          )
+        )}
+        {quiet && <span className="rq-fade text-sm leading-5 text-muted">{quiet}</span>}
+        {status && <span className="text-sm leading-5 text-muted">{status}</span>}
+        {opponentQuick && <QuickLine key={opponentQuick.seq} fx={opponentQuick} />}
+      </>
+    );
+  }
 
   return (
-    <div className="flex min-h-16 flex-1 flex-col items-center px-4" aria-live="polite">
-      {reveal && hit ? (
-        <div className="flex flex-1 flex-col items-center pt-2.5">
-          <DamagePlate reveal={reveal} hit={hit} opponentName={name} />
-        </div>
-      ) : (
-        <>
-          {state.phase === "question" && (
-            <div className="w-full pt-2">
-              <QuestionDrain state={state} clock={clock} />
-            </div>
-          )}
-          <div className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-2">
-            {snap !== null && (
-              <span key={`snap-${state.round}`} className="rq-callout rq-display rq-outline text-[40px] leading-[44px] font-bold tracking-[0.02em] uppercase italic">
-                {`${snap} seconds`}
-              </span>
-            )}
-            {quietLine && <span className="rq-fade text-sm leading-5 text-muted">{quietLine}</span>}
-            {status && <span className="text-sm leading-5 text-muted">{status}</span>}
-            {opponentQuick && <QuickLine key={opponentQuick.seq} fx={opponentQuick} />}
-            {forfeitLine && <span className="rq-pulse text-sm leading-5 text-text">{forfeitLine}</span>}
-          </div>
-          {state.phase === "question" && state.question?.type === "multi" && (
-            <span className="self-start pb-2 text-sm leading-5 text-muted">{LINES.selectAll}</span>
-          )}
-        </>
-      )}
+    <div
+      // A damage plate or K.O. keeps its full height (the answers scroll instead); otherwise the lane may shrink to 56 px.
+      className={`flex flex-1 flex-col items-center gap-1 px-4 text-center ${hit ? "" : "min-h-14"} ${reveal && hit && !knockout ? "justify-start pt-1.5 pb-3.5" : "justify-center py-2"}`}
+      aria-live="polite"
+    >
+      {body}
     </div>
   );
 }

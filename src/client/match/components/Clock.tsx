@@ -1,8 +1,8 @@
 // The clock plate in the middle of the HUD. During the question it counts your
 // seconds (server time); when the opponent answers it snaps to your
 // countdown. Under 5 seconds the plate turns red with dark digits and ticks.
-// Once you answered it goes muted and holds; during arming it counts the
-// arming time, muted.
+// Once you answered it goes muted and freezes; during arming it counts the
+// arming time.
 
 import { useEffect, useRef } from "react";
 import type { MatchClock } from "../clock";
@@ -49,10 +49,6 @@ export function ClockPlate({ state, clock, onTick }: Props) {
           if (lastSec.current !== null && sec > 0 && sec <= FX.tickFromS) onTick(sec);
           lastSec.current = sec;
         }
-      } else if (state.countdownEnd !== null) {
-        const sec = secondsLeft(state.countdownEnd - now);
-        text = String(sec);
-        label = `Answered. The opponent has ${sec} seconds`;
       } else {
         text = held.current !== null ? String(held.current) : "";
         label = held.current !== null ? `Answered with ${held.current} seconds left` : "Answered";
@@ -66,7 +62,8 @@ export function ClockPlate({ state, clock, onTick }: Props) {
     } else if (state.phase === "arming" && state.phaseEndsAt !== null) {
       const sec = secondsLeft(state.phaseEndsAt - now);
       text = String(sec);
-      label = `Round starts in ${sec} seconds`;
+      look = "live";
+      label = `Arming, ${sec} seconds left`;
     }
     if (el.textContent !== text) el.textContent = text;
     if (el.dataset.look !== look) el.dataset.look = look;

@@ -113,9 +113,9 @@ function TrueFalse({
             disabled={locked}
             data-mark={mark}
             onClick={() => onAnswer({ kind: "bool", value: v })}
-            className={`rq-option relative flex ${reveal ? "h-24" : "h-28"} flex-col items-center justify-center gap-1.5 rounded-[3px]`}
+            className={`rq-option relative flex ${reveal ? "h-[72px]" : "h-[min(200px,24dvh)] min-h-28"} flex-col items-center justify-center gap-1 rounded-[3px] px-3`}
           >
-            <span className="rq-option-text rq-display flex items-center gap-2 text-[32px] leading-9 font-bold">
+            <span className={`rq-option-text rq-display flex items-center gap-2 font-bold ${reveal ? "text-[28px] leading-8" : "text-4xl leading-10"}`}>
               {reveal && (mark === "right" || mark === "wrong") && <MarkIcon mark={mark} />}
               {v ? "True" : "False"}
             </span>
@@ -154,8 +154,8 @@ function Options({
   const code = question.codeLang !== null || question.options.some((o) => o.text.includes("\n"));
   // Many or long options get lower plates; during the reveal, when nothing is tapped any more, lower still.
   const dense = question.options.length >= 5 || question.options.reduce((n, o) => n + o.text.length, 0) > 260;
-  const rowCls = reveal ? (dense ? "min-h-10 py-1" : "min-h-12 py-1.5") : dense ? "min-h-12 py-1.5" : "min-h-[60px] py-2";
-  const textCls = dense || reveal ? "text-[15px] leading-5" : "text-[17px] leading-6";
+  const rowCls = reveal ? (dense ? "min-h-11 py-1.5" : "min-h-12 py-2") : dense ? "min-h-[52px] py-2" : "min-h-[60px] py-2";
+  const textCls = dense ? "text-[15px] leading-[22px]" : "text-[17px] leading-6";
 
   const tap = (o: OptionText) => {
     if (locked || hidden.has(o.id)) return;
@@ -169,7 +169,7 @@ function Options({
   const selectedNow = reveal || state.yourAnswer ? mine : picked;
 
   return (
-    <div className={`flex flex-col ${dense ? "gap-2" : "gap-2.5"}`}>
+    <div className={`flex flex-col ${dense || multi ? "gap-2" : "gap-2.5"}`}>
       {question.options.map((o) => {
         const isHidden = hidden.has(o.id);
         const sel = selectedNow.includes(o.id);
@@ -192,7 +192,7 @@ function Options({
             data-mark={mark}
             onClick={() => tap(o)}
             className={[
-              "rq-option relative flex w-full items-center gap-3 rounded-[3px] pr-3 pl-4 text-left",
+              `rq-option relative flex w-full items-center gap-3 rounded-[3px] pl-4 text-left ${reveal ? "pr-3" : "pr-4"}`,
               rowCls,
               isHidden && !reveal ? "rq-lifeline pointer-events-none" : "",
             ].join(" ")}
@@ -219,26 +219,18 @@ function Options({
   );
 }
 
-/** Multiple select's Lock in, under the scrolling answer list so it is always in reach. */
+/** Multiple select's Lock in: the primary action, under the scrolling answer list so it is always in reach. */
 export function LockInButton({ state, picked, onAnswer }: { state: MatchUiState; picked: string[]; onAnswer(a: AnswerKey): void }) {
   const locked = state.phase !== "question" || state.yourAnswer !== null;
-  if (state.yourAnswer) {
-    return (
-      <button type="button" disabled className="h-14 shrink-0 rounded-xs bg-surface text-lg font-semibold text-you">
-        {LINES.lockedIn}
-      </button>
-    );
-  }
-  const ready = !locked && picked.length > 0;
   return (
-    <div className="shrink-0 p-1">
+    <div className="shrink-0 p-[3px]">
       <button
         type="button"
-        disabled={!ready}
+        disabled={locked || picked.length === 0}
         onClick={() => onAnswer({ kind: "options", ids: picked })}
-        className={`h-14 w-full rounded-xs text-2xl leading-7 ${ready ? "btn-primary" : "rq-display bg-surface font-bold text-muted"}`}
+        className="btn-primary h-[52px] w-full rounded-xs text-2xl leading-7"
       >
-        {LINES.lockIn}
+        {state.yourAnswer ? LINES.lockedIn : LINES.lockIn}
       </button>
     </div>
   );

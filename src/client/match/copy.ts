@@ -51,8 +51,9 @@ export const LINES = {
   savedToMissed: "Saved to missed questions",
   reportQuestion: "Report",
   reportedQuestion: "Reported",
-  armHint: "Tap a power-up to arm it.",
-  armHintSub: "Your opponent cannot see what you armed.",
+  armHint: "Arm a blind power-up",
+  /** Under the arm hint, after the opponent's name. */
+  armHintSub: "will not see which one.",
   armNothing: "Get ready.",
   lockIn: "Lock in",
   selectAll: "Select all that apply",

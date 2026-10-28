@@ -1,13 +1,11 @@
-// The round callout of the arming phase, the versus intro, and the knockout.
+// The round callout of the arming phase and the versus intro.
 
 import { useRef, type CSSProperties } from "react";
-import { SCORING } from "@shared/game/config";
 import type { BlindPowerupId, MatchMode } from "@shared/game/types";
 import type { PlayerView } from "@shared/protocol";
 import type { MatchClock } from "../clock";
 import { LINES, POWERUP_HINTS, POWERUP_NAMES } from "../copy";
-import { fmtInt, fmtMultiplier, fmtShownRating, worstHit } from "../format";
-import { HIT_TOTAL_MS } from "../fx";
+import { fmtMultiplier, fmtShownRating } from "../format";
 import { useFrame } from "./hooks";
 import { PowerupIcon } from "./icons";
 
@@ -17,7 +15,7 @@ export function modeLabel(mode: MatchMode | null): string {
   return "Ranked";
 }
 
-/** A thin bar that drains from the time left until `end`, out of `total`. */
+/** A 4 px line that drains from the time left until `end`, out of `total`. */
 export function DrainBar({ clock, end, total, className = "" }: { clock: MatchClock; end: number; total: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useFrame(clock, true, (now) => {
@@ -25,67 +23,60 @@ export function DrainBar({ clock, end, total, className = "" }: { clock: MatchCl
     if (ref.current) ref.current.style.transform = `scaleX(${frac})`;
   });
   return (
-    <div className={`h-1 overflow-hidden bg-border ${className}`} aria-hidden>
-      <div ref={ref} className="h-full origin-left bg-muted" style={{ transform: "scaleX(1)" }} />
+    <div className={`h-1 overflow-hidden bg-line ${className}`} aria-hidden>
+      <div ref={ref} className="h-full origin-left bg-text" style={{ transform: "scaleX(1)" }} />
     </div>
   );
 }
 
-/** Arming: the round lands as a callout, the multiplier under it, then what to do with your power-ups. */
+/** Arming: the round lands in the event lane with the multiplier beside it, then what to do with your power-ups. */
 export function ArmingCallout({
   round,
   multiplier,
   suddenDeath,
   armable,
   armed,
+  opponentName,
   clock,
   endsAt,
   totalMs,
-  covered = false,
 }: {
   round: number;
   multiplier: number;
   suddenDeath: boolean;
   armable: BlindPowerupId[];
   armed: BlindPowerupId | null;
+  opponentName: string;
   clock: MatchClock;
   endsAt: number | null;
   totalMs: number;
-  /** A power-up banner is on top: the callout would show through it, so it fades out. */
-  covered?: boolean;
 }) {
   return (
-    <section
-      className={`flex flex-1 flex-col items-center justify-center px-4 text-center transition-opacity duration-150 ${covered ? "opacity-0" : ""}`}
-      aria-hidden={covered || undefined}
-    >
-      <div key={round} className="rq-land rq-display text-[64px] leading-[64px] font-bold whitespace-nowrap uppercase italic">
-        {suddenDeath ? "Sudden death" : `Round ${round}`}
+    <section className="flex flex-1 flex-col items-center justify-center px-4 text-center" aria-live="polite">
+      <div key={round} className="rq-round flex items-center gap-3.5">
+        <span className={`rq-display font-bold tracking-[0.01em] whitespace-nowrap uppercase italic ${suddenDeath ? "text-[min(56px,13vw)] leading-none" : "text-[min(80px,18vw)] leading-none"}`}>
+          {suddenDeath ? "Sudden death" : `Round ${round}`}
+        </span>
+        {multiplier > 1 && (
+          <span className="rq-display bg-gold px-3 pt-0.5 text-[min(48px,11vw)] leading-[1.25] font-bold text-bg italic" aria-label={`Damage ${fmtMultiplier(multiplier)}`}>
+            {fmtMultiplier(multiplier)}
+          </span>
+        )}
       </div>
-      {multiplier > 1 && (
-        <div className="rq-rise mt-3 flex flex-col items-center gap-2" style={{ animationDelay: "180ms" }}>
-          <span className="rq-display bg-gold px-3 py-0.5 text-[28px] leading-8 font-bold text-bg">
-            <span className="uppercase">Damage</span> {fmtMultiplier(multiplier)}
-          </span>
-          {multiplier >= 2 && (
-            <span className="text-sm leading-5 text-muted">{`A wrong answer can cost ${fmtInt(worstHit(multiplier, SCORING.maxScore, SCORING.roundCap))}.`}</span>
-          )}
-        </div>
-      )}
-      {endsAt !== null && <DrainBar clock={clock} end={endsAt} total={totalMs} className="mt-6 w-40" />}
-      <div className="mt-5 min-h-11 text-[15px] leading-[22px]">
+      {endsAt !== null && <DrainBar clock={clock} end={endsAt} total={totalMs} className="mt-4 w-[200px]" />}
+      <div className="mt-3 flex min-h-11 flex-col">
         {armed ? (
-          <span className="font-semibold">
-            <PowerupIcon id={armed} size={18} className="mr-1.5 inline-block align-[-3px] text-gold" />
-            {POWERUP_NAMES[armed]} armed. {POWERUP_HINTS[armed]}
-          </span>
+          <>
+            <span className="text-base leading-[22px] font-semibold">{POWERUP_NAMES[armed]} armed.</span>
+            <span className="text-[15px] leading-[21px] text-muted">{POWERUP_HINTS[armed]}</span>
+          </>
         ) : armable.length > 0 ? (
           <>
-            <div className="font-semibold">{LINES.armHint}</div>
-            <div className="text-sm text-muted">{LINES.armHintSub}</div>
+            <span className="text-base leading-[22px] font-semibold">{LINES.armHint}</span>
+            <span className="text-[15px] leading-[21px] text-muted">{`${opponentName} ${LINES.armHintSub}`}</span>
           </>
         ) : (
-          <div className="text-muted">{LINES.armNothing}</div>
+          <span className="text-[15px] leading-[21px] text-muted">{LINES.armNothing}</span>
         )}
       </div>
     </section>
@@ -206,22 +197,6 @@ export function IntroView({
           <NamePlate name={you.name} side="you" />
         </span>
       </section>
-    </div>
-  );
-}
-
-/** The knockout: once the last hit has drained, K.O. lands over the duel; the HUD stays in view. */
-export function KnockoutOverlay({ youWon, loserName }: { youWon: boolean; loserName: string | null }) {
-  const delay = `${HIT_TOTAL_MS}ms`;
-  return (
-    <div className="pointer-events-none absolute inset-0 z-50 flex flex-col items-center justify-center" role="status" aria-live="assertive">
-      <div className="rq-fade absolute inset-0 bg-bg/85" style={{ animationDelay: delay }} />
-      <div className="rq-land rq-display relative text-[120px] leading-[112px] font-bold italic" style={{ animationDelay: delay }}>
-        K.O.
-      </div>
-      <div className="rq-fade relative mt-3 text-[17px] leading-6 font-semibold" style={{ animationDelay: `${HIT_TOTAL_MS + 200}ms` }}>
-        {youWon ? `${loserName} is out of HP.` : "You are out of HP."}
-      </div>
     </div>
   );
 }

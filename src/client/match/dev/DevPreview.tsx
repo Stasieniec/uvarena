@@ -197,7 +197,7 @@ function EngineMatch({ questions, config, onRestart }: { questions: QuestionFull
 
 function Index() {
   return (
-    <div className="mx-auto max-w-[30rem] px-4 py-6 text-sm">
+    <div className="mx-auto max-w-column px-4 py-6 text-sm">
       <h1 className="rq-display text-2xl font-bold text-gold">Match preview</h1>
       <p className="mt-1 text-muted">Scripted matches on the real match screen. No server involved.</p>
       <h2 className="mt-6 mb-2 font-semibold">Play</h2>

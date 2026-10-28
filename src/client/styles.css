@@ -1,5 +1,8 @@
 /*
- * Theme tokens: the Broadcast look (design-research report, direction 2).
+ * Theme tokens: the Broadcast look (broadcast-spec.md: ground, plate,
+ * plate-dim, line, edge, text, muted, faint, you, opponent, event). The older
+ * names (bg, surface, border, gold, ...) stay as aliases so every screen
+ * picks the palette up.
  * Dark only. Tailwind v4: every --color-*, --font-* and --radius-* in @theme
  * becomes a utility (bg-you, text-gold, font-display, rounded-xl, ...) and a
  * CSS variable.
@@ -11,16 +14,21 @@
 @import "tailwindcss";
 
 @theme {
-  /* Surfaces */
-  --color-bg: #0e1013; /* ground */
-  --color-surface: #1a1e24; /* plate */
-  --color-surface-2: #20252d; /* raised plate, inputs, toggles */
-  --color-sunken: #15181d; /* inactive plate, tab bar */
-  --color-border: #2a2f37; /* line */
+  /* Surfaces (spec names first, then the aliases the screens use) */
+  --color-ground: #0e1013; /* page background, dark text on coloured plates */
+  --color-plate: #1a1e24; /* buttons, option plates, cards, clock plate */
+  --color-plate-dim: #15181d; /* revealed but irrelevant options, bottom nav, quiet panels */
+  --color-line: #2a2f37; /* hairlines, empty bar track, input border, 50:50 empty frame */
+  --color-edge: #08090b; /* the 3 px bottom edge under plates */
   --color-text: #f2f4f7;
   --color-muted: #8c939e;
-  --color-faint: #5e6570; /* spent power-ups, the ? of a provisional rating */
-  --color-edge: #08090b; /* the darker bottom edge of a plate */
+  --color-faint: #5e6570; /* the ? of provisional ratings, spent power-ups */
+  --color-event: #ffd23f; /* primary button, multiplier, damage plate, armable frame, K.O. */
+  --color-bg: #0e1013;
+  --color-surface: #1a1e24;
+  --color-surface-2: #2a2f37; /* a raised spot inside a plate: the line colour */
+  --color-sunken: #15181d;
+  --color-border: #2a2f37;
 
   /* Players */
   --color-you: #3ce0c8; /* teal: you, your HP bar. Dark text on it. */
@@ -53,20 +61,20 @@
   --font-sans: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  /* Corners: 2 to 4 px everywhere. Only avatars are round (rounded-full). */
+  /* Corners: plates and buttons 2 px, options 3 px. Only avatars are round (rounded-full). */
   --radius: 2px;
   --radius-xs: 2px;
   --radius-sm: 2px;
   --radius-md: 3px;
-  --radius-lg: 3px;
-  --radius-xl: 4px;
-  --radius-2xl: 4px;
-  --radius-3xl: 4px;
-  --radius-4xl: 4px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+  --radius-4xl: 2px;
 
   /* Layout */
   --spacing-tap: 3rem; /* 48 px minimum tap target */
-  --container-column: 30rem; /* 480 px centred column on laptops */
+  --container-column: 26.875rem; /* 430 px centred column on laptops */
 }
 
 @layer base {
@@ -129,11 +137,14 @@
     outline-offset: 3px;
     transition: transform 60ms ease-out;
   }
+  /* Pressed, the fill and the frame drop 3 px together. */
   .btn-primary:not(:disabled):active {
-    transform: translateY(1px);
+    transform: translateY(3px);
   }
   .btn-primary:disabled {
-    outline-color: transparent;
+    background-color: var(--color-line);
+    color: var(--color-muted);
+    outline: none;
   }
 }
 
