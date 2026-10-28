@@ -81,7 +81,7 @@ async function setup() {
       damageToB: 900,
       hpAAfter: 6000,
       hpBAfter: roundNo === 1 ? 5100 : 0,
-      powerupsJson: { armed: [null, null], effective: [null, null], cancelled: [false, false], quick: [null, null], phoenix: [false, false] },
+      powerupsJson: { armed: [null, null], quick: [null, null] },
     })),
     answers: [
       {

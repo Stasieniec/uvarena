@@ -22,9 +22,9 @@ export const TIMING = {
   /** Reveal phase after each question. */
   revealMs: 5000,
   /** Countdown the second player gets once the first one answers. */
-  countdownMs: 5000,
-  /** Countdown when the first answerer used Hermes this round. */
-  hermesCountdownMs: 2000,
+  countdownMs: 10000,
+  /** Countdown when the first answerer used Gotta Go Fast this round. */
+  fastCountdownMs: 5000,
   /**
    * Answers arriving up to this long after a deadline are still accepted, to
    * absorb network latency and alarm jitter. Not scaled in test mode.
@@ -104,14 +104,12 @@ export const SCORING = {
   multiplierCapRound: 20,
   /** Most damage one round can deal. */
   roundCap: 3000,
-  /** Cap in a round where the attacker's Zeus is active. */
-  zeusRoundCap: 4500,
-  /** Zeus multiplies the attacker's raw damage by this. */
-  zeusFactor: 2,
-  /** Aegis multiplies damage taken (after the cap) by this. */
-  aegisFactor: 0.5,
-  /** HP left after Phoenix saves a player. */
-  phoenixHp: 1,
+  /** Cap in a round where the attacker's Bibi is active. */
+  bibiRoundCap: 4500,
+  /** Bibi multiplies the attacker's raw damage by this. */
+  bibiFactor: 2,
+  /** Shield multiplies damage taken (after the cap) by this. */
+  shieldFactor: 0.5,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -122,17 +120,15 @@ export const POWERUPS = {
   /** Power-ups a player picks before a match. Distinct. */
   loadoutSize: 3,
   /** Loadout for new players (user_prefs default). */
-  defaultLoadout: ["zeus", "aegis", "oracle"] as readonly PowerupId[],
+  defaultLoadout: ["bibi", "shield", "fifty"] as readonly PowerupId[],
   /** Armed in the arming window, before the question is shown. */
-  blind: ["zeus", "aegis", "nemesis"] as readonly PowerupId[],
+  blind: ["bibi", "shield"] as readonly PowerupId[],
   /** Used during the question, before answering. */
-  quick: ["oracle", "hermes"] as readonly PowerupId[],
-  /** Never armed or used; triggers by itself. Does not count towards the per-round limit. */
-  passive: ["phoenix"] as readonly PowerupId[],
-  /** Non-passive power-ups per player per round. An armed one counts even if cancelled. */
+  quick: ["fifty", "fast"] as readonly PowerupId[],
+  /** Power-ups per player per round. */
   maxPerRound: 1,
-  oracle: {
-    /** Question types Oracle may be used on. */
+  fifty: {
+    /** Question types 50:50 may be used on. */
     eligibleTypes: ["single", "cloze", "multi"] as readonly QuestionType[],
     /** single and cloze: wrong options left visible (key plus this many). */
     singleWrongKept: 1,
@@ -242,28 +238,28 @@ export const BOT_STRENGTH = { ladderBase: 1050, ladderStep: 150 } as const;
 
 /** The eight ladder bots, weakest first. Each is unlocked by beating the one before. */
 export const BOT_LADDER: readonly BotLadderEntry[] = [
-  { level: 1, name: "Icarus", line: "Flies at every answer. Lands in most of them.", rating: 1050 },
-  { level: 2, name: "Narcissus", line: "Admires his own wrong answers.", rating: 1200 },
-  { level: 3, name: "Sisyphus", line: "Almost there. Every time.", rating: 1350 },
-  { level: 4, name: "Pandora", line: "Opens every option to see what happens.", rating: 1500 },
-  { level: 5, name: "Odysseus", line: "Takes the long way, gets there.", rating: 1650 },
-  { level: 6, name: "Cassandra", line: "Always right. Nobody believes her.", rating: 1800 },
-  { level: 7, name: "Athena", line: "Did the reading.", rating: 1950 },
-  { level: 8, name: "Prometheus", line: "Stole the answer key.", rating: 2100 },
+  { level: 1, name: "Skimmed the slides", line: "Recognises most of the words.", rating: 1050 },
+  { level: 2, name: "Attended once", line: "Remembers the room, mostly.", rating: 1200 },
+  { level: 3, name: "Has the notes open", line: "Searches faster than they read.", rating: 1350 },
+  { level: 4, name: "Did the reading", line: "Most of it. The first half twice.", rating: 1500 },
+  { level: 5, name: "Went to every tutorial", line: "Knows which questions come back.", rating: 1650 },
+  { level: 6, name: "Made the flashcards", line: "Has seen this one before.", rating: 1800 },
+  { level: 7, name: "Asks questions after class", line: "Already asked about your answer.", rating: 1950 },
+  { level: 8, name: "Wrote the exam", line: "Knows why the wrong options are there.", rating: 2100 },
 ];
 
 /** Echo plays at the player's own bot rating plus this offset. Level -1 in the database. */
 export const ECHO = {
   level: -1 as BotLevel,
   name: "Echo",
-  line: "Repeats your level back to you.",
+  line: "Plays at your level.",
   ratingOffset: -75,
 } as const;
 
 /** Test-mode-only bots. Never offered outside test mode. */
 export const TEST_BOTS = {
   dummy: { level: 0 as BotLevel, name: "Dummy", answerMs: 2000, alwaysCorrect: false },
-  oracle: { level: 9 as BotLevel, name: "Oracle Bot", answerMs: 2000, alwaysCorrect: true },
+  perfect: { level: 9 as BotLevel, name: "Perfect Bot", answerMs: 2000, alwaysCorrect: true },
 } as const;
 
 /** Bot answer model (bot.ts). See build-plan.md "Bot model". */
@@ -299,21 +295,19 @@ export const BOT_MODEL = {
 export const BOT_POLICY = {
   /** Levels from this one up (and Echo, and test levels) play the smart policy; below it, random rounds. */
   smartFromLevel: 4,
-  /** Smart: Zeus round drawn uniformly from this inclusive range at init. */
-  zeusRounds: [5, 9] as const,
-  /** Smart: Nemesis round drawn uniformly from this inclusive range at init. */
-  nemesisRounds: [3, 8] as const,
+  /** Smart: Bibi round drawn uniformly from this inclusive range at init. */
+  bibiRounds: [5, 9] as const,
   /** Weak bots (levels 1 to 3): every blind power-up's round drawn from this range. */
   weakRounds: [1, 12] as const,
-  /** Aegis: armed in the first arming window after the bot's HP drops below this. */
-  aegisBelowHp: 3000,
+  /** Shield: armed in the first arming window after the bot's HP drops below this. */
+  shieldBelowHp: 3000,
   /** When two blind power-ups fall in one round, the first in this list wins. */
-  priority: ["zeus", "nemesis", "aegis"] as readonly PowerupId[],
-  /** Oracle: used at shownAt + this, when the bot does not know and the type is eligible. */
-  oracleAtMs: 1500,
-  /** Hermes: used at shownAt + this, when the bot knows and the round is at least hermesFromRound. */
-  hermesAtMs: 500,
-  hermesFromRound: 3,
+  priority: ["bibi", "shield"] as readonly PowerupId[],
+  /** 50:50: used at shownAt + this, when the bot does not know and the type is eligible. */
+  fiftyAtMs: 1500,
+  /** Gotta Go Fast: used at shownAt + this, when the bot knows and the round is at least fastFromRound. */
+  fastAtMs: 500,
+  fastFromRound: 3,
 } as const;
 
 // ---------------------------------------------------------------------------

@@ -223,7 +223,7 @@ describe("duel with the real engine", () => {
     ca.close();
   });
 
-  it("plays a bot match against Oracle Bot and moves the bot rating", async () => {
+  it("plays a bot match against Perfect Bot and moves the bot rating", async () => {
     const { courseId } = await seedCourse();
     const me = await seedUser();
     const { matchId } = await createMatch(env, {

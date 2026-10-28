@@ -11,7 +11,7 @@
 // - Pair cap: with PAIR_CAP.perDay or more rated matches between the two
 //   players already today, ratings stay as they are, pairCapped is set, and
 //   the stats still count.
-// - Bot rating moves per answer in bot matches only, in round order. Oracle
+// - Bot rating moves per answer in bot matches only, in round order. 50:50
 //   answers move neither the player nor the item. Timeouts count as wrong.
 // - Item ratings move on human answers from every mode, subject to the guards
 //   in itemGuardPasses().
@@ -279,10 +279,7 @@ function roundRow(matchId: string, round: RoundRecord): MatchRoundRow {
     hpBAfter: b.hpAfter,
     powerupsJson: {
       armed: [a.armed, b.armed],
-      effective: [a.effective, b.effective],
-      cancelled: [a.armed !== null && a.effective === null, b.armed !== null && b.effective === null],
       quick: [a.quick, b.quick],
-      phoenix: [a.phoenix, b.phoenix],
     },
   };
 }

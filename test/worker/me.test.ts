@@ -34,10 +34,10 @@ describe("PATCH /me", () => {
 describe("PUT /me/prefs", () => {
   it("saves a loadout, sound and course, merging partial updates", async () => {
     const s = await signUp("prefs");
-    const a = await json(await call("/api/me/prefs", { method: "PUT", cookie: s, json: { loadout: ["nemesis", "phoenix", "hermes"] } }));
-    expect(a.prefs).toEqual({ loadout: ["nemesis", "phoenix", "hermes"], sound: true, courseId: null });
-    const b = await json(await call("/api/me/prefs", { method: "PUT", cookie: s, json: { sound: false, courseId: "eprm" } }));
-    expect(b.prefs).toEqual({ loadout: ["nemesis", "phoenix", "hermes"], sound: false, courseId: "eprm" });
+    const a = await json(await call("/api/me/prefs", { method: "PUT", cookie: s, json: { loadout: ["shield", "fifty", "fast"] } }));
+    expect(a.prefs).toEqual({ loadout: ["shield", "fifty", "fast"], sound: true, courseId: null });
+    const b = await json(await call("/api/me/prefs", { method: "PUT", cookie: s, json: { sound: false, courseId: "agai" } }));
+    expect(b.prefs).toEqual({ loadout: ["shield", "fifty", "fast"], sound: false, courseId: "agai" });
     const me = await json(await call("/api/me", { cookie: s }));
     expect(me.prefs).toEqual(b.prefs);
   });
@@ -45,10 +45,13 @@ describe("PUT /me/prefs", () => {
   it("validates the loadout and the course", async () => {
     const s = await signUp("badprefs");
     const put = (body: unknown) => call("/api/me/prefs", { method: "PUT", cookie: s, json: body });
-    expect((await put({ loadout: ["zeus", "zeus", "aegis"] })).status).toBe(400);
-    expect((await put({ loadout: ["zeus", "aegis"] })).status).toBe(400);
-    expect((await put({ loadout: ["zeus", "aegis", "kraken"] })).status).toBe(400);
+    expect((await put({ loadout: ["bibi", "bibi", "shield"] })).status).toBe(400);
+    expect((await put({ loadout: ["bibi", "shield"] })).status).toBe(400);
+    expect((await put({ loadout: ["bibi", "shield", "kraken"] })).status).toBe(400);
+    expect((await put({ loadout: ["nemesis", "phoenix", "fast"] })).status).toBe(400);
     expect((await put({ courseId: "nope" })).status).toBe(400);
+    // Engineering left the app in migration 0001.
+    expect((await put({ courseId: "eprm" })).status).toBe(400);
     expect((await put({})).status).toBe(400);
   });
 });

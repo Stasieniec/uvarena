@@ -86,9 +86,8 @@ function dmg(over: Partial<DamageInput>) {
   return computeDamage({
     scores: [0, 0],
     multiplier: 1,
-    effective: [null, null],
+    armed: [null, null],
     hp: [6000, 6000],
-    phoenixReady: [false, false],
     ...over,
   });
 }
@@ -117,78 +116,51 @@ describe("computeDamage", () => {
     expect(r.capped).toBe(true);
   });
 
-  it("Zeus doubles and lifts the cap to 4500", () => {
-    expect(dmg({ scores: [900, 0], multiplier: 2, effective: ["zeus", null] }).damage[1]).toBe(3600);
-    const r = dmg({ scores: [1000, 0], multiplier: 9, effective: ["zeus", null] });
+  it("Bibi doubles and lifts the cap to 4500", () => {
+    expect(dmg({ scores: [900, 0], multiplier: 2, armed: ["bibi", null] }).damage[1]).toBe(3600);
+    const r = dmg({ scores: [1000, 0], multiplier: 9, armed: ["bibi", null] });
     expect(r.damage[1]).toBe(4500);
     expect(r.capped).toBe(true);
-    expect(r.zeusHit).toEqual([true, false]);
+    expect(r.bibiHit).toEqual([true, false]);
   });
 
-  it("Zeus fizzles for the side that deals no damage", () => {
-    const r = dmg({ scores: [0, 800], effective: ["zeus", null] });
+  it("Bibi fizzles for the side that deals no damage", () => {
+    const r = dmg({ scores: [0, 800], armed: ["bibi", null] });
     expect(r.damage).toEqual([800, 0]);
-    expect(r.zeusHit).toEqual([false, false]);
+    expect(r.bibiHit).toEqual([false, false]);
   });
 
-  it("Aegis halves after the cap", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, effective: [null, "aegis"] });
+  it("Shield halves after the cap", () => {
+    const r = dmg({ scores: [1000, 0], multiplier: 9, armed: [null, "shield"] });
     expect(r.damage[1]).toBe(1500);
-    expect(r.aegisHeld).toEqual([false, true]);
+    expect(r.shieldHeld).toEqual([false, true]);
   });
 
-  it("Zeus against Aegis: doubled, capped at 4500, then halved", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, effective: ["zeus", "aegis"] });
+  it("Bibi against Shield: doubled, capped at 4500, then halved", () => {
+    const r = dmg({ scores: [1000, 0], multiplier: 9, armed: ["bibi", "shield"] });
     expect(r.damage[1]).toBe(2250);
   });
 
-  it("Aegis on the attacking side does nothing", () => {
-    const r = dmg({ scores: [1000, 0], effective: ["aegis", null] });
+  it("Shield on the attacking side does nothing", () => {
+    const r = dmg({ scores: [1000, 0], armed: ["shield", null] });
     expect(r.damage[1]).toBe(1000);
-    expect(r.aegisHeld).toEqual([false, false]);
+    expect(r.shieldHeld).toEqual([false, false]);
   });
 
   it("rounds half-damage", () => {
-    expect(dmg({ scores: [1, 0], effective: [null, "aegis"] }).damage[1]).toBe(1);
-    expect(dmg({ scores: [3, 0], effective: [null, "aegis"] }).damage[1]).toBe(2);
+    expect(dmg({ scores: [1, 0], armed: [null, "shield"] }).damage[1]).toBe(1);
+    expect(dmg({ scores: [3, 0], armed: [null, "shield"] }).damage[1]).toBe(2);
   });
 
-  it("Phoenix leaves 1 HP from a knockout, and only then", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 2000], phoenixReady: [false, true] });
-    expect(r.hpAfter[1]).toBe(1);
-    expect(r.phoenix).toEqual([false, true]);
-    const notLethal = dmg({ scores: [1000, 0], hp: [6000, 2000], phoenixReady: [false, true] });
-    expect(notLethal.hpAfter[1]).toBe(1000);
-    expect(notLethal.phoenix).toEqual([false, false]);
-  });
-
-  it("an exact knockout to 0 also triggers Phoenix", () => {
-    const r = dmg({ scores: [1000, 0], hp: [6000, 1000], phoenixReady: [false, true] });
-    expect(r.hpAfter[1]).toBe(1);
-  });
-
-  it("without Phoenix HP stops at 0", () => {
+  it("HP stops at 0", () => {
     const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 500] });
     expect(r.hpAfter[1]).toBe(0);
     expect(r.damage[1]).toBe(3000);
   });
 
-  it("Phoenix with Zeus over the normal cap", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 4000], effective: ["zeus", null], phoenixReady: [false, true] });
-    expect(r.damage[1]).toBe(4500);
-    expect(r.hpAfter[1]).toBe(1);
-  });
-
-  it("Phoenix with Aegis: the halved hit still knocks out, Phoenix catches it", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 1200], effective: [null, "aegis"], phoenixReady: [false, true] });
+  it("a Shield that does not cover the hit still ends at 0", () => {
+    const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 1200], armed: [null, "shield"] });
     expect(r.damage[1]).toBe(1500);
-    expect(r.hpAfter[1]).toBe(1);
-    expect(r.phoenix[1]).toBe(true);
-  });
-
-  it("Phoenix with Aegis: when Aegis alone saves the player, Phoenix stays unused", () => {
-    const r = dmg({ scores: [1000, 0], multiplier: 9, hp: [6000, 2000], effective: [null, "aegis"], phoenixReady: [false, true] });
-    expect(r.hpAfter[1]).toBe(500);
-    expect(r.phoenix[1]).toBe(false);
+    expect(r.hpAfter[1]).toBe(0);
   });
 });

@@ -12,7 +12,7 @@ export type MatchRow = typeof matches.$inferSelect;
 export function botName(level: number): string {
   if (level === ECHO.level) return ECHO.name;
   if (level === TEST_BOTS.dummy.level) return TEST_BOTS.dummy.name;
-  if (level === TEST_BOTS.oracle.level) return TEST_BOTS.oracle.name;
+  if (level === TEST_BOTS.perfect.level) return TEST_BOTS.perfect.name;
   return BOT_LADDER.find((b) => b.level === level)?.name ?? "Bot";
 }
 

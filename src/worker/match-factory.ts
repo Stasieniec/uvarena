@@ -13,9 +13,9 @@ import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { botInit } from "../shared/game/bot";
 import { ECHO, LIMITS, MATCH, POWERUPS, QUESTIONS, SELECTION, TEST_BOTS, TEST_MODE } from "../shared/game/config";
 import { createRng } from "../shared/game/rng";
+import { isValidLoadout } from "../shared/game/powerups";
 import { selectQuestions, selectionTarget } from "../shared/game/select";
 import type { BotInit, BotLevel, MatchInit, MatchMode, MatchSettings, Phase, PlayerInit, PowerupId, QuestionFull } from "../shared/game/types";
-import { POWERUP_IDS } from "../shared/game/types";
 import { answers, courses, matches, questions, ratings, user, userPrefs } from "./db/schema";
 import { MatchFactoryError, type CreateMatchResult, type CreateMatchSpec, type MatchRoomRpc } from "./do/contracts";
 import type { Env } from "./env";
@@ -94,15 +94,6 @@ function isJoinCodeCollision(err: unknown): boolean {
   return text.includes("UNIQUE") && text.includes("join_code");
 }
 
-function isLoadout(value: unknown): value is PowerupId[] {
-  return (
-    Array.isArray(value) &&
-    value.length === POWERUPS.loadoutSize &&
-    new Set(value).size === value.length &&
-    value.every((v) => (POWERUP_IDS as readonly unknown[]).includes(v))
-  );
-}
-
 /** A `questions` row as the MatchRoom needs it (with its key). */
 export function toQuestionFull(row: typeof questions.$inferSelect): QuestionFull {
   return {
@@ -164,7 +155,7 @@ async function loadPlayers(orm: DrizzleD1Database, userIds: string[], courseId: 
       userId: id,
       name: u.displayUsername ?? u.username ?? u.name,
       avatarUrl: u.image,
-      loadout: isLoadout(pref?.loadoutJson) ? [...pref.loadoutJson] : [...POWERUPS.defaultLoadout],
+      loadout: isValidLoadout(pref?.loadoutJson) ? [...pref.loadoutJson] : [...POWERUPS.defaultLoadout],
       botRating: bot?.rating ?? null,
       botRatingN: bot?.n ?? 0,
       ranked:
@@ -370,7 +361,7 @@ function resolveBot(env: Env, spec: CreateMatchSpec, player: LoadedPlayer): BotI
   const requested = spec.bot?.level;
   if (requested === undefined) throw new Error("createMatch: bot matches need spec.bot");
   const level: BotLevel = requested === "echo" ? ECHO.level : requested;
-  const testOnly = level === TEST_BOTS.dummy.level || level === TEST_BOTS.oracle.level;
+  const testOnly = level === TEST_BOTS.dummy.level || level === TEST_BOTS.perfect.level;
   if (testOnly && !spec.testMode) throw new MatchFactoryError("bot_locked", "That bot is not available");
   if (!testOnly && level !== ECHO.level && level > 1 && player.highestBotLevel < level - 1) {
     throw new MatchFactoryError("bot_locked", "Beat the bot before this one first");

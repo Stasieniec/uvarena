@@ -29,7 +29,7 @@ const LADDER_MIN = 1;
 const LADDER_MAX = BOT_LADDER.length;
 
 export function isTestBot(level: BotLevel): boolean {
-  return level === TEST_BOTS.dummy.level || level === TEST_BOTS.oracle.level;
+  return level === TEST_BOTS.dummy.level || level === TEST_BOTS.perfect.level;
 }
 
 /** Weak bots (ladder levels below BOT_POLICY.smartFromLevel) pick their power-up rounds at random. */
@@ -46,7 +46,7 @@ export function botStrength(level: BotLevel, playerBotRating: number | null): nu
 function botName(level: BotLevel): string {
   if (level === ECHO.level) return ECHO.name;
   if (level === TEST_BOTS.dummy.level) return TEST_BOTS.dummy.name;
-  if (level === TEST_BOTS.oracle.level) return TEST_BOTS.oracle.name;
+  if (level === TEST_BOTS.perfect.level) return TEST_BOTS.perfect.name;
   const entry = BOT_LADDER.find((b) => b.level === level);
   if (!entry) throw new Error(`unknown bot level ${level}`);
   return entry.name;
@@ -75,9 +75,8 @@ export function planBot(init: BotInit, powerupsOn: boolean, rng: Rng): { plan: B
     level: init.level,
     strength: init.strength,
     speed: botSpeed(init.strength),
-    zeusRound: loadout.includes("zeus") ? draw(weak ? BOT_POLICY.weakRounds : BOT_POLICY.zeusRounds) : null,
-    nemesisRound: loadout.includes("nemesis") ? draw(weak ? BOT_POLICY.weakRounds : BOT_POLICY.nemesisRounds) : null,
-    aegisRound: weak && loadout.includes("aegis") ? draw(BOT_POLICY.weakRounds) : null,
+    bibiRound: loadout.includes("bibi") ? draw(weak ? BOT_POLICY.weakRounds : BOT_POLICY.bibiRounds) : null,
+    shieldRound: weak && loadout.includes("shield") ? draw(BOT_POLICY.weakRounds) : null,
     q: null,
   };
   return { plan, loadout };
@@ -91,9 +90,8 @@ export function botArmChoice(bot: PlayerState, round: number, canUse: (p: BlindP
   const plan = bot.bot;
   if (!plan) return null;
   const due: Record<BlindPowerupId, boolean> = {
-    zeus: plan.zeusRound !== null && round >= plan.zeusRound,
-    nemesis: plan.nemesisRound !== null && round >= plan.nemesisRound,
-    aegis: plan.aegisRound !== null ? round >= plan.aegisRound : bot.hp < BOT_POLICY.aegisBelowHp,
+    bibi: plan.bibiRound !== null && round >= plan.bibiRound,
+    shield: plan.shieldRound !== null ? round >= plan.shieldRound : bot.hp < BOT_POLICY.shieldBelowHp,
   };
   for (const p of BOT_POLICY.priority) {
     const id = p as BlindPowerupId;
@@ -109,7 +107,7 @@ export function pKnow(itemRating: number, strength: number): number {
 
 /**
  * A uniform random answer from the type's answer space, in real ids. `exclude`
- * removes options (Oracle hides) from the draw.
+ * removes options (50:50 hides) from the draw.
  */
 export function randomAnswer(question: QuestionFull, rng: Rng, exclude: readonly string[] = []): AnswerKey {
   const ids = question.options.map((o) => o.id).filter((id) => !exclude.includes(id));
@@ -175,7 +173,7 @@ export function planBotQuestion(
   rng: Rng,
 ): BotQuestionPlan {
   if (isTestBot(plan.level)) {
-    const test = plan.level === TEST_BOTS.oracle.level ? TEST_BOTS.oracle : TEST_BOTS.dummy;
+    const test = plan.level === TEST_BOTS.perfect.level ? TEST_BOTS.perfect : TEST_BOTS.dummy;
     const answer = test.alwaysCorrect ? copyKey(question.key) : wrongAnswer(question, rng);
     const at = Math.min(shownAt + test.answerMs, shownAt + Math.floor(timerMs * BOT_MODEL.maxTimerFraction));
     return {
@@ -183,8 +181,8 @@ export function planBotQuestion(
       knows: test.alwaysCorrect,
       answer: answer ?? copyKey(question.key),
       answerAt: answer ? at : null,
-      oracleAt: null,
-      hermesAt: null,
+      fiftyAt: null,
+      fastAt: null,
       lateGuessResolved: false,
     };
   }
@@ -206,17 +204,17 @@ export function planBotQuestion(
   t = Math.min(Math.max(t, floor), BOT_MODEL.maxTimerFraction * base);
   const answerAt = shownAt + Math.round(t * ratio);
 
-  const oracleAt =
-    !knows && POWERUPS.oracle.eligibleTypes.includes(question.type) ? shownAt + Math.round(BOT_POLICY.oracleAtMs * ratio) : null;
-  const hermesAt = knows && round >= BOT_POLICY.hermesFromRound ? shownAt + Math.round(BOT_POLICY.hermesAtMs * ratio) : null;
+  const fiftyAt =
+    !knows && POWERUPS.fifty.eligibleTypes.includes(question.type) ? shownAt + Math.round(BOT_POLICY.fiftyAtMs * ratio) : null;
+  const fastAt = knows && round >= BOT_POLICY.fastFromRound ? shownAt + Math.round(BOT_POLICY.fastAtMs * ratio) : null;
 
   return {
     round,
     knows,
     answer,
     answerAt,
-    oracleAt: oracleAt !== null && oracleAt < answerAt ? oracleAt : null,
-    hermesAt: hermesAt !== null && hermesAt < answerAt ? hermesAt : null,
+    fiftyAt: fiftyAt !== null && fiftyAt < answerAt ? fiftyAt : null,
+    fastAt: fastAt !== null && fastAt < answerAt ? fastAt : null,
     lateGuessResolved: false,
   };
 }

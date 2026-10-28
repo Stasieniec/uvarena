@@ -5,7 +5,8 @@ import { asc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 import { MatchIdSchema, type MatchDetailResponse, MatchDetailRoundSideSchema } from "../../shared/api-schemas";
 import { CLOSE_CODES } from "../../shared/protocol";
-import type { AnswerKey, RoundPowerups } from "../../shared/game/types";
+import type { AnswerKey, PowerupId, RoundPowerups } from "../../shared/game/types";
+import { POWERUP_IDS } from "../../shared/game/types";
 import { HEADERS } from "../do/contracts";
 import { matchRounds, matches, questions } from "../db/schema";
 import { botName, getDb, lectureTitles, publicUsersById, sideOf, toQuestionPublic } from "../db/queries";
@@ -30,12 +31,14 @@ function roundSide(row: RoundRow, side: 0 | 1): RoundSide {
     score: a ? row.scoreA : row.scoreB,
     damageTaken: a ? row.damageToA : row.damageToB,
     hpAfter: a ? row.hpAAfter : row.hpBAfter,
-    armed: p.armed?.[side] ?? null,
-    effective: p.effective?.[side] ?? null,
-    cancelled: p.cancelled?.[side] ?? false,
-    quick: p.quick?.[side] ?? null,
-    phoenix: p.phoenix?.[side] ?? false,
+    armed: knownPowerup(p.armed?.[side]),
+    quick: knownPowerup(p.quick?.[side]),
   };
+}
+
+/** A power-up id from a stored round, or null for one the game no longer has. */
+function knownPowerup(id: unknown): PowerupId | null {
+  return (POWERUP_IDS as readonly unknown[]).includes(id) ? (id as PowerupId) : null;
 }
 
 matchesRoutes.get("/matches/:id/ws", async (c) => {

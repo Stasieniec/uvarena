@@ -18,7 +18,7 @@ import { makeQuestion, multiQ, trueFalse } from "./helpers";
 describe("bot strength and ladder", () => {
   it("ladder level L is 1050 + 150 (L - 1) and matches the config ladder", () => {
     for (const b of BOT_LADDER) expect(botStrength(b.level, null)).toBe(b.rating);
-    expect(botInit(4, null)).toEqual({ level: 4, name: "Pandora", strength: 1500 });
+    expect(botInit(4, null)).toEqual({ level: 4, name: "Did the reading", strength: 1500 });
   });
 
   it("Echo plays at the player's bot rating minus 75", () => {
@@ -29,7 +29,7 @@ describe("bot strength and ladder", () => {
 
   it("test bots exist, unknown levels throw", () => {
     expect(botInit(0, null).name).toBe("Dummy");
-    expect(botInit(9, null).name).toBe("Oracle Bot");
+    expect(botInit(9, null).name).toBe("Perfect Bot");
     expect(() => botInit(12 as never, null)).toThrow();
   });
 
@@ -52,15 +52,13 @@ describe("planBot", () => {
     expect(planBot(botInit(5, null), false, createRng(1)).loadout).toEqual([]);
   });
 
-  it("smart bots: Zeus in 5..9, Nemesis in 3..8, Aegis by HP", () => {
+  it("smart bots: Bibi in 5..9, Shield by HP", () => {
     for (let s = 0; s < 200; s++) {
       const { plan, loadout } = planBot(botInit(6, null), true, createRng(s));
-      if (loadout.includes("zeus")) expect(plan.zeusRound).toBeGreaterThanOrEqual(5);
-      if (loadout.includes("zeus")) expect(plan.zeusRound).toBeLessThanOrEqual(9);
-      else expect(plan.zeusRound).toBeNull();
-      if (loadout.includes("nemesis")) expect(plan.nemesisRound).toBeGreaterThanOrEqual(3);
-      if (loadout.includes("nemesis")) expect(plan.nemesisRound).toBeLessThanOrEqual(8);
-      expect(plan.aegisRound).toBeNull();
+      if (loadout.includes("bibi")) expect(plan.bibiRound).toBeGreaterThanOrEqual(5);
+      if (loadout.includes("bibi")) expect(plan.bibiRound).toBeLessThanOrEqual(9);
+      else expect(plan.bibiRound).toBeNull();
+      expect(plan.shieldRound).toBeNull();
     }
   });
 
@@ -68,8 +66,8 @@ describe("planBot", () => {
     const rounds = new Set<number>();
     for (let s = 0; s < 300; s++) {
       const { plan, loadout } = planBot(botInit(2, null), true, createRng(s));
-      if (loadout.includes("aegis")) expect(plan.aegisRound).not.toBeNull();
-      for (const r of [plan.zeusRound, plan.nemesisRound, plan.aegisRound]) if (r !== null) rounds.add(r);
+      if (loadout.includes("shield")) expect(plan.shieldRound).not.toBeNull();
+      for (const r of [plan.bibiRound, plan.shieldRound]) if (r !== null) rounds.add(r);
     }
     expect(Math.min(...rounds)).toBe(1);
     expect(Math.max(...rounds)).toBe(12);
@@ -85,7 +83,6 @@ function botState(plan: BotPlan, loadout: PlayerState["loadout"], hp = 6000, use
     hp,
     loadout,
     used,
-    phoenixUsed: false,
     connected: true,
     everConnected: true,
     disconnectedSince: null,
@@ -94,37 +91,38 @@ function botState(plan: BotPlan, loadout: PlayerState["loadout"], hp = 6000, use
     botRatingN: 0,
     rankedBefore: null,
     bot: plan,
-    r: { armed: null, effective: null, nemesisAgainst: false, quick: null, answer: null, answeredAt: null, hidden: [] },
+    r: { armed: null, quick: null, answer: null, answeredAt: null, hidden: [] },
   };
 }
 
 describe("botArmChoice", () => {
-  const plan: BotPlan = { level: 6, strength: 1800, speed: 6, zeusRound: 6, nemesisRound: 6, aegisRound: null, q: null };
+  const plan: BotPlan = { level: 6, strength: 1800, speed: 6, bibiRound: 6, shieldRound: null, q: null };
   const can = (p: PlayerState) => (id: BlindPowerupId) => p.loadout.includes(id) && !p.used.includes(id);
 
   it("arms nothing before the planned rounds", () => {
-    const b = botState(plan, ["zeus", "nemesis", "aegis"]);
+    const b = botState(plan, ["bibi", "fifty", "shield"]);
     expect(botArmChoice(b, 5, can(b))).toBeNull();
   });
 
-  it("Zeus wins a tie with Nemesis, which moves to the next round", () => {
-    const b = botState(plan, ["zeus", "nemesis", "aegis"]);
-    expect(botArmChoice(b, 6, can(b))).toBe("zeus");
-    const after = botState(plan, ["zeus", "nemesis", "aegis"], 6000, ["zeus"]);
-    expect(botArmChoice(after, 7, can(after))).toBe("nemesis");
+  it("Bibi wins a tie with Shield, which moves to the next round", () => {
+    const weakPlan: BotPlan = { ...plan, level: 2, shieldRound: 6 };
+    const b = botState(weakPlan, ["bibi", "fifty", "shield"]);
+    expect(botArmChoice(b, 6, can(b))).toBe("bibi");
+    const after = botState(weakPlan, ["bibi", "fifty", "shield"], 6000, ["bibi"]);
+    expect(botArmChoice(after, 7, can(after))).toBe("shield");
   });
 
-  it("smart Aegis arms in the first window below half HP", () => {
-    const b = botState({ ...plan, zeusRound: null, nemesisRound: null }, ["aegis", "oracle", "hermes"], 3500);
+  it("smart Shield arms in the first window below half HP", () => {
+    const b = botState({ ...plan, bibiRound: null }, ["shield", "fifty", "fast"], 3500);
     expect(botArmChoice(b, 3, can(b))).toBeNull();
-    const low = botState({ ...plan, zeusRound: null, nemesisRound: null }, ["aegis", "oracle", "hermes"], 2999);
-    expect(botArmChoice(low, 3, can(low))).toBe("aegis");
+    const low = botState({ ...plan, bibiRound: null }, ["shield", "fifty", "fast"], 2999);
+    expect(botArmChoice(low, 3, can(low))).toBe("shield");
   });
 });
 
 describe("planBotQuestion", () => {
-  const strong: BotPlan = { level: 8, strength: 2100, speed: 8, zeusRound: null, nemesisRound: null, aegisRound: null, q: null };
-  const weak: BotPlan = { level: 1, strength: 1050, speed: 1, zeusRound: null, nemesisRound: null, aegisRound: null, q: null };
+  const strong: BotPlan = { level: 8, strength: 2100, speed: 8, bibiRound: null, shieldRound: null, q: null };
+  const weak: BotPlan = { level: 1, strength: 1050, speed: 1, bibiRound: null, shieldRound: null, q: null };
 
   it("pKnow is the Elo curve", () => {
     expect(pKnow(1500, 1500)).toBeCloseTo(0.5);
@@ -168,41 +166,41 @@ describe("planBotQuestion", () => {
     expect(tStrong / knowStrong).toBeLessThan(tWeak / knowWeak);
   });
 
-  it("a known answer is the key; Oracle only when unsure, Hermes only when sure from round 3", () => {
+  it("a known answer is the key; 50:50 only when unsure, Gotta Go Fast only when sure from round 3", () => {
     const q = makeQuestion({ rating: 1500 });
     for (let s = 0; s < 300; s++) {
       const p = planBotQuestion(strong, q, 3, 1000, 20000, createRng(s));
       if (p.knows) {
         expect(isCorrect(q.key, p.answer)).toBe(true);
-        expect(p.oracleAt).toBeNull();
-        expect(p.hermesAt).toBe(1500);
+        expect(p.fiftyAt).toBeNull();
+        expect(p.fastAt).toBe(1500);
       } else {
-        expect(p.oracleAt).toBe(2500);
-        expect(p.hermesAt).toBeNull();
+        expect(p.fiftyAt).toBe(2500);
+        expect(p.fastAt).toBeNull();
       }
       const early = planBotQuestion(strong, q, 2, 1000, 20000, createRng(s));
-      expect(early.hermesAt).toBeNull();
+      expect(early.fastAt).toBeNull();
     }
   });
 
-  it("no Oracle on true/false", () => {
+  it("no 50:50 on true/false", () => {
     for (let s = 0; s < 100; s++) {
-      expect(planBotQuestion(weak, trueFalse(), 1, 0, 15000, createRng(s)).oracleAt).toBeNull();
+      expect(planBotQuestion(weak, trueFalse(), 1, 0, 15000, createRng(s)).fiftyAt).toBeNull();
     }
   });
 
-  it("test bots: Oracle Bot always right, Dummy always wrong, both at 2 s", () => {
-    const oracle: BotPlan = { ...strong, level: 9 };
+  it("test bots: Perfect Bot always right, Dummy always wrong, both at 2 s", () => {
+    const fifty: BotPlan = { ...strong, level: 9 };
     const dummy: BotPlan = { ...weak, level: 0 };
     for (const q of [makeQuestion(), multiQ(), trueFalse(false)]) {
       for (let s = 0; s < 30; s++) {
-        const a = planBotQuestion(oracle, q, 1, 0, 4000, createRng(s));
+        const a = planBotQuestion(fifty, q, 1, 0, 4000, createRng(s));
         expect(isCorrect(q.key, a.answer)).toBe(true);
         expect(a.answerAt).toBe(2000);
         const b = planBotQuestion(dummy, q, 1, 0, 4000, createRng(s));
         expect(isCorrect(q.key, b.answer)).toBe(false);
         expect(b.answerAt).toBe(2000);
-        expect(b.oracleAt).toBeNull();
+        expect(b.fiftyAt).toBeNull();
       }
     }
   });
@@ -236,5 +234,22 @@ describe("randomAnswer", () => {
       const a = randomAnswer(makeQuestion(), r, ["b", "c"]);
       expect(a.kind === "options" && ["a", "d"].includes(a.ids[0]!)).toBe(true);
     }
+  });
+});
+
+describe("the ladder", () => {
+  it("has the eight student bots, weakest first, 1050 to 2100 in steps of 150", () => {
+    expect(BOT_LADDER.map((b) => b.name)).toEqual([
+      "Skimmed the slides",
+      "Attended once",
+      "Has the notes open",
+      "Did the reading",
+      "Went to every tutorial",
+      "Made the flashcards",
+      "Asks questions after class",
+      "Wrote the exam",
+    ]);
+    expect(BOT_LADDER.map((b) => b.rating)).toEqual([1050, 1200, 1350, 1500, 1650, 1800, 1950, 2100]);
+    for (const b of BOT_LADDER) expect(botInit(b.level, null).strength).toBe(b.rating);
   });
 });

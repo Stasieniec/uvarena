@@ -22,12 +22,12 @@ import type {
 export const QUESTION_TYPES = ["single", "multi", "truefalse", "cloze", "order", "match"] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
-export const POWERUP_IDS = ["zeus", "aegis", "nemesis", "oracle", "hermes", "phoenix"] as const;
+export const POWERUP_IDS = ["bibi", "shield", "fifty", "fast"] as const;
 export type PowerupId = (typeof POWERUP_IDS)[number];
 /** Armed in the arming window. */
-export type BlindPowerupId = "zeus" | "aegis" | "nemesis";
+export type BlindPowerupId = "bibi" | "shield";
 /** Used during the question, before answering. */
-export type QuickPowerupId = "oracle" | "hermes";
+export type QuickPowerupId = "fifty" | "fast";
 
 export const PHASES = ["lobby", "intro", "arming", "banner", "question", "reveal", "finished", "cancelled"] as const;
 export type Phase = (typeof PHASES)[number];
@@ -52,10 +52,6 @@ export type EndReason = (typeof END_REASONS)[number];
 /** Reasons the MatchRoom `cancel` RPC accepts. */
 export type CancelReason = "no_show" | "expired" | "cancelled";
 
-/** Banner outcome per armed power-up, see build-plan.md "Arming resolution". */
-export const BANNER_OUTCOMES = ["active", "cancelled", "nemesis_hit", "nemesis_watch", "nemesis_wasted"] as const;
-export type BannerOutcome = (typeof BANNER_OUTCOMES)[number];
-
 export const DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
@@ -64,7 +60,7 @@ export type BloomLevel = (typeof BLOOM_LEVELS)[number];
 
 /**
  * Bot level as stored in `matches.bot_level`: -1 Echo, 1 to 8 the ladder,
- * 0 (Dummy) and 9 (Oracle Bot) in test mode only.
+ * 0 (Dummy) and 9 (Perfect Bot) in test mode only.
  */
 export type BotLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -213,10 +209,10 @@ export interface BotQuestionPlan {
   answer: AnswerKey;
   /** When the bot answers; null for a planned timeout. */
   answerAt: number | null;
-  /** When the bot uses Oracle, if it does. */
-  oracleAt: number | null;
-  /** When the bot uses Hermes, if it does. */
-  hermesAt: number | null;
+  /** When the bot uses 50:50, if it does. */
+  fiftyAt: number | null;
+  /** When the bot uses Gotta Go Fast, if it does. */
+  fastAt: number | null;
   /** Whether the late-guess rule has already been applied this round. */
   lateGuessResolved: boolean;
 }
@@ -228,29 +224,24 @@ export interface BotPlan {
   strength: number;
   /** Speed level s = clamp(1 + (R - 1050) / 150, 1, 8). */
   speed: number;
-  /** Round in which the bot arms each blind power-up it holds (null: not held, or Aegis). */
-  zeusRound: number | null;
-  nemesisRound: number | null;
-  /** Weak bots only: the random round for Aegis. Smart bots use the HP rule. */
-  aegisRound: number | null;
+  /** Round in which the bot arms Bibi (null: not held). */
+  bibiRound: number | null;
+  /** Weak bots only: the random round for Shield. Smart bots use the HP rule. */
+  shieldRound: number | null;
   /** Plan for the current question; null outside the question phase. */
   q: BotQuestionPlan | null;
 }
 
 /** Per-round state of one player. Reset at the start of every arming phase. */
 export interface PlayerRoundState {
-  /** Chosen in the arming window. */
+  /** Chosen in the arming window; active from the banner on. */
   armed: BlindPowerupId | null;
-  /** After Nemesis resolution. */
-  effective: BlindPowerupId | null;
-  /** The opponent's Nemesis hit this player (also blocks Phoenix this round). */
-  nemesisAgainst: boolean;
-  /** Oracle or Hermes used this round. */
+  /** 50:50 or Gotta Go Fast used this round. */
   quick: QuickPowerupId | null;
   /** Mapped to real ids. */
   answer: AnswerKey | null;
   answeredAt: number | null;
-  /** Option ids removed by Oracle (real ids). */
+  /** Option ids removed by 50:50 (real ids). */
   hidden: string[];
 }
 
@@ -263,9 +254,8 @@ export interface PlayerState {
   hp: number;
   /** 3 distinct power-ups; [] when power-ups are off. */
   loadout: PowerupId[];
-  /** Spent, including cancelled and fizzled ones, and a triggered Phoenix. */
+  /** Spent, including fizzled ones. */
   used: PowerupId[];
-  phoenixUsed: boolean;
   connected: boolean;
   everConnected: boolean;
   disconnectedSince: number | null;
@@ -310,17 +300,13 @@ export interface RoundSideRecord {
   timedOut: boolean;
   /** Timed out after the opponent's countdown had started (excluded from item ratings). */
   timedOutAfterCountdown: boolean;
-  /** Used Oracle this round (the answer moves no rating). */
+  /** Used 50:50 this round (the answer moves no rating). */
   helped: boolean;
   score: number;
   damageTaken: number;
   hpAfter: number;
   armed: BlindPowerupId | null;
-  effective: BlindPowerupId | null;
-  nemesisAgainst: boolean;
   quick: QuickPowerupId | null;
-  /** Phoenix triggered for this side this round. */
-  phoenix: boolean;
 }
 
 export interface RoundRecord {
@@ -556,11 +542,7 @@ export interface MatchRowUpdate {
 /** Blind and quick power-up record of one round, stored in match_rounds.powerups_json. */
 export interface RoundPowerups {
   armed: [BlindPowerupId | null, BlindPowerupId | null];
-  effective: [BlindPowerupId | null, BlindPowerupId | null];
-  /** Side whose armed power-up was cancelled by Nemesis. */
-  cancelled: [boolean, boolean];
   quick: [QuickPowerupId | null, QuickPowerupId | null];
-  phoenix: [boolean, boolean];
 }
 
 /** A `match_rounds` row. */

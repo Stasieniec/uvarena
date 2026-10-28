@@ -9,12 +9,11 @@
 //
 // Option ids in match messages are the receiving player's per-match opaque
 // ids. No message before `reveal` may contain the key, correctness, or
-// anything derived from them (Oracle hides, sent only to the player who used
-// Oracle, are the one intended exception).
+// anything derived from them (50:50 hides, sent only to the player who used
+// 50:50, are the one intended exception).
 
 import { z } from "zod";
 import {
-  BANNER_OUTCOMES,
   END_REASONS,
   MATCH_MODES,
   PHASES,
@@ -32,12 +31,11 @@ export const IdSchema = z.string().min(1).max(32).regex(/^[A-Za-z0-9_-]+$/);
 
 export const QuestionTypeSchema = z.enum(QUESTION_TYPES);
 export const PowerupIdSchema = z.enum(POWERUP_IDS);
-export const BlindPowerupIdSchema = z.enum(["zeus", "aegis", "nemesis"]);
-export const QuickPowerupIdSchema = z.enum(["oracle", "hermes"]);
+export const BlindPowerupIdSchema = z.enum(["bibi", "shield"]);
+export const QuickPowerupIdSchema = z.enum(["fifty", "fast"]);
 export const PhaseSchema = z.enum(PHASES);
 export const MatchModeSchema = z.enum(MATCH_MODES);
 export const EndReasonSchema = z.enum(END_REASONS);
-export const BannerOutcomeSchema = z.enum(BANNER_OUTCOMES);
 export const WhoSchema = z.enum(["you", "opponent"]);
 
 const epochMs = z.number().int().nonnegative();
@@ -77,7 +75,6 @@ export const PlayerViewSchema = z.object({
   hp: z.number().int(),
   loadout: z.array(PowerupIdSchema),
   used: z.array(PowerupIdSchema),
-  phoenixUsed: z.boolean(),
   connected: z.boolean(),
   ready: z.boolean(),
   /**
@@ -105,8 +102,7 @@ export const QuestionViewSchema = z.object({
 
 export const BannerItemSchema = z.object({
   who: WhoSchema,
-  powerup: PowerupIdSchema,
-  outcome: BannerOutcomeSchema,
+  powerup: BlindPowerupIdSchema,
 });
 
 export const RatingChangeSchema = z.object({
@@ -136,10 +132,9 @@ export const RevealPayloadSchema = z.object({
   damageToOpponent: z.number().int(),
   /** The round's damage hit its cap. */
   capped: z.boolean(),
-  /** Whose Zeus was active, whose Aegis was active, whose Phoenix fired. */
-  zeus: WhoSchema.nullable(),
-  aegis: WhoSchema.nullable(),
-  phoenix: WhoSchema.nullable(),
+  /** Whose Bibi was active, whose Shield was active. */
+  bibi: WhoSchema.nullable(),
+  shield: WhoSchema.nullable(),
   hp: z.object({ you: z.number().int(), opponent: z.number().int() }),
   whyShort: z.string(),
   /** The receiver missed this one and it went into Missed questions. */
@@ -187,7 +182,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ready") }),
   /** Arming: arm a blind power-up, or null to unarm. Switching is allowed. */
   z.object({ type: z.literal("arm"), round: roundNo, powerup: BlindPowerupIdSchema.nullable() }),
-  /** Question, before answering: use Oracle or Hermes. */
+  /** Question, before answering: use 50:50 or Gotta Go Fast. */
   z.object({ type: z.literal("use"), round: roundNo, powerup: QuickPowerupIdSchema }),
   /** Question: lock in an answer (opaque ids). */
   z.object({ type: z.literal("answer"), round: roundNo, answer: AnswerSchema }),
@@ -229,7 +224,7 @@ export const SnapshotMessageSchema = z.object({
   /** Banner phase: the banner items. */
   banner: z.array(BannerItemSchema).nullable(),
   question: QuestionViewSchema.nullable(),
-  /** Your Oracle hides this round (opaque ids). */
+  /** Your 50:50 hides this round (opaque ids). */
   hidden: z.array(IdSchema),
   /** Your quick power-up this round. */
   quickUsed: QuickPowerupIdSchema.nullable(),
@@ -278,7 +273,7 @@ export const ArmingMessageSchema = z.object({
   round: roundNo,
   multiplier: z.number(),
   phaseEndsAt: epochMs,
-  /** Your unused zeus, aegis, nemesis. Empty when power-ups are off. */
+  /** Your unused bibi and shield. Empty when power-ups are off. */
   armable: z.array(BlindPowerupIdSchema),
 });
 
@@ -325,7 +320,7 @@ export const PowerupResultMessageSchema = z.object({
   ...base,
   round: roundNo,
   powerup: QuickPowerupIdSchema,
-  /** Oracle: hidden options (your opaque ids). Hermes: []. */
+  /** 50:50: hidden options (your opaque ids). Gotta Go Fast: []. */
   hidden: z.array(IdSchema),
 });
 

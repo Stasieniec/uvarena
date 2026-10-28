@@ -97,7 +97,7 @@ interface LeakStats {
   frames: number;
 }
 
-function scanFrames(d: Driver, from: number, oracleRound: number | null, stats: LeakStats): void {
+function scanFrames(d: Driver, from: number, fiftyRound: number | null, stats: LeakStats): void {
   for (const o of d.log.slice(from)) {
     expect(o.to).toBe(0); // the bot side never gets frames
     const msg = o.msg;
@@ -106,13 +106,13 @@ function scanFrames(d: Driver, from: number, oracleRound: number | null, stats: 
     let json: string;
     if (msg.type === "snapshot") {
       if (msg.phase === "question") expect(msg.lastReveal).toBeNull();
-      if (msg.hidden.length > 0) expect(oracleRound).toBe(msg.round);
+      if (msg.hidden.length > 0) expect(fiftyRound).toBe(msg.round);
       json = JSON.stringify({ ...msg, lastReveal: null, result: null });
     } else {
       json = JSON.stringify(msg);
     }
     for (const bad of PRE_REVEAL_FORBIDDEN) expect(json).not.toContain(bad);
-    if (msg.type === "powerup_result" && msg.hidden.length > 0) expect(oracleRound).toBe(msg.round);
+    if (msg.type === "powerup_result" && msg.hidden.length > 0) expect(fiftyRound).toBe(msg.round);
     if (msg.type === "question") {
       const q = d.state.q;
       if (q && q.shownAt === msg.shownAt) {
@@ -150,7 +150,7 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
     botMatchInit(level, {
       seed,
       matchId: `hb-${seed}`,
-      humans: [human("alice", { loadout: rng.shuffle(["zeus", "aegis", "nemesis", "oracle", "hermes", "phoenix"] as const).slice(0, 3) })],
+      humans: [human("alice", { loadout: rng.shuffle(["bibi", "shield", "fifty", "fast"] as const).slice(0, 3) })],
       settings: { powerups: rng.next() < 0.85, lectures: null },
       questions: pickQuestions(pool, [1500, strength], seed),
       timeScale: rng.next() < 0.2 ? 0.2 : 1,
@@ -160,8 +160,8 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
   let planRound = -1;
   let answerAt = 0;
   let quickAt: number | null = null;
-  let quick: "oracle" | "hermes" = "oracle";
-  let oracleRound: number | null = null;
+  let quick: "fifty" | "fast" = "fifty";
+  let fiftyRound: number | null = null;
   let awayUntil: number | null = d.now + rng.int(0, 2000);
   let scanned = 0;
 
@@ -183,7 +183,7 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
         at: d.now,
         run: () => {
           armedRound = s.round;
-          if (rng.next() < 0.3) d.arm(0, rng.pick(["zeus", "aegis", "nemesis"] as const));
+          if (rng.next() < 0.3) d.arm(0, rng.pick(["bibi", "shield"] as const));
           if (rng.next() < 0.2) d.arm(0, null);
         },
       });
@@ -192,7 +192,7 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
       planRound = s.round;
       answerAt = s.q.shownAt + rng.int(0, s.q.timerMs + 1500);
       quickAt = rng.next() < 0.3 ? s.q.shownAt + rng.int(0, 3000) : null;
-      quick = rng.next() < 0.5 ? "oracle" : "hermes";
+      quick = rng.next() < 0.5 ? "fifty" : "fast";
     }
     if (connected && s.phase === "question" && s.q && me.r.answer === null) {
       if (quickAt !== null && quickAt < answerAt) {
@@ -202,7 +202,7 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
           run: () => {
             quickAt = null;
             d.use(0, quick, at);
-            if (d.out(0).some((m) => m.type === "powerup_result" && m.powerup === "oracle")) oracleRound = d.state.round;
+            if (d.out(0).some((m) => m.type === "powerup_result" && m.powerup === "fifty")) fiftyRound = d.state.round;
           },
         });
       } else {
@@ -229,7 +229,7 @@ function humanVsBot(seed: number, level: BotLevel, stats: LeakStats): Driver {
     if (next && (deadline === null || next.at < deadline)) next.run();
     else tickAtDeadline(d);
 
-    scanFrames(d, scanned, oracleRound, stats);
+    scanFrames(d, scanned, fiftyRound, stats);
     scanned = d.log.length;
     checkRounds(d.state);
   }
@@ -257,7 +257,7 @@ describe("random human against bots", () => {
 });
 
 describe("bots inside a match", () => {
-  it("Dummy loses to a human who answers right, Oracle Bot beats one who never answers", () => {
+  it("Dummy loses to a human who answers right, Perfect Bot beats one who never answers", () => {
     const d = new Driver(botMatchInit(0, { timeScale: 0.2 }));
     d.connectAll();
     while (d.state.phase !== "finished") {
@@ -299,36 +299,35 @@ describe("bots inside a match", () => {
     expect(guessed / late).toBeLessThan(0.9);
   });
 
-  it("a smart bot arms Zeus in its planned round, and the human sees the banner", () => {
+  it("a smart bot arms Bibi in its planned round, and the human sees the banner", () => {
     let checked = 0;
     for (let seed = 0; seed < 60 && checked < 5; seed++) {
       const d = new Driver(botMatchInit(8, { seed }));
       const bot = d.state.players[1]!;
-      if (!bot.loadout.includes("zeus") || bot.bot!.nemesisRound === bot.bot!.zeusRound) continue;
-      const zr = bot.bot!.zeusRound!;
-      if (bot.bot!.nemesisRound !== null && bot.bot!.nemesisRound < zr) continue;
-      // The human never answers; a large HP pool keeps the match going until the Zeus round.
+      if (!bot.loadout.includes("bibi")) continue;
+      const zr = bot.bot!.bibiRound!;
+      // The human never answers; a large HP pool keeps the match going until the Bibi round.
       d.state = { ...d.state, players: [{ ...d.state.players[0], hp: 1_000_000 }, d.state.players[1]] };
       d.connectAll();
       d.until((s) => s.round === zr && (s.phase === "banner" || s.phase === "question"));
       expect(d.state.phase).toBe("banner");
-      expect(d.lastMsg(0, "banner").items).toContainEqual({ who: "opponent", powerup: "zeus", outcome: "active" });
+      expect(d.lastMsg(0, "banner").items).toContainEqual({ who: "opponent", powerup: "bibi" });
       checked += 1;
     }
     expect(checked).toBeGreaterThan(0);
   });
 
-  it("a bot uses Oracle only when unsure, and then guesses among what is left", () => {
+  it("a bot uses 50:50 only when unsure, and then guesses among what is left", () => {
     let used = 0;
     for (let seed = 0; seed < 200 && used < 10; seed++) {
       const d = new Driver(botMatchInit(5, { seed }));
       const bot = d.state.players[1]!;
-      if (!bot.loadout.includes("oracle")) continue;
+      if (!bot.loadout.includes("fifty")) continue;
       d.connectAll();
-      d.until((s) => s.phase === "reveal" || s.phase === "finished" || (s.players[1]!.r.quick === "oracle"));
-      if (d.state.players[1]!.r.quick !== "oracle") continue;
+      d.until((s) => s.phase === "reveal" || s.phase === "finished" || (s.players[1]!.r.quick === "fifty"));
+      if (d.state.players[1]!.r.quick !== "fifty") continue;
       const hidden = d.state.players[1]!.r.hidden;
-      expect(d.lastMsg(0, "opponent_powerup").powerup).toBe("oracle");
+      expect(d.lastMsg(0, "opponent_powerup").powerup).toBe("fifty");
       d.toPhase("reveal");
       const rec = d.state.rounds.at(-1)!;
       expect(rec.sides[1].helped).toBe(true);

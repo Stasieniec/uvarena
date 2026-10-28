@@ -27,9 +27,8 @@ export function human(userId: string, overrides: Partial<PlayerState> = {}): Pla
     name: userId,
     avatarUrl: null,
     hp: MATCH.startHp,
-    loadout: ["zeus", "aegis", "oracle"],
+    loadout: ["bibi", "shield", "fifty"],
     used: [],
-    phoenixUsed: false,
     connected: true,
     everConnected: true,
     disconnectedSince: null,
@@ -38,7 +37,7 @@ export function human(userId: string, overrides: Partial<PlayerState> = {}): Pla
     botRatingN: 0,
     rankedBefore: null,
     bot: null,
-    r: { armed: null, effective: null, nemesisAgainst: false, quick: null, answer: null, answeredAt: null, hidden: [] },
+    r: { armed: null, quick: null, answer: null, answeredAt: null, hidden: [] },
     ...overrides,
   };
 }
@@ -49,7 +48,7 @@ export function botPlayer(level: BotLevel, strength: number, overrides: Partial<
     userId: null,
     name: `bot${level}`,
     botRating: strength,
-    bot: { level, strength, speed: 1, zeusRound: null, nemesisRound: null, aegisRound: null, q: null },
+    bot: { level, strength, speed: 1, bibiRound: null, shieldRound: null, q: null },
     ...overrides,
   });
 }
@@ -86,10 +85,7 @@ function sideRecord(spec: SideSpec, shownAt: number): RoundSideRecord {
     damageTaken: 0,
     hpAfter: MATCH.startHp,
     armed: null,
-    effective: null,
-    nemesisAgainst: false,
     quick: null,
-    phoenix: false,
   };
   if (spec === null) return base;
   if (typeof spec === "boolean") {

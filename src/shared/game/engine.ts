@@ -9,7 +9,7 @@
 import type { MatchErrorCode, ServerMessage } from "../protocol";
 import { botArmChoice, isTestBot, planBot, planBotQuestion, randomAnswer } from "./bot";
 import { BOT_MODEL, ELO, MATCH, POWERUPS, QUESTIONS, TIMING, scaleMs } from "./config";
-import { canUsePowerup, isBlind, oracleHides, resolveArming } from "./powerups";
+import { armedBanner, canUsePowerup, fiftyHides, isBlind } from "./powerups";
 import { createRng } from "./rng";
 import { computeDamage, isCorrect, multiplier, roundScore, timerMs } from "./scoring";
 import type {
@@ -72,7 +72,7 @@ interface Ctx {
 // ---------------------------------------------------------------------------
 
 function emptyRound(): PlayerRoundState {
-  return { armed: null, effective: null, nemesisAgainst: false, quick: null, answer: null, answeredAt: null, hidden: [] };
+  return { armed: null, quick: null, answer: null, answeredAt: null, hidden: [] };
 }
 
 function cleanLoadout(loadout: readonly PowerupId[], powerupsOn: boolean): PowerupId[] {
@@ -94,7 +94,6 @@ function humanPlayer(p: PlayerInit, powerupsOn: boolean, ready: boolean): Player
     hp: MATCH.startHp,
     loadout: cleanLoadout(p.loadout, powerupsOn),
     used: [],
-    phoenixUsed: false,
     connected: false,
     everConnected: false,
     disconnectedSince: null,
@@ -118,7 +117,6 @@ export function botPlayer(init: BotInit, powerupsOn: boolean, rng: Rng): PlayerS
     hp: MATCH.startHp,
     loadout,
     used: [],
-    phoenixUsed: false,
     connected: true,
     everConnected: true,
     disconnectedSince: null,
@@ -202,8 +200,8 @@ export function sideOf(state: MatchState, userId: string): Side | null {
 }
 
 type DeadlineKind =
-  | "bot_hermes"
-  | "bot_oracle"
+  | "bot_fast"
+  | "bot_fifty"
   | "bot_answer"
   | "forfeit"
   | "void"
@@ -221,8 +219,8 @@ interface Deadline {
 
 /** Tie-break when two deadlines fall on the same millisecond. */
 const DEADLINE_ORDER: readonly DeadlineKind[] = [
-  "bot_hermes",
-  "bot_oracle",
+  "bot_fast",
+  "bot_fifty",
   "bot_answer",
   "forfeit",
   "void",
@@ -253,8 +251,8 @@ function deadlines(s: MatchState): Deadline[] {
       const p = s.players[side];
       const plan = p?.bot?.q;
       if (!p || p.kind !== "bot" || !plan || p.r.answer !== null) continue;
-      if (plan.hermesAt !== null) list.push({ at: plan.hermesAt, kind: "bot_hermes", side });
-      if (plan.oracleAt !== null) list.push({ at: plan.oracleAt, kind: "bot_oracle", side });
+      if (plan.fastAt !== null) list.push({ at: plan.fastAt, kind: "bot_fast", side });
+      if (plan.fiftyAt !== null) list.push({ at: plan.fiftyAt, kind: "bot_fifty", side });
       if (plan.answerAt !== null) list.push({ at: plan.answerAt, kind: "bot_answer", side });
     }
   } else if (s.phaseEndsAt !== null) {
@@ -389,23 +387,23 @@ function applyDeadline(ctx: Ctx, d: Deadline): void {
     case "round_end":
       endRound(ctx);
       return;
-    case "bot_hermes": {
+    case "bot_fast": {
       const p = s.players[d.side as Side] as PlayerState;
       const plan = p.bot?.q;
-      if (plan) plan.hermesAt = null;
-      if (canUsePowerup(p, "hermes", s.settings.powerups)) useQuick(ctx, d.side as Side, "hermes", []);
+      if (plan) plan.fastAt = null;
+      if (canUsePowerup(p, "fast", s.settings.powerups)) useQuick(ctx, d.side as Side, "fast", []);
       return;
     }
-    case "bot_oracle": {
+    case "bot_fifty": {
       const side = d.side as Side;
       const p = s.players[side] as PlayerState;
       const plan = p.bot?.q;
       if (!plan || !s.q) return;
-      plan.oracleAt = null;
-      if (!canUsePowerup(p, "oracle", s.settings.powerups)) return;
-      const hides = oracleHides(s.q.question, ctx.rng);
+      plan.fiftyAt = null;
+      if (!canUsePowerup(p, "fifty", s.settings.powerups)) return;
+      const hides = fiftyHides(s.q.question, ctx.rng);
       if (hides.length === 0) return;
-      useQuick(ctx, side, "oracle", hides);
+      useQuick(ctx, side, "fifty", hides);
       // It did not know: guess again among what is left.
       plan.answer = randomAnswer(s.q.question, ctx.rng, hides);
       return;
@@ -584,14 +582,10 @@ function startArming(ctx: Ctx): void {
 function endArming(ctx: Ctx): void {
   const s = ctx.s;
   const players = bothPlayers(s);
-  const res = resolveArming(players);
-  for (const side of SIDES) {
-    const p = players[side];
-    p.r.effective = res.effective[side];
-    p.r.nemesisAgainst = res.nemesisAgainst[side];
+  for (const p of players) {
     if (p.r.armed !== null && !p.used.includes(p.r.armed)) p.used.push(p.r.armed);
   }
-  if (res.banner.length === 0) {
+  if (armedBanner(players).length === 0) {
     startQuestion(ctx);
     return;
   }
@@ -741,7 +735,7 @@ function submitAnswer(ctx: Ctx, side: Side, answer: AnswerKey, at: number): void
 
   if (q.firstSide === null) {
     q.firstSide = side;
-    const countdown = p.r.quick === "hermes" ? TIMING.hermesCountdownMs : TIMING.countdownMs;
+    const countdown = p.r.quick === "fast" ? TIMING.fastCountdownMs : TIMING.countdownMs;
     q.countdownEnd = Math.min(q.deadline, at + scaleMs(countdown, s.timeScale));
     s.phaseEndsAt = q.countdownEnd;
     send(ctx, side, { type: "answer_ack", serverNow: ctx.now, round: s.round, countdownEnd: q.countdownEnd });
@@ -778,8 +772,8 @@ function applyLateGuess(ctx: Ctx, botSide: Side, at: number): void {
   } else {
     plan.answerAt = null;
   }
-  if (plan.answerAt === null || (plan.oracleAt !== null && plan.oracleAt >= plan.answerAt)) plan.oracleAt = null;
-  if (plan.answerAt === null || (plan.hermesAt !== null && plan.hermesAt >= plan.answerAt)) plan.hermesAt = null;
+  if (plan.answerAt === null || (plan.fiftyAt !== null && plan.fiftyAt >= plan.answerAt)) plan.fiftyAt = null;
+  if (plan.answerAt === null || (plan.fastAt !== null && plan.fastAt >= plan.answerAt)) plan.fastAt = null;
 }
 
 function onArm(ctx: Ctx, side: Side, round: number, powerup: BlindPowerupId | null): null {
@@ -804,9 +798,9 @@ function onUse(ctx: Ctx, side: Side, round: number, powerup: QuickPowerupId): nu
     return fail(ctx, side, "powerup_unavailable", "That power-up is not available.");
   }
   let hides: string[] = [];
-  if (powerup === "oracle") {
-    hides = oracleHides(q.question, ctx.rng);
-    if (hides.length === 0) return fail(ctx, side, "powerup_unavailable", "The Oracle has nothing to say about this one.");
+  if (powerup === "fifty") {
+    hides = fiftyHides(q.question, ctx.rng);
+    if (hides.length === 0) return fail(ctx, side, "powerup_unavailable", "50:50 has nothing to remove on this one.");
   }
   useQuick(ctx, side, powerup, hides);
   return null;
@@ -845,20 +839,12 @@ function endRound(ctx: Ctx): void {
   const dmg = computeDamage({
     scores,
     multiplier: mult,
-    effective: [players[0].r.effective, players[1].r.effective],
+    armed: [players[0].r.armed, players[1].r.armed],
     hp: [players[0].hp, players[1].hp],
-    phoenixReady: players.map((p) => p.loadout.includes("phoenix") && !p.phoenixUsed && !p.r.nemesisAgainst) as [
-      boolean,
-      boolean,
-    ],
   });
 
   const sides = SIDES.map((side): RoundSideRecord => {
     const p = players[side];
-    if (dmg.phoenix[side]) {
-      p.phoenixUsed = true;
-      if (!p.used.includes("phoenix")) p.used.push("phoenix");
-    }
     p.hp = dmg.hpAfter[side];
     const answered = p.r.answeredAt !== null && p.r.answer !== null;
     const timedOut = !answered;
@@ -869,15 +855,12 @@ function endRound(ctx: Ctx): void {
       correct: correct[side] as boolean,
       timedOut,
       timedOutAfterCountdown: timedOut && q.firstSide !== null && q.firstSide !== side,
-      helped: p.r.quick === "oracle",
+      helped: p.r.quick === "fifty",
       score: scores[side],
       damageTaken: dmg.damage[side],
       hpAfter: p.hp,
       armed: p.r.armed,
-      effective: p.r.effective,
-      nemesisAgainst: p.r.nemesisAgainst,
       quick: p.r.quick,
-      phoenix: dmg.phoenix[side],
     };
   }) as [RoundSideRecord, RoundSideRecord];
 

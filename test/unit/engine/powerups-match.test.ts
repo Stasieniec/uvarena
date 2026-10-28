@@ -24,138 +24,95 @@ function aliceHits(d: Driver): void {
 }
 
 describe("blind power-ups through the arming window", () => {
-  it("Zeus against Aegis: banner shows both, damage doubled then halved", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["aegis", "zeus", "oracle"]);
-    d.arm(0, "zeus");
-    expect(d.lastMsg(0, "armed_ack").powerup).toBe("zeus");
-    d.arm(1, "aegis");
+  it("Bibi against Shield: banner shows both, damage doubled then halved", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "bibi", "fifty"]);
+    d.arm(0, "bibi");
+    expect(d.lastMsg(0, "armed_ack").powerup).toBe("bibi");
+    d.arm(1, "shield");
     // The opponent's choice is invisible during arming.
     const snap = view(d.state, 1, d.now);
     expect(snap.opponent?.used).toEqual([]);
-    expect(JSON.stringify(d.out(1))).not.toContain("zeus");
+    expect(JSON.stringify(d.out(1))).not.toContain("bibi");
 
     d.tick(d.state.phaseEndsAt!);
     expect(d.state.phase).toBe("banner");
     expect(d.lastMsg(1, "banner").items).toEqual([
-      { who: "opponent", powerup: "zeus", outcome: "active" },
-      { who: "you", powerup: "aegis", outcome: "active" },
+      { who: "opponent", powerup: "bibi" },
+      { who: "you", powerup: "shield" },
     ]);
     expect(d.state.phaseEndsAt! - d.now).toBe(TIMING.bannerMs);
-    expect(d.state.players[0].used).toEqual(["zeus"]);
+    expect(d.state.players[0].used).toEqual(["bibi"]);
 
     aliceHits(d);
     const r = d.lastMsg(1, "reveal");
     expect(r.damageToYou).toBe(1000); // 1000 * 2 = 2000, halved
-    expect(r.zeus).toBe("opponent");
-    expect(r.aegis).toBe("you");
+    expect(r.bibi).toBe("opponent");
+    expect(r.shield).toBe("you");
   });
 
-  it("Zeus lifts the cap to 4500 late in a match", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["aegis", "oracle", "hermes"]);
+  it("Bibi lifts the cap to 4500 late in a match", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "fifty", "fast"]);
     d.until((s) => s.phase === "arming" && s.round === 20);
-    d.arm(0, "zeus");
+    d.arm(0, "bibi");
     aliceHits(d);
     const r = d.lastMsg(1, "reveal");
     expect(r.damageToYou).toBe(4500);
     expect(r.capped).toBe(true);
   });
 
-  it("Zeus fizzles when its side is wrong, and is spent anyway", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["aegis", "oracle", "hermes"]);
-    d.arm(1, "aegis");
+  it("Bibi fizzles when its side is wrong, and is spent anyway", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "fifty", "fast"]);
+    d.arm(1, "shield");
     d.arm(1, null);
-    d.arm(0, "zeus");
+    d.arm(0, "bibi");
     d.toPhase("question");
     d.answer(1, d.correct(1), d.q.shownAt);
     d.answer(0, d.wrong(0), d.q.shownAt + 100);
-    expect(d.lastMsg(0, "reveal")).toMatchObject({ damageToYou: 1000, damageToOpponent: 0, zeus: "you" });
-    expect(d.state.players[0].used).toEqual(["zeus"]);
+    expect(d.lastMsg(0, "reveal")).toMatchObject({ damageToYou: 1000, damageToOpponent: 0, bibi: "you" });
+    expect(d.state.players[0].used).toEqual(["bibi"]);
     expect(d.state.players[1]!.used).toEqual([]);
     d.toPhase("arming", 2);
-    expect(d.lastMsg(0, "arming").armable).toEqual(["aegis"]);
-    d.arm(0, "zeus");
+    expect(d.lastMsg(0, "arming").armable).toEqual(["shield"]);
+    d.arm(0, "bibi");
     expectError(d, 0, "powerup_unavailable");
   });
 
-  it("Nemesis against Zeus: Zeus is cancelled and spent, damage is normal", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["nemesis", "aegis", "oracle"]);
-    d.arm(0, "zeus");
-    d.arm(1, "nemesis");
+  it("a lone Shield: the banner shows it to both, damage taken is halved", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "bibi", "fifty"]);
+    d.arm(1, "shield");
     d.tick(d.state.phaseEndsAt!);
-    expect(d.lastMsg(0, "banner").items).toEqual([
-      { who: "you", powerup: "zeus", outcome: "cancelled" },
-      { who: "opponent", powerup: "nemesis", outcome: "nemesis_hit" },
-    ]);
+    expect(d.lastMsg(0, "banner").items).toEqual([{ who: "opponent", powerup: "shield" }]);
+    expect(d.lastMsg(1, "banner").items).toEqual([{ who: "you", powerup: "shield" }]);
     aliceHits(d);
-    expect(d.lastMsg(1, "reveal").damageToYou).toBe(1000);
-    expect(d.lastMsg(1, "reveal").zeus).toBeNull();
-    expect(d.state.players[0].used).toEqual(["zeus"]);
-    expect(d.state.players[1]!.used).toEqual(["nemesis"]);
-    expect(d.state.rounds[0]!.sides[0]).toMatchObject({ armed: "zeus", effective: null, nemesisAgainst: true });
+    expect(d.lastMsg(1, "reveal")).toMatchObject({ damageToYou: 500, shield: "you", bibi: null });
+    expect(d.state.rounds[0]!.sides[1]).toMatchObject({ armed: "shield", damageTaken: 500 });
   });
 
-  it("Nemesis against Aegis: the shield is cancelled", () => {
-    const d = withLoadouts(["nemesis", "aegis", "oracle"], ["aegis", "zeus", "oracle"]);
-    d.arm(0, "nemesis");
-    d.arm(1, "aegis");
+  it("a Shield that takes no hit is spent anyway", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "bibi", "fifty"]);
+    d.arm(0, "shield");
     aliceHits(d);
-    expect(d.lastMsg(1, "reveal").damageToYou).toBe(1000);
-    expect(d.lastMsg(1, "reveal").aegis).toBeNull();
+    expect(d.lastMsg(0, "reveal")).toMatchObject({ damageToYou: 0, damageToOpponent: 1000, shield: "you" });
+    expect(d.state.players[0].used).toEqual(["shield"]);
+    d.toPhase("arming", 2);
+    expect(d.lastMsg(0, "arming").armable).toEqual(["bibi"]);
   });
 
-  it("Nemesis against Nemesis: both cancelled, Phoenix still works", () => {
-    const d = withLoadouts(["nemesis", "aegis", "oracle"], ["nemesis", "phoenix", "oracle"]);
-    d.arm(0, "nemesis");
-    d.arm(1, "nemesis");
-    setHp(d, 1, 500);
-    d.tick(d.state.phaseEndsAt!);
-    expect(d.lastMsg(0, "banner").items.map((i) => i.outcome)).toEqual(["cancelled", "cancelled"]);
+  it("no power-up saves a knockout", () => {
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "bibi", "fifty"]);
+    d.arm(1, "shield");
+    setHp(d, 1, 400);
     aliceHits(d);
-    const r = d.lastMsg(1, "reveal");
-    expect(r.hp.you).toBe(1);
-    expect(r.phoenix).toBe("you");
-    expect(d.state.players[1]!.used).toEqual(["nemesis", "phoenix"]);
-    expect(d.state.players[0].used).toEqual(["nemesis"]);
-  });
-
-  it("Nemesis with nothing armed watches the Phoenix and stops it: knockout", () => {
-    const d = withLoadouts(["nemesis", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    d.arm(0, "nemesis");
-    setHp(d, 1, 500);
+    expect(d.lastMsg(1, "reveal")).toMatchObject({ damageToYou: 500, hp: { you: 0 } });
     d.tick(d.state.phaseEndsAt!);
-    expect(d.lastMsg(1, "banner").items).toEqual([{ who: "opponent", powerup: "nemesis", outcome: "nemesis_watch" }]);
-    aliceHits(d);
-    expect(d.lastMsg(1, "reveal").hp.you).toBe(0);
-    expect(d.lastMsg(1, "reveal").phoenix).toBeNull();
-    expect(d.state.players[1]!.phoenixUsed).toBe(false);
-    d.tick(d.state.phaseEndsAt!);
-    expect(d.state.phase).toBe("finished");
     expect(d.state.result).toMatchObject({ winner: 0, reason: "hp" });
   });
 
-  it("Nemesis with nothing to stop is wasted", () => {
-    const d = withLoadouts(["nemesis", "aegis", "oracle"], ["zeus", "aegis", "oracle"]);
-    d.arm(0, "nemesis");
-    d.tick(d.state.phaseEndsAt!);
-    expect(d.lastMsg(0, "banner").items).toEqual([{ who: "you", powerup: "nemesis", outcome: "nemesis_wasted" }]);
-    expect(d.state.players[0].used).toEqual(["nemesis"]);
-  });
-
-  it("Nemesis stops Phoenix only in its own round", () => {
-    const d = withLoadouts(["nemesis", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    d.arm(0, "nemesis");
-    d.toPhase("arming", 2);
-    setHp(d, 1, 500);
-    aliceHits(d);
-    expect(d.lastMsg(1, "reveal").hp.you).toBe(1);
-  });
-
   it("switching and unarming in the window; the last choice counts", () => {
-    const d = withLoadouts(["zeus", "aegis", "nemesis"], ["aegis", "oracle", "hermes"]);
-    d.arm(0, "zeus");
-    d.arm(0, "nemesis");
-    d.arm(0, "aegis");
-    expect(view(d.state, 0, d.now).armed).toBe("aegis");
+    const d = withLoadouts(["bibi", "shield", "fifty"], ["shield", "fifty", "fast"]);
+    d.arm(0, "bibi");
+    d.arm(0, "shield");
+    expect(view(d.state, 0, d.now).armed).toBe("shield");
     d.arm(0, null);
     expect(d.lastMsg(0, "armed_ack").powerup).toBeNull();
     d.tick(d.state.phaseEndsAt!);
@@ -164,97 +121,57 @@ describe("blind power-ups through the arming window", () => {
   });
 
   it("refuses power-ups outside the loadout, outside the window or for another round", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["aegis", "oracle", "hermes"]);
-    d.arm(0, "nemesis");
+    const d = withLoadouts(["bibi", "fifty", "fast"], ["shield", "fifty", "fast"]);
+    d.arm(0, "shield");
     expectError(d, 0, "powerup_unavailable");
-    d.event({ type: "arm", side: 0, round: 2, powerup: "zeus" });
+    d.event({ type: "arm", side: 0, round: 1, powerup: "nemesis" as never });
+    expectError(d, 0, "powerup_unavailable");
+    d.event({ type: "arm", side: 0, round: 2, powerup: "bibi" });
     expectError(d, 0, "round_closed");
     d.toPhase("question");
-    d.arm(0, "zeus");
+    d.arm(0, "bibi");
     expectError(d, 0, "wrong_phase");
   });
 });
 
-describe("Phoenix", () => {
-  it("leaves 1 HP once, then the next knockout ends the match", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    setHp(d, 1, 800);
-    aliceHits(d);
-    const r = d.lastMsg(1, "reveal");
-    expect(r).toMatchObject({ damageToYou: 1000, phoenix: "you", hp: { you: 1, opponent: 6000 } });
-    expect(d.lastMsg(0, "reveal").phoenix).toBe("opponent");
-    expect(d.state.players[1]!).toMatchObject({ phoenixUsed: true, hp: 1 });
-    expect(d.state.rounds[0]!.sides[1].phoenix).toBe(true);
-    d.toPhase("arming", 2);
-    aliceHits(d);
-    expect(d.state.players[1]!.hp).toBe(0);
-    d.tick(d.state.phaseEndsAt!);
-    expect(d.state.result).toMatchObject({ winner: 0, reason: "hp" });
-  });
-
-  it("with Aegis: Aegis halves first, Phoenix catches what still knocks out", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    d.arm(1, "aegis");
-    setHp(d, 1, 400);
-    aliceHits(d);
-    expect(d.lastMsg(1, "reveal")).toMatchObject({ damageToYou: 500, aegis: "you", phoenix: "you", hp: { you: 1 } });
-  });
-
-  it("with Zeus over the normal cap", () => {
-    const d = withLoadouts(["zeus", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    d.until((s) => s.phase === "arming" && s.round === 20);
-    setHp(d, 1, 4000);
-    d.arm(0, "zeus");
-    aliceHits(d);
-    expect(d.lastMsg(1, "reveal")).toMatchObject({ damageToYou: 4500, capped: true, phoenix: "you", hp: { you: 1 } });
-  });
-
-  it("is not armable", () => {
-    const d = withLoadouts(["phoenix", "aegis", "oracle"], ["phoenix", "aegis", "oracle"]);
-    expect(d.lastMsg(0, "arming").armable).toEqual(["aegis"]);
-    d.event({ type: "arm", side: 0, round: 1, powerup: "phoenix" as never });
-    expectError(d, 0, "powerup_unavailable");
-  });
-});
-
-describe("Oracle", () => {
+describe("50:50", () => {
   it("hides two wrong options of four, only for its user", () => {
-    const d = withLoadouts(["oracle", "aegis", "zeus"], ["aegis", "zeus", "hermes"]);
+    const d = withLoadouts(["fifty", "shield", "bibi"], ["shield", "bibi", "fast"]);
     d.toPhase("question");
-    d.use(0, "oracle", d.q.shownAt + 1000);
+    d.use(0, "fifty", d.q.shownAt + 1000);
     const res = d.lastMsg(0, "powerup_result");
-    expect(res.powerup).toBe("oracle");
+    expect(res.powerup).toBe("fifty");
     expect(res.hidden).toHaveLength(2);
     const correctId = (d.correct(0) as { ids: string[] }).ids[0];
     expect(res.hidden).not.toContain(correctId);
     for (const id of res.hidden) expect(d.q.order[0]).toContain(id);
-    expect(d.lastMsg(1, "opponent_powerup").powerup).toBe("oracle");
+    expect(d.lastMsg(1, "opponent_powerup").powerup).toBe("fifty");
     expect(d.msgs(1, "powerup_result")).toHaveLength(0);
     expect(view(d.state, 0, d.now).hidden).toEqual(res.hidden);
     expect(view(d.state, 1, d.now).hidden).toEqual([]);
-    expect(view(d.state, 0, d.now).quickUsed).toBe("oracle");
+    expect(view(d.state, 0, d.now).quickUsed).toBe("fifty");
 
     d.answer(0, d.correct(0), d.q.shownAt + 3000);
     d.answer(1, d.wrong(1), d.q.shownAt + 4000);
-    expect(d.state.rounds[0]!.sides[0]).toMatchObject({ helped: true, quick: "oracle" });
+    expect(d.state.rounds[0]!.sides[0]).toMatchObject({ helped: true, quick: "fifty" });
     expect(d.state.rounds[0]!.sides[1].helped).toBe(false);
   });
 
   it("hides one wrong option on multiple select", () => {
-    const d = withLoadouts(["oracle", "aegis", "zeus"], ["aegis", "zeus", "hermes"], [
+    const d = withLoadouts(["fifty", "shield", "bibi"], ["shield", "bibi", "fast"], [
       { ...questions(1)[0]!, type: "multi", key: { kind: "options", ids: ["a", "b"] } },
       ...questions(24),
     ]);
     d.toPhase("question");
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expect(d.lastMsg(0, "powerup_result").hidden).toHaveLength(1);
   });
 
   it("is refused on true/false and stays unspent", () => {
-    const d = withLoadouts(["oracle", "aegis", "zeus"], ["aegis", "zeus", "hermes"], [trueFalse(), ...questions(24)]);
+    const d = withLoadouts(["fifty", "shield", "bibi"], ["shield", "bibi", "fast"], [trueFalse(), ...questions(24)]);
     d.toPhase("question");
     const before = d.state;
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expectError(d, 0, "powerup_unavailable");
     expect(d.state).toEqual(before);
     expect(d.state.players[0].used).toEqual([]);
@@ -262,63 +179,65 @@ describe("Oracle", () => {
   });
 
   it("is refused after answering, after arming this round, and a second time", () => {
-    const d = withLoadouts(["oracle", "aegis", "zeus"], ["aegis", "zeus", "hermes"]);
-    d.arm(0, "zeus");
+    const d = withLoadouts(["fifty", "shield", "bibi"], ["shield", "bibi", "fast"]);
+    d.arm(0, "bibi");
     d.toPhase("question", 1);
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expectError(d, 0, "powerup_unavailable");
 
     d.toPhase("question", 2);
     d.answer(0, d.correct(0));
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expectError(d, 0, "already_answered");
 
     d.toPhase("question", 3);
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expect(d.lastMsg(0, "powerup_result").hidden).toHaveLength(2);
     d.toPhase("question", 4);
-    d.use(0, "oracle");
+    d.use(0, "fifty");
     expectError(d, 0, "powerup_unavailable");
   });
 
   it("is refused once your time is up", () => {
-    const d = withLoadouts(["oracle", "aegis", "zeus"], ["aegis", "zeus", "hermes"]);
+    const d = withLoadouts(["fifty", "shield", "bibi"], ["shield", "bibi", "fast"]);
     d.toPhase("question");
     d.answer(1, d.correct(1), d.q.shownAt + 1000);
-    d.use(0, "oracle", d.q.countdownEnd! + TIMING.graceMs + 1);
+    d.use(0, "fifty", d.q.countdownEnd! + TIMING.graceMs + 1);
     expect(d.state.phase).toBe("reveal");
   });
 });
 
-describe("Hermes", () => {
-  it("answering first: the opponent gets 2 seconds", () => {
-    const d = withLoadouts(["hermes", "aegis", "zeus"], ["aegis", "zeus", "oracle"]);
+describe("Gotta Go Fast", () => {
+  it("answering first: the opponent gets 5 seconds instead of 10", () => {
+    const d = withLoadouts(["fast", "shield", "bibi"], ["shield", "bibi", "fifty"]);
     d.toPhase("question");
-    d.use(0, "hermes", d.q.shownAt + 200);
-    expect(d.lastMsg(0, "powerup_result")).toMatchObject({ powerup: "hermes", hidden: [] });
-    expect(d.lastMsg(1, "opponent_powerup").powerup).toBe("hermes");
+    d.use(0, "fast", d.q.shownAt + 200);
+    expect(d.lastMsg(0, "powerup_result")).toMatchObject({ powerup: "fast", hidden: [] });
+    expect(d.lastMsg(1, "opponent_powerup").powerup).toBe("fast");
     d.answer(0, d.correct(0), d.q.shownAt + 3000);
-    expect(d.q.countdownEnd).toBe(d.q.shownAt + 3000 + TIMING.hermesCountdownMs);
-    expect(d.lastMsg(1, "opponent_answered").countdownEnd).toBe(d.q.shownAt + 5000);
+    expect(d.q.countdownEnd).toBe(d.q.shownAt + 3000 + TIMING.fastCountdownMs);
+    expect(TIMING.fastCountdownMs).toBe(5000);
+    expect(TIMING.countdownMs).toBe(10000);
+    expect(d.lastMsg(1, "opponent_answered").countdownEnd).toBe(d.q.shownAt + 8000);
   });
 
-  it("answering second: Hermes does nothing, and is spent", () => {
-    const d = withLoadouts(["hermes", "aegis", "zeus"], ["aegis", "zeus", "oracle"]);
+  it("answering second: Gotta Go Fast does nothing, and is spent", () => {
+    const d = withLoadouts(["fast", "shield", "bibi"], ["shield", "bibi", "fifty"]);
     d.toPhase("question");
-    d.use(0, "hermes", d.q.shownAt + 200);
+    d.use(0, "fast", d.q.shownAt + 200);
     d.answer(1, d.wrong(1), d.q.shownAt + 1000);
     expect(d.q.countdownEnd).toBe(d.q.shownAt + 1000 + TIMING.countdownMs);
     d.answer(0, d.correct(0), d.q.shownAt + 5500);
-    expect(d.state.rounds[0]!.sides[0]).toMatchObject({ quick: "hermes", correct: true });
-    expect(d.state.players[0].used).toEqual(["hermes"]);
+    expect(d.state.rounds[0]!.sides[0]).toMatchObject({ quick: "fast", correct: true });
+    expect(d.state.players[0].used).toEqual(["fast"]);
   });
 
   it("can be used after the opponent already answered, to no effect", () => {
-    const d = withLoadouts(["hermes", "aegis", "zeus"], ["aegis", "zeus", "oracle"]);
+    const d = withLoadouts(["fast", "shield", "bibi"], ["shield", "bibi", "fifty"]);
     d.toPhase("question");
     d.answer(1, d.wrong(1), d.q.shownAt + 1000);
-    d.use(0, "hermes", d.q.shownAt + 1500);
-    expect(d.lastMsg(0, "powerup_result").powerup).toBe("hermes");
-    expect(d.q.countdownEnd).toBe(d.q.shownAt + 6000);
+    d.use(0, "fast", d.q.shownAt + 1500);
+    expect(d.lastMsg(0, "powerup_result").powerup).toBe("fast");
+    expect(d.q.countdownEnd).toBe(d.q.shownAt + 1000 + TIMING.countdownMs);
   });
 });

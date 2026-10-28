@@ -269,7 +269,7 @@ export const answers = sqliteTable(
     correct: bool("correct").notNull(),
     timedOut: bool("timed_out").notNull(),
     ms: integer("ms"),
-    /** Oracle was used. */
+    /** 50:50 was used. */
     helped: bool("helped").notNull(),
     answerJson: text("answer_json", { mode: "json" }).$type<AnswerKey>(),
     answeredAt: integer("answered_at").notNull(),
@@ -359,7 +359,7 @@ export const userPrefs = sqliteTable("user_prefs", {
   loadoutJson: text("loadout_json", { mode: "json" })
     .$type<PowerupId[]>()
     .notNull()
-    .default(sql`'["zeus","aegis","oracle"]'`),
+    .default(sql`'["bibi","shield","fifty"]'`),
   sound: bool("sound").notNull().default(true),
   courseId: text("course_id"),
 });

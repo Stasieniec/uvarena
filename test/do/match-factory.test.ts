@@ -28,7 +28,7 @@ describe("createMatch", () => {
     const { courseId } = await seedCourse();
     const a = await seedUser("Alice");
     const b = await seedUser();
-    await env.DB.prepare(`INSERT INTO user_prefs (user_id, loadout_json) VALUES (?, '["nemesis","hermes","phoenix"]')`).bind(a).run();
+    await env.DB.prepare(`INSERT INTO user_prefs (user_id, loadout_json) VALUES (?, '["shield","fast","fifty"]')`).bind(a).run();
     await env.DB.prepare("INSERT INTO ratings (user_id, course_id, kind, rating, rd, vol, updated_at) VALUES (?, ?, 'ranked', 1620, 80, 0.05, 1)")
       .bind(a, courseId)
       .run();
@@ -37,7 +37,7 @@ describe("createMatch", () => {
     expect(code).toBeNull();
     const row = await matchRow(matchId);
     expect(row).toMatchObject({ mode: "ranked", rated: 1, status: "active", player_a: a, player_b: b, join_code: null, bot_level: null });
-    expect(JSON.parse(String(row?.loadout_a_json))).toEqual(["nemesis", "hermes", "phoenix"]);
+    expect(JSON.parse(String(row?.loadout_a_json))).toEqual(["shield", "fast", "fifty"]);
     expect(JSON.parse(String(row?.loadout_b_json))).toEqual(POWERUPS.defaultLoadout);
 
     const state = await readState(roomStub(matchId));

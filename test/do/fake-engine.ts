@@ -28,7 +28,7 @@ import { ROOM_TEST_ENGINE_KEY, type RoomEngine } from "../../src/worker/do/match
 const IN_PLAY = new Set(["intro", "arming", "banner", "question", "reveal"]);
 
 function roundState(): PlayerState["r"] {
-  return { armed: null, effective: null, nemesisAgainst: false, quick: null, answer: null, answeredAt: null, hidden: [] };
+  return { armed: null, quick: null, answer: null, answeredAt: null, hidden: [] };
 }
 
 function human(p: PlayerInit, ready: boolean, powerups: boolean): PlayerState {
@@ -40,7 +40,6 @@ function human(p: PlayerInit, ready: boolean, powerups: boolean): PlayerState {
     hp: MATCH.startHp,
     loadout: powerups ? p.loadout : [],
     used: [],
-    phoenixUsed: false,
     connected: false,
     everConnected: false,
     disconnectedSince: null,
@@ -62,7 +61,6 @@ function botPlayer(b: BotInit): PlayerState {
     hp: MATCH.startHp,
     loadout: [],
     used: [],
-    phoenixUsed: false,
     connected: true,
     everConnected: true,
     disconnectedSince: null,
@@ -74,9 +72,8 @@ function botPlayer(b: BotInit): PlayerState {
       level: b.level,
       strength: b.strength,
       speed: 1,
-      zeusRound: null,
-      nemesisRound: null,
-      aegisRound: null,
+      bibiRound: null,
+      shieldRound: null,
       q: null,
     },
     r: roundState(),
@@ -101,7 +98,6 @@ function playerView(p: PlayerState): PlayerView {
     hp: p.hp,
     loadout: p.loadout,
     used: p.used,
-    phoenixUsed: p.phoenixUsed,
     connected: p.connected,
     ready: p.ready,
     rating: null,

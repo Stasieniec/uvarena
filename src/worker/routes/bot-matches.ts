@@ -1,5 +1,5 @@
 // POST /bot-matches: a bot match against Echo, a ladder bot, or (test mode
-// only) the Dummy and Oracle Bot.
+// only) the Dummy and Perfect Bot.
 import { Hono } from "hono";
 import { CreateBotMatchBodySchema, type EndpointResponse } from "../../shared/api-schemas";
 import { TEST_BOTS } from "../../shared/game/config";
@@ -16,7 +16,7 @@ import { validateLectureFilter } from "./lobbies";
 
 export const botMatchesRoutes = new Hono<HonoEnv>();
 
-const TEST_LEVELS: readonly number[] = [TEST_BOTS.dummy.level, TEST_BOTS.oracle.level];
+const TEST_LEVELS: readonly number[] = [TEST_BOTS.dummy.level, TEST_BOTS.perfect.level];
 
 botMatchesRoutes.post("/bot-matches", requireUser, userRateLimit("bot"), async (c) => {
   const me = currentUser(c);

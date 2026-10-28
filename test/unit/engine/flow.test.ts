@@ -19,7 +19,7 @@ describe("lobby and start", () => {
     expect(d.last.effects).toEqual([{ kind: "started" }]);
     const intro = d.lastMsg(0, "intro");
     expect(intro.opponent.name).toBe("bob");
-    expect(intro.opponent.loadout).toEqual(["zeus", "aegis", "oracle"]);
+    expect(intro.opponent.loadout).toEqual(["bibi", "shield", "fifty"]);
     expect(intro.you.rating).toEqual({ value: 1500, provisional: false });
     expect(d.msgs(0, "opponent_connection").at(-1)).toMatchObject({ connected: true, forfeitAt: null });
   });
@@ -137,7 +137,7 @@ describe("lobby and start", () => {
   it("bot match starts when the human connects", () => {
     const d = new Driver(botMatchInit(4));
     expect(d.state.players[1]?.kind).toBe("bot");
-    expect(d.state.players[1]?.name).toBe("Pandora");
+    expect(d.state.players[1]?.name).toBe("Did the reading");
     expect(d.state.players[1]?.loadout).toHaveLength(3);
     d.event({ type: "connect", side: 0 });
     expect(d.state.phase).toBe("intro");
@@ -170,13 +170,13 @@ describe("lobby and start", () => {
     d.toPhase("arming", 1);
     expect(d.state.phaseEndsAt! - d.now).toBe(TIMING.armingMsNoPowerups);
     expect(d.lastMsg(0, "arming").armable).toEqual([]);
-    d.arm(0, "zeus");
+    d.arm(0, "bibi");
     expectError(d, 0, "powerup_unavailable");
   });
 
   it("dedupes and trims a malformed loadout", () => {
-    const d = new Driver(rankedInit({ humans: [human("alice", { loadout: ["zeus", "zeus", "aegis", "oracle", "hermes"] }), human("bob")] }));
-    expect(d.state.players[0].loadout).toEqual(["zeus", "aegis", "oracle"]);
+    const d = new Driver(rankedInit({ humans: [human("alice", { loadout: ["bibi", "bibi", "shield", "fifty", "fast"] }), human("bob")] }));
+    expect(d.state.players[0].loadout).toEqual(["bibi", "shield", "fifty"]);
   });
 
   it("applies the test-mode time scale to phases, timers and forfeits", () => {
@@ -194,7 +194,7 @@ describe("a round", () => {
   it("skips the banner when nobody armed, and sends each side its own opaque options", () => {
     const d = startedRanked();
     const arming = d.lastMsg(0, "arming");
-    expect(arming).toMatchObject({ round: 1, multiplier: 1, armable: ["zeus", "aegis"] });
+    expect(arming).toMatchObject({ round: 1, multiplier: 1, armable: ["bibi", "shield"] });
     expect(arming.phaseEndsAt - d.now).toBe(TIMING.armingMs);
     d.tick(arming.phaseEndsAt);
     expect(d.state.phase).toBe("question");
@@ -208,15 +208,16 @@ describe("a round", () => {
     expect(JSON.stringify(q0)).not.toContain('"key"');
   });
 
-  it("first answer starts the 5 s countdown; both answered ends the round at once", () => {
+  it("first answer starts the 10 s countdown; both answered ends the round at once", () => {
+    expect(TIMING.countdownMs).toBe(10000);
     const d = startedRanked();
     d.toPhase("question", 1);
     const shown = d.q.shownAt;
     d.answer(0, d.correct(0), shown + 4000);
-    expect(d.lastMsg(0, "answer_ack").countdownEnd).toBe(shown + 9000);
-    expect(d.lastMsg(1, "opponent_answered").countdownEnd).toBe(shown + 9000);
-    expect(d.state.phaseEndsAt).toBe(shown + 9000);
-    expect(view(d.state, 1, d.now).yourDeadline).toBe(shown + 9000);
+    expect(d.lastMsg(0, "answer_ack").countdownEnd).toBe(shown + 14000);
+    expect(d.lastMsg(1, "opponent_answered").countdownEnd).toBe(shown + 14000);
+    expect(d.state.phaseEndsAt).toBe(shown + 14000);
+    expect(view(d.state, 1, d.now).yourDeadline).toBe(shown + 14000);
     expect(view(d.state, 1, d.now).opponentAnswered).toBe(true);
     expect(view(d.state, 0, d.now).yourAnswer).toEqual(d.correct(0));
 
@@ -241,7 +242,7 @@ describe("a round", () => {
     const d = startedRanked();
     d.toPhase("question", 1);
     d.answer(0, d.wrong(0), d.q.shownAt + 1000);
-    expect(d.q.countdownEnd).toBe(d.q.shownAt + 6000);
+    expect(d.q.countdownEnd).toBe(d.q.shownAt + 11000);
   });
 
   it("the countdown never extends past the deadline", () => {
@@ -256,7 +257,7 @@ describe("a round", () => {
     d.toPhase("question", 1);
     const shown = d.q.shownAt;
     d.answer(0, d.correct(0), shown + 1000);
-    const end = shown + 6000;
+    const end = shown + 11000;
     expect(nextDeadline(d.state)).toBe(end + TIMING.graceMs);
 
     // Exactly at the end of grace: accepted.
@@ -454,7 +455,7 @@ describe("deadlines", () => {
   it("does not let a stale invalid event block due transitions", () => {
     const d = startedRanked();
     // An arm frame arrives after the arming window ended: the window closes first.
-    d.arm(0, "zeus", d.state.phaseEndsAt! + 10);
+    d.arm(0, "bibi", d.state.phaseEndsAt! + 10);
     expect(d.state.phase).toBe("question");
     expectError(d, 0, "wrong_phase");
   });

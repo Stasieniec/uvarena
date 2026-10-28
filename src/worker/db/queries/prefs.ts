@@ -2,6 +2,7 @@
 import { eq } from "drizzle-orm";
 import type { Prefs } from "../../../shared/api-schemas";
 import { POWERUPS } from "../../../shared/game/config";
+import { isValidLoadout } from "../../../shared/game/powerups";
 import type { PowerupId } from "../../../shared/game/types";
 import { userPrefs } from "../schema";
 import type { Db } from "./db";
@@ -14,9 +15,7 @@ export async function getPrefs(db: Db, userId: string): Promise<Prefs> {
   const rows = await db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1);
   const row = rows[0];
   if (!row) return defaultPrefs();
-  const loadout = Array.isArray(row.loadoutJson) && row.loadoutJson.length === POWERUPS.loadoutSize
-    ? row.loadoutJson
-    : defaultPrefs().loadout;
+  const loadout = isValidLoadout(row.loadoutJson) ? row.loadoutJson : defaultPrefs().loadout;
   return { loadout, sound: row.sound, courseId: row.courseId ?? null };
 }
 

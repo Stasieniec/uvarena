@@ -318,7 +318,7 @@ export const BotsResponseSchema = z.object({
   ladder: z.array(BotLadderItemSchema),
 });
 
-/** Ladder levels 1 to 8, or "echo". Test mode also accepts 0 (Dummy) and 9 (Oracle Bot). */
+/** Ladder levels 1 to 8, or "echo". Test mode also accepts 0 (Dummy) and 9 (Perfect Bot). */
 export const BotChoiceSchema = z.union([z.literal("echo"), z.number().int().min(0).max(9)]);
 
 export const CreateBotMatchBodySchema = z.object({
@@ -370,10 +370,7 @@ export const MatchDetailRoundSideSchema = z.object({
   damageTaken: z.number().int(),
   hpAfter: z.number().int(),
   armed: PowerupIdSchema.nullable(),
-  effective: PowerupIdSchema.nullable(),
-  cancelled: z.boolean(),
   quick: PowerupIdSchema.nullable(),
-  phoenix: z.boolean(),
 });
 
 export const MatchDetailResponseSchema = z.object({

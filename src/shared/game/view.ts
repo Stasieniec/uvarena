@@ -1,6 +1,6 @@
 // Per-side views of the match state. Everything a client receives is built
 // here, in the receiver's opaque id space. Before a round's reveal nothing
-// here carries the key, correctness, or the opponent's answer or Oracle hides.
+// here carries the key, correctness, or the opponent's answer or 50:50 hides.
 import type {
   BannerItem,
   IntroMessage,
@@ -14,7 +14,7 @@ import type {
   SnapshotMessage,
 } from "../protocol";
 import { ELO, GLICKO, MATCH, POWERUPS, TIMING, scaleMs } from "./config";
-import { canUsePowerup, resolveArming } from "./powerups";
+import { canUsePowerup, armedBanner } from "./powerups";
 import { multiplier } from "./scoring";
 import type {
   AnswerKey,
@@ -124,7 +124,6 @@ export function playerView(state: MatchState, p: PlayerState): PlayerView {
     hp: p.hp,
     loadout: p.loadout.slice(),
     used: p.used.slice(),
-    phoenixUsed: p.phoenixUsed,
     connected: p.connected,
     ready: p.ready,
     rating: shownRating(state, p),
@@ -162,10 +161,9 @@ export function questionView(state: MatchState, side: Side): QuestionView | null
 export function bannerItems(state: MatchState, side: Side): BannerItem[] {
   const [p0, p1] = state.players;
   if (!p1) return [];
-  return resolveArming([p0, p1]).banner.map((b) => ({
+  return armedBanner([p0, p1]).map((b) => ({
     who: b.side === side ? "you" : "opponent",
     powerup: b.powerup,
-    outcome: b.outcome,
   }));
 }
 
@@ -203,9 +201,8 @@ export function revealPayload(state: MatchState, side: Side, rec: RoundRecord, p
     damageToYou: me.damageTaken,
     damageToOpponent: opp.damageTaken,
     capped: rec.capped,
-    zeus: pickWho(side, [rec.sides[0].effective === "zeus", rec.sides[1].effective === "zeus"], attacker),
-    aegis: pickWho(side, [rec.sides[0].effective === "aegis", rec.sides[1].effective === "aegis"], defender),
-    phoenix: pickWho(side, [rec.sides[0].phoenix, rec.sides[1].phoenix], null),
+    bibi: pickWho(side, [rec.sides[0].armed === "bibi", rec.sides[1].armed === "bibi"], attacker),
+    shield: pickWho(side, [rec.sides[0].armed === "shield", rec.sides[1].armed === "shield"], defender),
     hp: { you: me.hpAfter, opponent: opp.hpAfter },
     whyShort: q.question.whyShort,
     savedToMissed: player?.kind === "human" && !me.correct,

@@ -300,7 +300,7 @@ describe("cancelled and unfinished matches", () => {
 describe("bot match", () => {
   const bot = (level: Parameters<typeof botPlayer>[0], strength = 1650) => botPlayer(level, strength);
 
-  it("moves the bot rating per answer in round order, skipping Oracle answers", () => {
+  it("moves the bot rating per answer in round order, skipping 50:50 answers", () => {
     const specs: RoundSpec[] = [
       { a: true, b: false, itemRating: 1400, chance: 0.25 },
       { a: false, b: true, itemRating: 1300, chance: 0.5 },
@@ -318,7 +318,7 @@ describe("bot match", () => {
     let theta = 1450;
     let n = 12;
     for (const [i, spec] of specs.entries()) {
-      if (i === 2) continue; // Oracle
+      if (i === 2) continue; // 50:50
       const correct = spec.a === true;
       const u = eloUpdate(theta, n, spec.itemRating!, 0, spec.chance!, correct);
       theta += u.playerDelta;
@@ -392,7 +392,7 @@ describe("bot match", () => {
     expect(plan.summaries[0].bot?.provisional).toBe(false);
   });
 
-  it("an all-Oracle match leaves the bot rating where it was", () => {
+  it("an all-50:50 match leaves the bot rating where it was", () => {
     const state = finishedState({
       mode: "bot",
       players: [human("alice"), bot(4, 1500)],
@@ -446,7 +446,7 @@ describe("item ratings", () => {
     expect(plan.playerCourse).toHaveLength(2);
   });
 
-  it("skips Oracle answers, recent repeats and timeouts after the countdown", () => {
+  it("skips 50:50 answers, recent repeats and timeouts after the countdown", () => {
     const specs: RoundSpec[] = [
       { a: { correct: true, helped: true }, b: { timedOut: true, timedOutAfterCountdown: true } },
       { a: true, b: false, questionId: "seen" },
@@ -542,13 +542,13 @@ describe("answers, missed questions and totals", () => {
 });
 
 describe("round rows", () => {
-  it("copies scores, damage and power-ups, marking Nemesis cancellations", () => {
+  it("copies scores, damage and power-ups", () => {
     const rs = rounds([
       {
-        a: { correct: true, score: 950, armed: "zeus", effective: null, nemesisAgainst: true, hpAfter: 6000 },
-        b: { correct: false, armed: "nemesis", effective: "nemesis", damageTaken: 950, hpAfter: 5050, quick: "oracle", helped: true },
+        a: { correct: true, score: 950, armed: "bibi", hpAfter: 6000 },
+        b: { correct: false, armed: "shield", damageTaken: 950, hpAfter: 5050, quick: "fifty", helped: true },
       },
-      { a: { correct: false, armed: "nemesis", effective: null, damageTaken: 6000, hpAfter: 1, phoenix: true }, b: { correct: true, armed: "nemesis", effective: null } },
+      { a: { correct: false, armed: "shield", damageTaken: 6000, hpAfter: 0 }, b: { correct: true, quick: "fast" } },
     ]);
     const plan = planFinalization(finishedState({ rounds: rs, winner: 1, reason: "hp" }), context());
     expect(plan.rounds[0]).toMatchObject({
@@ -565,14 +565,11 @@ describe("round rows", () => {
       hpBAfter: 5050,
       msA: 4000,
       powerupsJson: {
-        armed: ["zeus", "nemesis"],
-        effective: [null, "nemesis"],
-        cancelled: [true, false],
-        quick: [null, "oracle"],
-        phoenix: [false, false],
+        armed: ["bibi", "shield"],
+        quick: [null, "fifty"],
       },
     });
-    expect(plan.rounds[1].powerupsJson).toMatchObject({ cancelled: [true, true], phoenix: [true, false] });
+    expect(plan.rounds[1].powerupsJson).toEqual({ armed: ["shield", null], quick: [null, "fast"] });
   });
 });
 

@@ -100,7 +100,7 @@ export function human(userId: string, over: Partial<PlayerInit> = {}): PlayerIni
     userId,
     name: userId,
     avatarUrl: null,
-    loadout: ["zeus", "aegis", "oracle"],
+    loadout: ["bibi", "shield", "fifty"],
     botRating: 1500,
     botRatingN: 40,
     ranked: { r: 1500, rd: 80, vol: 0.06 },

@@ -62,10 +62,9 @@ export function isCorrect(key: AnswerKey, answer: AnswerKey | null): boolean {
 export interface DamageInput {
   scores: [number, number];
   multiplier: number;
-  effective: [BlindPowerupId | null, BlindPowerupId | null];
+  /** Armed blind power-up per side. */
+  armed: [BlindPowerupId | null, BlindPowerupId | null];
   hp: [number, number];
-  /** Phoenix available: in loadout, unused, and not hit by Nemesis this round. */
-  phoenixReady: [boolean, boolean];
 }
 
 export interface DamageResult {
@@ -73,11 +72,10 @@ export interface DamageResult {
   damage: [number, number];
   hpAfter: [number, number];
   capped: boolean;
-  /** Zeus active and dealt damage. */
-  zeusHit: [boolean, boolean];
-  /** Aegis active and halved damage. */
-  aegisHeld: [boolean, boolean];
-  phoenix: [boolean, boolean];
+  /** Bibi active and dealt damage. */
+  bibiHit: [boolean, boolean];
+  /** Shield active and halved damage. */
+  shieldHeld: [boolean, boolean];
 }
 
 /** Damage for one round, per build-plan.md "Score, multiplier, damage". */
@@ -86,9 +84,8 @@ export function computeDamage(input: DamageInput): DamageResult {
     damage: [0, 0],
     hpAfter: [input.hp[0], input.hp[1]],
     capped: false,
-    zeusHit: [false, false],
-    aegisHeld: [false, false],
-    phoenix: [false, false],
+    bibiHit: [false, false],
+    shieldHeld: [false, false],
   };
   const [s0, s1] = input.scores;
   if (s0 === s1) return result;
@@ -96,24 +93,19 @@ export function computeDamage(input: DamageInput): DamageResult {
   const att = s0 > s1 ? 0 : 1;
   const def = att === 0 ? 1 : 0;
   const raw = (input.scores[att] - input.scores[def]) * input.multiplier;
-  const zeus = input.effective[att] === "zeus";
-  const cap = zeus ? SCORING.zeusRoundCap : SCORING.roundCap;
-  const uncapped = raw * (zeus ? SCORING.zeusFactor : 1);
+  const bibi = input.armed[att] === "bibi";
+  const cap = bibi ? SCORING.bibiRoundCap : SCORING.roundCap;
+  const uncapped = raw * (bibi ? SCORING.bibiFactor : 1);
   let dmg = Math.min(uncapped, cap);
   result.capped = uncapped > cap;
-  if (input.effective[def] === "aegis") {
-    dmg *= SCORING.aegisFactor;
-    result.aegisHeld[def] = true;
+  if (input.armed[def] === "shield") {
+    dmg *= SCORING.shieldFactor;
+    result.shieldHeld[def] = true;
   }
   dmg = Math.round(dmg);
 
-  let hp = input.hp[def] - dmg;
-  if (hp <= 0 && input.phoenixReady[def]) {
-    hp = SCORING.phoenixHp;
-    result.phoenix[def] = true;
-  }
-  result.hpAfter[def] = Math.max(0, hp);
+  result.hpAfter[def] = Math.max(0, input.hp[def] - dmg);
   result.damage[def] = dmg;
-  result.zeusHit[att] = zeus && dmg > 0;
+  result.bibiHit[att] = bibi && dmg > 0;
   return result;
 }
