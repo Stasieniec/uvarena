@@ -10,7 +10,7 @@ function Inline({ tokens, fill }: { tokens: InlineToken[]; fill?: ReactNode }): 
         return <span key={i}>{t.text}</span>;
       case "code":
         return (
-          <code key={i} className="rounded bg-black/35 px-1 py-0.5 font-mono text-[0.88em]">
+          <code key={i} className="rounded-xs bg-surface px-1 py-0.5 font-mono text-[0.88em]">
             {t.text}
           </code>
         );
@@ -34,7 +34,7 @@ function Inline({ tokens, fill }: { tokens: InlineToken[]; fill?: ReactNode }): 
         );
       case "not":
         return (
-          <strong key={i} className="font-black tracking-wide text-wrong">
+          <strong key={i} className="font-bold text-wrong">
             NOT
           </strong>
         );
@@ -49,7 +49,7 @@ export function Prompt({ text, fill, className }: { text: string; fill?: ReactNo
     <div className={className}>
       {blocks.map((b, i) =>
         b.kind === "code" ? (
-          <pre key={i} className="rq-code my-2 rounded-lg bg-black/40 p-2.5 text-[13px] leading-snug ring-1 ring-white/10">
+          <pre key={i} className="rq-code my-2 rounded-xs bg-sunken p-2.5 text-[13px] leading-snug">
             {b.text}
           </pre>
         ) : (

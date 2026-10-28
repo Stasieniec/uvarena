@@ -119,3 +119,28 @@ export function damageLine(r: DamageFacts, caps: DamageCaps): string | null {
 export function worstHit(multiplier: number, maxScore: number, roundCap: number): number {
   return Math.min(roundCap, maxScore * multiplier);
 }
+
+/**
+ * The line under the damage number on the reveal's damage plate:
+ * "You 0 · kvdberg 900 · x2", plus Bibi when it doubled the hit. Null when
+ * nobody took damage.
+ */
+export function hitLine(r: DamageFacts, opponentName: string, caps: Pick<DamageCaps, "bibiFactor">): string | null {
+  const toThem = r.damageToOpponent > 0;
+  if (!toThem && r.damageToYou <= 0) return null;
+  const bibi = r.bibi === (toThem ? "you" : "opponent");
+  const line = `You ${fmtInt(r.yourScore)} · ${opponentName} ${fmtInt(r.opponentScore)} · ${fmtMultiplier(r.multiplier)}`;
+  return bibi ? `${line} · Bibi x${caps.bibiFactor}` : line;
+}
+
+/** What else changed the hit: the cap and Shield. Null when neither did. */
+export function hitNote(r: DamageFacts, caps: DamageCaps): string | null {
+  const toThem = r.damageToOpponent > 0;
+  if (!toThem && r.damageToYou <= 0) return null;
+  const bibi = r.bibi === (toThem ? "you" : "opponent");
+  const victim = toThem ? "opponent" : "you";
+  const notes: string[] = [];
+  if (r.capped) notes.push(`Capped at ${fmtInt(bibi ? caps.bibiRoundCap : caps.roundCap)}`);
+  if (r.shield === victim) notes.push("Halved by Shield");
+  return notes.length ? notes.join(" · ") : null;
+}

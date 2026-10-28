@@ -51,7 +51,7 @@ export const LINES = {
   savedToMissed: "Saved to missed questions",
   reportQuestion: "Report",
   reportedQuestion: "Reported",
-  armHint: "Tap a glowing power-up to arm it.",
+  armHint: "Tap a power-up to arm it.",
   armHintSub: "Your opponent cannot see what you armed.",
   armNothing: "Get ready.",
   lockIn: "Lock in",

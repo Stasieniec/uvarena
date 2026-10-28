@@ -121,7 +121,7 @@ function Run({ config, onRestart }: { config: Config; onRestart(): void }) {
   // As if the ladder screen had cached the ladder before the match: the bot after the opponent still locked.
   const opponentLevel = SCENARIOS[config.scenario]!.players[config.side === 0 ? 1 : 0].botLevel ?? 0;
   const extras = useMemo(
-    () => ({ record: { wins: 2, losses: 1, draws: 0 }, ladderBefore: BOT_LADDER.map((b) => ({ level: b.level, unlocked: b.level <= Math.max(1, opponentLevel) })) }),
+    () => ({ courseTitle: "Agentic AI", record: { wins: 2, losses: 1, draws: 0 }, ladderBefore: BOT_LADDER.map((b) => ({ level: b.level, unlocked: b.level <= Math.max(1, opponentLevel) })) }),
     [opponentLevel],
   );
 

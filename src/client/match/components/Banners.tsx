@@ -1,7 +1,7 @@
-// Power-up theatre: the full-screen banners of the banner phase (Bibi,
-// Shield), your own 50:50 and Gotta Go Fast lines (a strip over the opponent
-// bar, never over the question), and the small toast when the opponent uses
-// one. The power-ups are the one loud thing in the app; everything else is plain.
+// Power-up theatre: the banners of the banner phase (Bibi, Shield) and your
+// own 50:50 and Gotta Go Fast strips. They cover the duel under the HUD, so
+// both players' plates and the clock stay in view. The power-ups are the one
+// loud thing in the app; everything else is plain.
 
 import { useState, type CSSProperties } from "react";
 import { TIMING } from "@shared/game/config";
@@ -19,33 +19,25 @@ function OptionalImage({ src, alt, className, style }: { src: string; alt: strin
   return <img src={src} alt={alt} className={className} style={style} draggable={false} onError={() => setFailed(true)} />;
 }
 
-/** Whose power-up this is. The opponent's is marked as incoming, so a threat never reads like your own. */
+/** Whose power-up this is, as a name plate. The opponent's is marked as incoming, so a threat never reads like your own. */
 function Caption({ who, opponentName }: { who: BannerItem["who"]; opponentName: string }) {
-  if (who === "you") return <div className="mb-2 text-xs font-semibold tracking-[0.2em] text-you uppercase">You</div>;
-  return (
-    <div className="mb-2.5 rounded-full bg-opponent/20 px-3 py-1 text-xs font-bold tracking-[0.16em] text-opponent uppercase ring-1 ring-opponent/60">
-      Incoming from {opponentName}
-    </div>
-  );
+  if (who === "you") return <div className="rq-plate-name mb-3 bg-you px-2 py-px text-[17px] leading-[22px] text-bg">You</div>;
+  return <div className="rq-plate-name mb-3 max-w-full truncate bg-opponent px-2 py-px text-[17px] leading-[22px] text-bg">Incoming from {opponentName}</div>;
 }
 
 function BibiFace({ small }: { small: boolean }) {
-  const size = small ? "min(34vw, 150px)" : "min(56vw, 250px)";
+  const size = small ? "min(30vw, 130px)" : "min(52vw, 230px)";
   return (
     <div className="rq-face relative mb-3 flex items-center justify-center" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(245,197,66,0.5),rgba(245,197,66,0)_70%)]" aria-hidden />
-      {/* The glow sits on a wrapper: a mask on the same element would clip it to a box. */}
-      <div className="relative h-full w-full" style={{ filter: "drop-shadow(0 0 16px rgba(245,197,66,0.7))" }}>
-        <OptionalImage
-          src={POWERUP_IMAGES.bibi}
-          alt="Benjamin Netanyahu"
-          className="h-full w-full object-contain"
-          style={{
-            maskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
-          }}
-        />
-      </div>
+      <OptionalImage
+        src={POWERUP_IMAGES.bibi}
+        alt="Benjamin Netanyahu"
+        className="h-full w-full object-contain"
+        style={{
+          maskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, #000 70%, transparent 100%)",
+        }}
+      />
     </div>
   );
 }
@@ -54,19 +46,19 @@ function BibiLine({ small }: { small: boolean }) {
   const k = small ? 0.62 : 1;
   const [first, second, third] = LINES.bibiParts;
   return (
-    <div className="rq-slam rq-display rq-bibi-text text-center leading-[0.92] font-black" style={{ animationDelay: "120ms" }}>
-      <div style={{ fontSize: `min(${8.6 * k}vw, ${40 * k}px)` }}>{first}</div>
-      <div style={{ fontSize: `min(${11.4 * k}vw, ${53 * k}px)` }}>{second}</div>
-      <div style={{ fontSize: `min(${12.5 * k}vw, ${58 * k}px)` }}>{third}</div>
+    <div className="rq-slam rq-display rq-bibi-text text-center leading-[0.92] font-bold" style={{ animationDelay: "120ms" }}>
+      <div style={{ fontSize: `min(${10 * k}vw, ${44 * k}px)` }}>{first}</div>
+      <div style={{ fontSize: `min(${14 * k}vw, ${62 * k}px)` }}>{second}</div>
+      <div style={{ fontSize: `min(${16 * k}vw, ${70 * k}px)` }}>{third}</div>
     </div>
   );
 }
 
 function ShieldLine({ small }: { small: boolean }) {
   return (
-    <div className="rq-plain-in flex flex-col items-center text-center">
-      <PowerupIcon id="shield" size={small ? 44 : 64} />
-      <div className={`mt-3 font-bold text-text ${small ? "text-xl" : "text-3xl"}`}>{LINES.shieldTitle}</div>
+    <div className="rq-slam flex flex-col items-center text-center">
+      <PowerupIcon id="shield" size={small ? 44 : 64} strokeWidth={1.6} />
+      <div className={`rq-display mt-3 font-bold uppercase italic ${small ? "text-[32px] leading-9" : "text-[48px] leading-[52px]"}`}>{LINES.shieldTitle}</div>
       <div className={`mt-1 text-muted ${small ? "text-sm" : "text-base"}`}>{LINES.shieldSub}</div>
     </div>
   );
@@ -84,6 +76,7 @@ function BlindLine({ powerup, small }: { powerup: BlindPowerupId; small: boolean
   return <ShieldLine small={small} />;
 }
 
+/** Bibi and Shield, over the duel under the HUD for the banner phase. */
 export function BannerOverlay({ banner, opponent }: { banner: BannerState; opponent: PlayerView | null }) {
   const items = banner.items;
   const bibi = items.some((i) => i.powerup === "bibi");
@@ -91,21 +84,13 @@ export function BannerOverlay({ banner, opponent }: { banner: BannerState; oppon
   const name = opponent?.name ?? "Opponent";
   const incoming = items.every((i) => i.who === "opponent");
   const style = { "--rq-banner-ms": `${TIMING.bannerMs}ms` } as CSSProperties;
-  const background = bibi
-    ? "radial-gradient(ellipse at center, rgba(40,30,8,0.97) 0%, rgba(6,5,2,0.99) 75%)"
-    : incoming
-      ? "radial-gradient(ellipse at center, rgba(40,20,12,0.96) 0%, rgba(12,6,4,0.99) 75%)"
-      : "radial-gradient(ellipse at center, rgba(14,22,48,0.97) 0%, rgba(5,8,20,0.99) 75%)";
+  const background = bibi ? "radial-gradient(ellipse at 50% 40%, #2e2408 0%, #0e1013 70%)" : "var(--color-bg)";
 
   return (
     <div
       key={banner.seq}
       className="rq-banner absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 overflow-hidden px-4"
-      style={{
-        ...style,
-        background,
-        boxShadow: incoming ? "inset 0 0 0 3px rgba(251,146,60,0.55), inset 0 0 60px 10px rgba(251,146,60,0.2)" : undefined,
-      }}
+      style={{ ...style, background, boxShadow: incoming ? "inset 0 3px 0 var(--color-opponent)" : "inset 0 3px 0 var(--color-you)" }}
       role="status"
       aria-live="assertive"
     >
@@ -133,17 +118,12 @@ function FiftyStrip() {
       <div className="relative flex w-full items-center justify-between gap-2 px-3">
         <OptionalImage src={POWERUP_IMAGES.fiftyLogo} alt="Milionerzy" className="h-16 w-16 shrink-0 object-contain" />
         <div className="rq-slam flex min-w-0 flex-1 flex-col items-center">
-          <span
-            className="rq-display text-[min(7.4vw,34px)] font-black whitespace-nowrap text-white"
-            style={{ textShadow: "0 0 18px rgba(139,123,255,0.95), 0 2px 0 #000" }}
-          >
-            {LINES.fifty}
-          </span>
+          <span className="rq-display text-[min(10vw,44px)] leading-none font-bold whitespace-nowrap text-white italic">{LINES.fifty}</span>
         </div>
         <OptionalImage
           src={POWERUP_IMAGES.fiftyHost}
           alt="The host"
-          className="h-16 w-16 shrink-0 rounded-full bg-[radial-gradient(circle,#2a2a8a,#0b0a3a)] object-cover object-top ring-2 ring-[#8b7bff]"
+          className="h-16 w-16 shrink-0 rounded-full bg-[#1b1a6a] object-cover object-top ring-2 ring-[#8b7bff]"
         />
       </div>
     </>
@@ -159,7 +139,7 @@ function FastStrip() {
       {BLUR_LINES.map((top, i) => (
         <div
           key={top}
-          className="rq-blur absolute right-0 h-[3px] rounded-full"
+          className="rq-blur absolute right-0 h-[3px]"
           style={{
             top: `${top}%`,
             width: `${45 + ((i * 23) % 40)}%`,
@@ -170,10 +150,10 @@ function FastStrip() {
         />
       ))}
       <div className="rq-dash relative flex items-center gap-2.5 px-4">
-        <PowerupIcon id="fast" size={30} color="#fff" />
+        <PowerupIcon id="fast" size={30} color="#fff" strokeWidth={2.4} />
         <span
-          className="rq-display text-[min(7.6vw,35px)] font-black whitespace-nowrap text-white italic"
-          style={{ textShadow: "-6px 0 0 rgba(47,123,255,0.65), -12px 0 0 rgba(47,123,255,0.35), 0 2px 0 #000" }}
+          className="rq-display text-[min(10vw,44px)] leading-none font-bold whitespace-nowrap text-white italic"
+          style={{ textShadow: "-6px 0 0 rgba(47,123,255,0.65), -12px 0 0 rgba(47,123,255,0.35)" }}
         >
           {LINES.fast}
         </span>
@@ -182,31 +162,16 @@ function FastStrip() {
   );
 }
 
-/** Your 50:50 or Gotta Go Fast: a strip over the opponent bar, so the question stays readable. */
+/** Your 50:50 or Gotta Go Fast: a strip at the top of the duel, under the HUD, so the question stays readable. */
 export function QuickBanner({ fx }: { fx: QuickFx }) {
   return (
     <div
       key={fx.seq}
-      className="rq-banner pointer-events-none absolute inset-x-0 top-0 z-40 flex h-[96px] items-center justify-center overflow-hidden"
+      className="rq-banner pointer-events-none absolute inset-x-0 top-0 z-40 flex h-24 items-center justify-center overflow-hidden"
       style={{ "--rq-banner-ms": `${FX.quickBannerMs}ms` } as CSSProperties}
       role="status"
     >
       {fx.powerup === "fifty" ? <FiftyStrip /> : <FastStrip />}
-    </div>
-  );
-}
-
-export function OpponentToast({ fx }: { fx: QuickFx }) {
-  const text = fx.powerup === "fifty" ? LINES.fiftyOpponent : LINES.fastOpponent;
-  return (
-    <div
-      key={fx.seq}
-      className="rq-toast pointer-events-none flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-[13px] font-semibold text-text shadow-lg ring-1 ring-opponent/50"
-      style={{ "--rq-toast-ms": `${FX.toastMs}ms` } as CSSProperties}
-      role="status"
-    >
-      <PowerupIcon id={fx.powerup} size={16} />
-      {text}
     </div>
   );
 }

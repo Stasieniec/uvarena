@@ -35,25 +35,21 @@ export function FoundView({ you, opponent, waiting, noShowAt, record, clock, onH
 
   return (
     <div className="flex flex-1 flex-col items-center px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),16px)] text-center">
-      <div className="text-xs font-bold tracking-[0.25em] text-ranked uppercase">Ranked</div>
-      <h1 className="rq-slam rq-display mt-6 text-[min(10vw,40px)] leading-none font-black text-ranked-gold" style={{ textShadow: "0 0 24px rgba(245,197,66,0.45)" }}>
-        Opponent found
-      </h1>
+      <div className="self-stretch text-left text-sm leading-5 text-muted">Ranked</div>
+      <h1 className="rq-land rq-display mt-8 text-[56px] leading-[56px] font-bold uppercase italic">Opponent found</h1>
 
-      <div className="rq-rise mt-8 flex flex-col items-center gap-3" style={{ animationDelay: "150ms" }}>
+      <div className="rq-rise mt-10 flex flex-col items-center gap-3" style={{ animationDelay: "180ms" }}>
         <div className="relative">
-          <span className="absolute -inset-3 rounded-full border border-ranked/40" aria-hidden />
-          <span className="absolute -inset-6 rounded-full border border-ranked-gold/20" aria-hidden />
           <Avatar name={opponent.name} url={opponent.avatarUrl} userId={opponent.userId} size={112} ring="var(--color-opponent)" bot={opponent.kind === "bot"} />
         </div>
         <div>
-          <div className="max-w-[18rem] truncate text-2xl font-bold text-opponent">{opponent.name}</div>
-          {rating && <div className="mt-0.5 text-lg font-semibold text-text/85 tabular-nums">{rating}</div>}
+          <div className="rq-plate-name inline-block max-w-[18rem] truncate bg-opponent px-3 pt-1 pb-0.5 text-[32px] leading-9 text-bg italic">{opponent.name}</div>
+          {rating && <div className="rq-display mt-2 text-4xl leading-10 font-bold">{rating}</div>}
         </div>
         {played > 0 && record ? (
-          <div className="mt-1 flex items-center gap-3 rounded-full bg-surface px-4 py-1.5 text-sm ring-1 ring-white/10">
+          <div className="plate mt-1 flex items-center gap-3 px-4 py-1.5 text-sm">
             <span className="text-muted">You</span>
-            <span className="font-display text-lg font-bold tabular-nums">
+            <span className="rq-display text-2xl font-bold">
               <span className="text-you">{record.wins}</span>
               <span className="mx-1.5 text-muted">{"·"}</span>
               <span className="text-opponent">{record.losses}</span>
@@ -72,15 +68,15 @@ export function FoundView({ you, opponent, waiting, noShowAt, record, clock, onH
           {yours && <span className="tabular-nums">{yours}</span>}
         </div>
         {waiting && !theyAreHere ? (
-          <p className="rq-pulse mt-2 text-sm text-text/85 tabular-nums">
+          <p className="rq-pulse mt-2 text-sm">
             Waiting for {opponent.name} to connect
             {noShowAt !== null ? ` · ${fmtClock(noShowAt - now)}` : ""}
           </p>
         ) : (
-          <p className="mt-2 text-sm text-text/70">{waiting ? "Connecting" : "Starting"}</p>
+          <p className="mt-2 text-sm text-muted">{waiting ? "Connecting" : "Starting"}</p>
         )}
         {waiting && (
-          <button type="button" onClick={onHome} className="mt-2 h-11 rounded-xl px-6 text-sm font-semibold text-muted ring-1 ring-white/10">
+          <button type="button" onClick={onHome} className="plate press mt-2 h-12 rounded-xs px-8 text-base font-semibold">
             Home
           </button>
         )}

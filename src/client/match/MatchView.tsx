@@ -2,7 +2,7 @@
 // banners, question, reveal), and the end screen. Driven only by the state the
 // reducer built from server messages; taps go out through `actions`.
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BOT_LADDER, POWERUPS, TIMING } from "@shared/game/config";
 import type { BlindPowerupId, PowerupId, QuickPowerupId } from "@shared/game/types";
 import { apiRequest } from "../lib/api";
@@ -15,15 +15,18 @@ import { sfx } from "./sfx";
 import { canSurrender, canUseQuick, type MatchUiState } from "./state";
 import type { MatchActions } from "./useMatch";
 import { AnswerArea, LockInButton, useMultiPick } from "./components/AnswerArea";
-import { BannerOverlay, OpponentToast, QuickBanner } from "./components/Banners";
+import { BannerOverlay, QuickBanner } from "./components/Banners";
+import { CalloutBand } from "./components/Callout";
+import { ClockPlate } from "./components/Clock";
 import { MuteButton, SurrenderButton } from "./components/Controls";
 import { EndView, type NextBot } from "./components/EndView";
 import { FoundView, type HeadToHead } from "./components/FoundView";
 import { useNow, usePulse } from "./components/hooks";
+import { Hud, TopBar, type HitView } from "./components/Hud";
 import { LobbyView } from "./components/LobbyView";
-import { ArmingCard, IntroView, RoundLine, modeTheme } from "./components/Phases";
-import { QuestionCard, RevealBand } from "./components/QuestionCard";
-import { OpponentStrip, YourStrip, type HitView, type PowerupButtonState } from "./components/Strips";
+import { ArmingCallout, IntroView, KnockoutOverlay, modeLabel } from "./components/Phases";
+import { PowerupRow, type PowerupButtonState } from "./components/PowerupRow";
+import { QuestionPrompt, RevealBand } from "./components/QuestionCard";
 import "./match.css";
 
 export interface MatchNav {
@@ -44,6 +47,8 @@ export interface MatchExtras {
   /** A "Fight" request is on its way. */
   fightPending?: boolean;
   fightError?: string | null;
+  /** The match's course title, for the versus and end screens. */
+  courseTitle?: string | null;
 }
 
 interface Props {
@@ -56,8 +61,8 @@ interface Props {
 
 const LIVE_PHASES = new Set(["lobby", "intro", "arming", "banner", "question", "reveal"]);
 
-/** Reveal timeline steps: 1 answers flipped, 2 hit travelling, 3 hit landed, 4 explanation. */
-type RevealStep = 1 | 2 | 3 | 4;
+/** Reveal timeline steps: 1 answers marked, 3 hit landed, 4 explanation. */
+type RevealStep = 1 | 3 | 4;
 
 function useRevealStep(state: MatchUiState): RevealStep {
   const fx = state.revealFx;
@@ -71,7 +76,6 @@ function useRevealStep(state: MatchUiState): RevealStep {
     const seq = fx.seq;
     setStage({ seq, step: 1 });
     const ids = [
-      window.setTimeout(() => setStage({ seq, step: 2 }), FX.revealStreakMs),
       window.setTimeout(() => setStage({ seq, step: 3 }), FX.revealImpactMs),
       window.setTimeout(() => setStage({ seq, step: 4 }), FX.revealLineMs),
     ];
@@ -160,21 +164,14 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
         bibi: reveal.bibi === attacker,
         shield: reveal.shield === victim,
         capped: reveal.capped,
-        big: amount > FX.bigHit,
+        big: amount >= FX.bigHit,
       },
     };
   }, [reveal, fx, live, step]);
 
-  const bigHit = hit?.view.big ? hit : null;
-  // The knockout: the last hit always shakes, then KO lands on the emptied bar.
+  // The knockout: the last hit always shakes the hit plate, then K.O. lands once the bar has drained.
   const knockout = hit && reveal && (reveal.hp.you === 0 || reveal.hp.opponent === 0) ? hit : null;
-  const shaking = usePulse((bigHit || knockout) && !reduced ? (bigHit ?? knockout)!.view.seq : null, FX.shakeMs);
-  const edge = usePulse((bigHit ?? knockout)?.victim === "you" ? (bigHit ?? knockout)!.view.seq : null, 900);
-  const oppFlash = usePulse(bigHit?.victim === "opponent" ? bigHit.view.seq : null, 900);
-
-  // Quick power-up lines only belong to the question they were used on.
-  const quick = freshQuick(state, clock);
-  const quickVisible = usePulse(quick ? quick.seq : null, quick?.who === "you" ? FX.quickBannerMs : FX.toastMs);
+  const shake = !!hit && (hit.view.big || knockout !== null) && !reduced;
 
   const forfeitNow = useNow(clock, 500, state.opponentForfeitAt !== null);
   const forfeitIn =
@@ -186,22 +183,16 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
 
   const onTick = (sec: number) => sfx.play(sec <= 1 ? "tickLast" : "tick");
 
-  const background = useMemo((): CSSProperties => {
-    const theme = modeTheme(state.mode);
-    return {
-      background: `radial-gradient(120% 55% at 50% -10%, ${theme.glow}, transparent 70%), radial-gradient(100% 40% at 50% 110%, ${theme.glow}, transparent 70%), var(--color-bg)`,
-      boxShadow: `inset 0 0 0 1px ${theme.edge}, inset 0 0 40px -10px ${theme.edge}`,
-    };
-  }, [state.mode]);
-
   let content: ReactNode;
   const status = state.status;
   if (status === "replaced") {
     content = (
       <Notice title={LINES.anotherDevice} sub={LINES.anotherDeviceSub}>
-        <button type="button" onClick={actions.reconnectNow} className="h-14 w-full rounded-xl bg-you text-lg font-bold text-bg active:scale-[0.98]">
-          {LINES.playHere}
-        </button>
+        <div className="p-1">
+          <button type="button" onClick={actions.reconnectNow} className="btn-primary h-14 w-full rounded-xs text-2xl leading-7">
+            {LINES.playHere}
+          </button>
+        </div>
         <HomeButton onHome={nav.home} />
       </Notice>
     );
@@ -226,13 +217,14 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
       />
     );
   } else if (state.phase === "lobby") {
-    content = <LobbyView state={state} onReady={actions.ready} onHome={nav.home} />;
+    content = <LobbyView state={state} courseTitle={extras?.courseTitle ?? null} onReady={actions.ready} onHome={nav.home} />;
   } else if ((state.phase === "finished" || state.phase === "cancelled") && state.result) {
     content = (
       <EndView
         result={state.result}
         mode={state.mode}
         rated={state.rated}
+        course={extras?.courseTitle ?? null}
         you={state.you}
         opponent={state.opponent}
         rematch={state.rematch}
@@ -252,15 +244,7 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
     content = <Notice title={LINES.finishing} pulse />;
   } else if (state.phase === "intro" && state.you && state.opponent) {
     content = (
-      <IntroView
-        you={state.you}
-        opponent={state.opponent}
-        mode={state.mode}
-        rated={state.rated}
-        clock={clock}
-        endsAt={state.phaseEndsAt}
-        totalMs={phaseTotal(state, TIMING.introMs)}
-      />
+      <IntroView you={state.you} opponent={state.opponent} mode={state.mode} rated={state.rated} course={extras?.courseTitle ?? null} />
     );
   } else if (state.you && state.opponent) {
     content = (
@@ -270,7 +254,8 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
         clock={clock}
         displayHp={displayHp}
         hit={hit}
-        oppFlash={oppFlash}
+        shake={shake}
+        knockout={knockout}
         step={step}
         forfeitIn={forfeitIn}
         onTick={onTick}
@@ -291,27 +276,14 @@ export function MatchView({ state, actions, clock, nav, extras }: Props) {
   return (
     <div
       ref={rootRef}
-      className={`rq-match relative mx-auto flex h-dvh w-full max-w-[30rem] flex-col overflow-hidden text-text select-none ${reduced ? "rq-rm" : ""}`}
-      style={background}
+      className={`rq-match relative mx-auto flex h-dvh w-full max-w-[30rem] flex-col overflow-hidden bg-bg text-text select-none ${reduced ? "rq-rm" : ""}`}
       onContextMenu={(e) => {
         if (inDuel) e.preventDefault();
       }}
     >
-      <div className={`flex min-h-0 flex-1 flex-col ${shaking ? "rq-shake" : ""} ${knockout ? "rq-slowmo" : ""}`}>{content}</div>
-
-      {inDuel && reveal && live && step === 2 && !reduced && <Streak state={state} rootRef={rootRef} />}
-      {inDuel && state.phase === "banner" && state.banner && <BannerOverlay banner={state.banner} opponent={state.opponent} />}
-      {inDuel && quick && quickVisible && quick.who === "you" && <QuickBanner fx={quick} />}
-      {inDuel && knockout && (
-        <KnockoutOverlay
-          key={`ko-${knockout.view.seq}`}
-          youWon={knockout.victim === "opponent"}
-          loserName={knockout.victim === "opponent" ? (state.opponent?.name ?? "Your opponent") : null}
-        />
-      )}
-      {edge && <div key={`edge-${(bigHit ?? knockout)?.view.seq ?? 0}`} className="rq-edge" />}
+      <div className="flex min-h-0 flex-1 flex-col">{content}</div>
       {status === "reconnecting" && state.loaded && (
-        <div className="pointer-events-none absolute top-[calc(max(env(safe-area-inset-top),10px)+84px)] left-1/2 z-[60] -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-text ring-1 ring-white/20">
+        <div className="pointer-events-none absolute top-[calc(max(env(safe-area-inset-top),0px)+152px)] left-1/2 z-[60] -translate-x-1/2 bg-surface px-3 py-1 text-sm font-semibold text-text">
           <span className="rq-pulse">{LINES.reconnecting}</span>
         </div>
       )}
@@ -335,31 +307,9 @@ function phaseTotal(state: MatchUiState, fallback: number): number {
   return fallback;
 }
 
-/** The knockout: a beat of stillness on the emptied bar, then KO in heavy capitals. */
-function KnockoutOverlay({ youWon, loserName }: { youWon: boolean; loserName: string | null }) {
-  return (
-    <div className="rq-ko pointer-events-none absolute inset-0 z-50 flex flex-col items-center justify-center" role="status" aria-live="assertive">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(4,7,18,0.55),rgba(4,7,18,0.92))]" />
-      <div
-        className="rq-ko-word rq-display relative leading-none font-black"
-        style={{
-          fontSize: "min(42vw, 190px)",
-          color: youWon ? "var(--color-gold)" : "var(--color-wrong)",
-          textShadow: youWon ? "0 0 40px rgba(245,197,66,0.7), 0 6px 0 #6b4500" : "0 0 40px rgba(239,68,68,0.6), 0 6px 0 #000",
-        }}
-      >
-        KO
-      </div>
-      <div className="rq-ko-sub relative mt-2 text-base font-semibold text-text/90">
-        {youWon ? `${loserName} is out of HP.` : "You are out of HP."}
-      </div>
-    </div>
-  );
-}
-
 function HomeButton({ onHome }: { onHome(): void }) {
   return (
-    <button type="button" onClick={onHome} className="h-12 w-full rounded-xl font-semibold text-muted ring-1 ring-white/10">
+    <button type="button" onClick={onHome} className="plate press h-12 w-full rounded-xs font-semibold">
       Home
     </button>
   );
@@ -368,30 +318,11 @@ function HomeButton({ onHome }: { onHome(): void }) {
 function Notice({ title, sub, pulse, children }: { title: string; sub?: string; pulse?: boolean; children?: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-      <p className={`text-lg font-semibold ${pulse ? "rq-pulse text-muted" : ""}`}>{title}</p>
+      <p className={`text-[17px] leading-6 font-semibold ${pulse ? "rq-pulse text-muted" : ""}`}>{title}</p>
       {sub && <p className="text-sm text-muted">{sub}</p>}
-      {children && <div className="mt-4 flex w-full max-w-xs flex-col gap-2.5">{children}</div>}
+      {children && <div className="mt-4 flex w-full max-w-xs flex-col gap-3">{children}</div>}
     </div>
   );
-}
-
-/** The hit travelling from the attacker's bar to the defender's. */
-function Streak({ state, rootRef }: { state: MatchUiState; rootRef: RefObject<HTMLDivElement | null> }) {
-  const reveal = state.reveal!;
-  const toThem = reveal.damageToOpponent > 0;
-  const toYou = reveal.damageToYou > 0;
-  if (!toThem && !toYou) return null;
-  const h = rootRef.current?.clientHeight ?? 800;
-  const travel = Math.max(200, h - 280);
-  const bibi = reveal.bibi === (toThem ? "you" : "opponent");
-  const color = bibi ? "var(--color-bibi)" : toThem ? "var(--color-you)" : "var(--color-opponent)";
-  const style: CSSProperties = {
-    ["--rq-travel" as string]: `${toThem ? -travel : travel}px`,
-    background: `linear-gradient(${toThem ? "0deg" : "180deg"}, transparent, ${color} 40%, #fff)`,
-    boxShadow: `0 0 18px 4px ${color}`,
-    ...(toThem ? { bottom: 130 } : { top: 90 }),
-  };
-  return <div key={state.revealFx?.seq} className="rq-streak pointer-events-none absolute left-1/2 z-40 h-28 w-2 rounded-full" style={style} />;
 }
 
 /**
@@ -426,19 +357,16 @@ function AnswerScroll({ scrollKey, children }: { scrollKey: string; children: Re
     };
   }, []);
   return (
-    <div className="relative flex min-h-[7.5rem] flex-1 flex-col">
+    <div className="relative flex min-h-[7.5rem] shrink flex-col">
       <div ref={ref} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-        <div className="mt-auto pt-2.5 pb-0.5">{children}</div>
+        <div className="mt-auto pb-[3px]">{children}</div>
       </div>
       {more && (
-        <>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-3 bg-gradient-to-t from-bg/90 to-transparent" />
-          <div className="pointer-events-none absolute right-1 bottom-1 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/80 ring-1 ring-white/25" aria-hidden>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="rq-pulse text-text">
-              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </>
+        <div className="pointer-events-none absolute right-1 bottom-1 z-20 flex h-7 w-7 items-center justify-center rounded-xs bg-gold text-bg" aria-hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
       )}
     </div>
   );
@@ -450,22 +378,23 @@ interface DuelProps {
   clock: MatchClock;
   displayHp: { you: number; opponent: number };
   hit: { victim: "you" | "opponent"; view: HitView } | null;
-  oppFlash: boolean;
+  shake: boolean;
+  knockout: { victim: "you" | "opponent"; view: HitView } | null;
   step: RevealStep;
   forfeitIn: string | null;
   onTick(sec: number): void;
   controls: ReactNode;
 }
 
-function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn, onTick, controls }: DuelProps) {
+function Duel({ state, actions, clock, displayHp, hit, shake, knockout, step, forfeitIn, onTick, controls }: DuelProps) {
   const you = state.you!;
   const opponent = state.opponent!;
   const now = useNow(clock, 250, state.phase === "question");
   const question = state.question;
   const showQuestion = (state.phase === "question" || state.phase === "reveal") && question !== null;
   const quick = freshQuick(state, clock);
+  const quickVisible = usePulse(quick ? quick.seq : null, quick?.who === "you" ? FX.quickBannerMs : FX.toastMs);
   const [picked, togglePick] = useMultiPick(question?.round ?? null);
-  const toastVisible = usePulse(quick && quick.who === "opponent" ? quick.seq : null, FX.toastMs);
   // The reveal's report flag: one tap files the report without leaving the duel.
   const [reported, setReported] = useState<ReadonlySet<string>>(() => new Set());
   const report = (questionId: string) => {
@@ -498,57 +427,77 @@ function Duel({ state, actions, clock, displayHp, hit, oppFlash, step, forfeitIn
     else if (POWERUPS.quick.includes(id)) actions.use(id as QuickPowerupId);
   };
 
+  const round = state.suddenDeath > 0 ? "Sudden death" : state.round > 0 ? `Round ${state.round}` : null;
+  const multiplier = question?.multiplier ?? state.multiplier;
+  const marked = step >= 1;
+
   return (
     <>
-      <OpponentStrip
-        player={{ ...opponent }}
-        hp={displayHp.opponent}
-        hit={hit?.victim === "opponent" ? hit.view : null}
-        hitFlash={oppFlash}
-        controls={controls}
-        forfeitIn={forfeitIn}
+      <div className="pt-[env(safe-area-inset-top)]">
+        <TopBar label={`${modeLabel(state.mode)}${round ? ` · ${round}` : ""}`} controls={controls} />
+      </div>
+      <Hud
+        you={you}
+        opponent={opponent}
+        hp={displayHp}
+        hit={hit}
+        shake={shake}
+        answered={{
+          you: state.phase === "question" && state.yourAnswer !== null,
+          opponent: state.phase === "question" && state.opponentAnswered,
+        }}
+        multiplier={multiplier}
+        clock={<ClockPlate state={state} clock={clock} onTick={onTick} />}
       />
-      {toastVisible && quick && (
-        <div className="pointer-events-none relative z-30 h-0">
-          <div className="absolute inset-x-0 top-0.5 flex justify-center">
-            <OpponentToast fx={quick} />
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <CalloutBand
+          state={state}
+          clock={clock}
+          hit={hit?.view ?? null}
+          marked={marked}
+          opponentQuick={quick && quickVisible && quick.who === "opponent" ? quick : null}
+          forfeitLine={forfeitIn !== null ? `${LINES.opponentDisconnected}${forfeitIn ? ` · ${forfeitIn}` : ""}` : null}
+          arming={
+            <ArmingCallout
+              round={state.round}
+              multiplier={state.multiplier}
+              suddenDeath={state.suddenDeath > 0}
+              armable={state.phase === "arming" ? state.armable : []}
+              armed={state.phase === "arming" || state.phase === "banner" ? (state.armed ?? state.armedAcked) : null}
+              clock={clock}
+              endsAt={state.phase === "arming" ? state.phaseEndsAt : null}
+              totalMs={phaseTotal(state, state.settings?.powerups === false ? TIMING.armingMsNoPowerups : TIMING.armingMs)}
+              covered={state.phase === "banner" && state.banner !== null}
+            />
+          }
+        />
+        <main className="flex min-h-0 shrink flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom),24px)]">
+          {showQuestion && (
+            <>
+              <QuestionPrompt state={state} question={question!} />
+              <AnswerScroll scrollKey={`${state.round}`}>
+                <AnswerArea state={state} question={question!} marked={marked} onAnswer={actions.answer} picked={picked} onToggle={togglePick} />
+              </AnswerScroll>
+              {question!.type === "multi" && state.phase === "question" && <LockInButton state={state} picked={picked} onAnswer={actions.answer} />}
+              {state.phase === "reveal" && state.reveal && step >= 4 && (
+                <RevealBand reveal={state.reveal} reported={reported.has(state.reveal.questionId)} onReport={report} />
+              )}
+            </>
+          )}
+          <div className={showQuestion ? "mt-1" : ""}>
+            <PowerupRow buttons={buttons} onTap={onTap} off={you.loadout.length === 0} />
           </div>
-        </div>
-      )}
-      <RoundLine
-        round={state.round}
-        multiplier={question?.multiplier ?? state.multiplier}
-        suddenDeath={state.suddenDeath > 0}
-        mode={state.mode}
-        opponentAnswered={state.phase === "question" && state.opponentAnswered}
-      />
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pt-1 pb-2">
-        {showQuestion ? (
-          <>
-            <QuestionCard state={state} question={question!} clock={clock} onTick={onTick} />
-            <AnswerScroll scrollKey={`${state.round}`}>
-              <AnswerArea state={state} question={question!} flipped={step >= 1} onAnswer={actions.answer} picked={picked} onToggle={togglePick} />
-            </AnswerScroll>
-            {question!.type === "multi" && state.phase === "question" && <LockInButton state={state} picked={picked} onAnswer={actions.answer} />}
-            {state.phase === "reveal" && state.reveal && step >= 4 && (
-              <RevealBand reveal={state.reveal} reported={reported.has(state.reveal.questionId)} onReport={report} />
-            )}
-          </>
-        ) : (
-          <ArmingCard
-            round={state.round}
-            multiplier={state.multiplier}
-            suddenDeath={state.suddenDeath > 0}
-            armable={state.phase === "arming" ? state.armable : []}
-            armed={state.phase === "arming" || state.phase === "banner" ? (state.armed ?? state.armedAcked) : null}
-            clock={clock}
-            endsAt={state.phase === "arming" ? state.phaseEndsAt : null}
-            totalMs={phaseTotal(state, state.settings?.powerups === false ? TIMING.armingMsNoPowerups : TIMING.armingMs)}
-            covered={state.phase === "banner" && state.banner !== null}
+        </main>
+        {state.phase === "banner" && state.banner && <BannerOverlay banner={state.banner} opponent={opponent} />}
+        {quick && quickVisible && quick.who === "you" && <QuickBanner fx={quick} />}
+        {knockout && (
+          <KnockoutOverlay
+            key={`ko-${knockout.view.seq}`}
+            youWon={knockout.victim === "opponent"}
+            loserName={knockout.victim === "opponent" ? (opponent.name ?? "Your opponent") : null}
           />
         )}
       </div>
-      <YourStrip player={you} hp={displayHp.you} hit={hit?.victim === "you" ? hit.view : null} buttons={buttons} onTap={onTap} />
     </>
   );
 }

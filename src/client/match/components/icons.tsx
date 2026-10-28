@@ -1,4 +1,5 @@
-// Inline SVG icons: the four power-ups and a few controls. Drawn here, no icon font.
+// Inline SVG icons: the four power-ups and a few controls, as 1.8 px line
+// drawings in the text colour. Drawn here, no icon font.
 
 import type { PowerupId } from "@shared/game/types";
 
@@ -15,64 +16,67 @@ interface IconProps {
   color?: string;
 }
 
-export function PowerupIcon({ id, size = 24, className, color }: IconProps & { id: PowerupId }) {
-  const c = color ?? POWERUP_COLOR[id];
-  const common = { width: size, height: size, viewBox: "0 0 24 24", className, "aria-hidden": true } as const;
+/** Line drawings of the four power-ups, in the text colour unless told otherwise. */
+export function PowerupIcon({ id, size = 24, className, color, strokeWidth = 1.8 }: IconProps & { id: PowerupId; strokeWidth?: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    className,
+    fill: "none",
+    stroke: color ?? "currentColor",
+    strokeWidth,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  } as const;
   switch (id) {
     case "bibi":
       return (
         <svg {...common}>
-          <path d="M13.5 1.5 4 13.6h6.2L8.6 22.5 20 9.4h-6.4l1.9-7.9z" fill={c} stroke="#fff6" strokeWidth="0.6" strokeLinejoin="round" />
+          <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" />
         </svg>
       );
     case "shield":
       return (
         <svg {...common}>
-          <path d="M12 2 20 5v6.3c0 5.1-3.4 9-8 10.7-4.6-1.7-8-5.6-8-10.7V5z" fill={c} />
-          <path d="M12 2v20" stroke="#0004" strokeWidth="1.2" />
+          <path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3z" />
         </svg>
       );
     case "fifty":
       return (
         <svg {...common}>
-          <circle cx="12" cy="12" r="10" fill="none" stroke={c} strokeWidth="1.8" />
-          <path d="M12 2a10 10 0 0 0 0 20z" fill={c} />
-          <text x="7.2" y="14.6" fontSize="6.6" fontWeight="800" textAnchor="middle" fill="#0b0a3a" fontFamily="Inter, sans-serif">
-            50
-          </text>
-          <text x="16.8" y="14.6" fontSize="6.6" fontWeight="800" textAnchor="middle" fill={c} fontFamily="Inter, sans-serif">
-            50
-          </text>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4v16" />
         </svg>
       );
     case "fast":
       return (
-        <svg {...common} fill="none" stroke={c} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 8h6M1 12h7M2 16h6" strokeWidth="1.8" />
-          <path d="M11 5l7 7-7 7" strokeWidth="2.6" />
-          <path d="M16 5l7 7-7 7" strokeWidth="2.6" opacity="0.55" />
+        <svg {...common}>
+          <path d="M4 6l6 6-6 6" />
+          <path d="M12 6l6 6-6 6" />
         </svg>
       );
   }
 }
 
-export function FlagIcon({ size = 22, className }: IconProps) {
+export function FlagIcon({ size = 18, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden>
-      <path d="M5 2.5v19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M6 3.5c3.5-1.6 6.2 1.8 12.5.2v9.4C12.2 14.7 9.5 11.3 6 12.9z" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2 4 2 4H5" />
     </svg>
   );
 }
 
-export function SoundIcon({ on, size = 22, className }: IconProps & { on: boolean }) {
+export function SoundIcon({ on, size = 18, className }: IconProps & { on: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
       {on ? (
         <>
-          <path d="M15.5 9a4.2 4.2 0 0 1 0 6" />
-          <path d="M18.3 6.3a8 8 0 0 1 0 11.4" />
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M18.5 5.5a9 9 0 0 1 0 13" />
         </>
       ) : (
         <path d="M16 9.5l5 5M21 9.5l-5 5" />
@@ -83,7 +87,7 @@ export function SoundIcon({ on, size = 22, className }: IconProps & { on: boolea
 
 export function CheckIcon({ size = 18, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4.5 12.5l5 5 10-11" />
     </svg>
   );
@@ -91,7 +95,7 @@ export function CheckIcon({ size = 18, className }: IconProps) {
 
 export function CrossIcon({ size = 18, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   );

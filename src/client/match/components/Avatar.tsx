@@ -31,7 +31,7 @@ export function Avatar({ name, url, size, ring, bot, userId }: AvatarProps) {
       <div
         aria-hidden
         className="flex shrink-0 items-center justify-center rounded-full font-display font-bold text-white"
-        style={{ ...style, background: "radial-gradient(circle at 30% 25%, #60a5fa, #1d4ed8 70%)", fontSize: Math.round(size * 0.42) }}
+        style={{ ...style, background: "var(--color-border)", fontSize: Math.round(size * 0.42) }}
       >
         {name.slice(0, 1)}
       </div>
@@ -44,7 +44,7 @@ export function Avatar({ name, url, size, ring, bot, userId }: AvatarProps) {
       className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
       style={{
         ...style,
-        background: `linear-gradient(140deg, hsl(${hue} 65% 48%), hsl(${(hue + 40) % 360} 60% 32%))`,
+        background: `hsl(${hue} 55% 40%)`,
         fontSize: Math.max(10, Math.round(size * 0.38)),
       }}
     >

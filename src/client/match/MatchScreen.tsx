@@ -7,7 +7,7 @@ import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BotsResponse } from "@shared/api-schemas";
 import { apiRequest, errorMessage } from "../lib/api";
-import { qk } from "../lib/queries";
+import { qk, useCourses } from "../lib/queries";
 import { createSocketTransport, matchSocketUrl } from "./browser";
 import { ClockSync } from "./clock";
 import { MatchView, type MatchExtras, type MatchNav } from "./MatchView";
@@ -77,11 +77,15 @@ function LiveMatch({ matchId }: MatchScreenProps) {
     [navigate, fight.mutate],
   );
 
+  const courses = useCourses();
+  const courseTitle = courses.data?.courses.find((c) => c.id === state.courseId)?.title ?? null;
+
   const extras: MatchExtras = {
     record: profile.data?.headToHead ?? null,
     ladderBefore: ladderBefore ?? null,
     fightPending: fight.isPending,
     fightError: fight.error ? errorMessage(fight.error) : null,
+    courseTitle,
   };
   return <MatchView state={state} actions={actions} clock={clock} nav={nav} extras={extras} />;
 }

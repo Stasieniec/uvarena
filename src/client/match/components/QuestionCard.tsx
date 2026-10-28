@@ -1,69 +1,41 @@
-// The question card: draining timer bar synced to the server clock, the
-// prompt, and during the reveal the verdicts and the one-line explanation.
+// The question, set directly above the options as one block (no card), and
+// the reveal's teaching lines under the answers.
 
-import { useRef } from "react";
-import { SCORING } from "@shared/game/config";
 import type { QuestionView, RevealPayload } from "@shared/protocol";
-import type { MatchClock } from "../clock";
-import { LINES, TYPE_LABEL } from "../copy";
-import { damageLine, fmtSeconds } from "../format";
-import { FX } from "../fx";
+import { LINES } from "../copy";
 import type { MatchUiState } from "../state";
-import { useFrame } from "./hooks";
-import { FlagIcon } from "../../components/icons";
-import { CheckIcon, CrossIcon } from "./icons";
-import { modeTheme } from "./Phases";
+import { FlagIcon } from "./icons";
 import { InlineText, Prompt } from "./Prompt";
-
-interface Props {
-  state: MatchUiState;
-  question: QuestionView;
-  clock: MatchClock;
-  onTick(secondsLeft: number): void;
-}
 
 /** Prompt length from which the question text steps down a size, so long prompts leave room for the answers. */
 const LONG_PROMPT = 150;
 const VERY_LONG_PROMPT = 260;
 
-export function QuestionCard({ state, question, clock, onTick }: Props) {
+export function QuestionPrompt({ state, question }: { state: MatchUiState; question: QuestionView }) {
   const reveal = state.phase === "reveal" ? state.reveal : null;
   const fill = clozeFill(question, state, reveal);
   const isTf = question.type === "truefalse";
   const text = (isTf ? question.statement : question.prompt) ?? "";
   const optionChars = question.options.reduce((n, o) => n + o.text.length, 0);
-  // A crowded question (long prompt, or many long options) gets smaller text, never a clipped card.
+  // A crowded question (long prompt, or many long options) gets smaller text, never a clipped block.
   const crowded = text.length + optionChars > 420 || question.options.length >= 5;
   const long = text.length > LONG_PROMPT || question.codeLang !== null || crowded;
   const size = isTf
     ? text.length > 110
-      ? "text-xl"
-      : "text-2xl"
+      ? "text-[22px] leading-[30px]"
+      : "text-2xl leading-8"
     : text.length > VERY_LONG_PROMPT
-      ? "text-[15px]"
+      ? "text-[15px] leading-[22px]"
       : long
-        ? "text-[17px]"
-        : "text-xl";
-  const theme = modeTheme(state.mode);
+        ? "text-[17px] leading-6"
+        : "text-[22px] leading-[30px]";
   // The prompt has been read by the reveal: a crowded one steps down to make room for the answers and the explanation.
-  const shownSize = reveal && (crowded || long) && !isTf ? "text-[15px]" : size;
+  const shown = reveal && (crowded || long) && !isTf ? "text-[15px] leading-[22px]" : size;
 
   return (
-    <section
-      className="relative shrink-0 overflow-hidden rounded-2xl border bg-surface"
-      style={{ borderColor: theme.frame, boxShadow: theme.cardShadow }}
-    >
-      {state.phase === "question" && <TimerBar state={state} question={question} clock={clock} onTick={onTick} color={theme.timer} />}
-      {reveal && <RevealHeader reveal={reveal} />}
-      {state.phase === "question" && (
-        <div className="flex items-center justify-between px-4 pt-3.5 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">
-          <span>{TYPE_LABEL[question.type]}</span>
-        </div>
-      )}
-      <div className={`px-4 leading-snug font-semibold ${reveal ? "pt-2 pb-2.5" : "pt-1.5 pb-4"} ${shownSize}`}>
-        <Prompt text={text} fill={fill} />
-      </div>
-    </section>
+    <div role="heading" aria-level={1} className={`shrink-0 font-medium text-pretty ${shown}`}>
+      <Prompt text={text} fill={fill} />
+    </div>
   );
 }
 
@@ -73,7 +45,7 @@ function clozeFill(q: QuestionView, s: MatchUiState, reveal: RevealPayload | nul
   if (reveal && reveal.key.kind === "options") {
     const o = byId(reveal.key.ids[0]);
     return o ? (
-      <span className="text-correct">
+      <span className="font-semibold text-text">
         <InlineText text={o.text} />
       </span>
     ) : undefined;
@@ -89,92 +61,10 @@ function clozeFill(q: QuestionView, s: MatchUiState, reveal: RevealPayload | nul
   return undefined;
 }
 
-function TimerBar({ state, question, clock, onTick, color: baseColor }: Props & { color: string }) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const secRef = useRef<HTMLSpanElement>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
-  const lastSec = useRef<number | null>(null);
-  const answered = state.yourAnswer !== null;
-
-  useFrame(clock, true, (now) => {
-    const end = answered ? (state.countdownEnd ?? question.deadline) : (state.yourDeadline ?? question.deadline);
-    const remaining = Math.max(0, end - now);
-    const frac = Math.max(0, Math.min(1, remaining / question.timerMs));
-    const sec = Math.ceil(remaining / 1000);
-    const urgent = !answered && sec <= FX.tickFromS;
-    const color = answered ? "var(--color-opponent)" : urgent ? "var(--color-wrong)" : baseColor;
-    if (barRef.current) {
-      barRef.current.style.transform = `scaleX(${frac})`;
-      barRef.current.style.background = color;
-      barRef.current.style.boxShadow = `0 0 12px ${color}`;
-    }
-    if (secRef.current) {
-      secRef.current.textContent = answered && state.countdownEnd === null ? "" : String(sec);
-      secRef.current.style.color = answered ? "var(--color-opponent)" : urgent ? "var(--color-wrong)" : "var(--color-text)";
-    }
-    if (labelRef.current) {
-      const label = state.answerRejected
-        ? LINES.tooLate
-        : answered
-          ? LINES.waiting
-          : remaining <= 0
-            ? LINES.timeUp
-            : "";
-      if (labelRef.current.textContent !== label) labelRef.current.textContent = label;
-    }
-    if (!answered && sec !== lastSec.current) {
-      if (lastSec.current !== null && sec > 0 && sec <= FX.tickFromS) onTick(sec);
-      lastSec.current = sec;
-    }
-  });
-
-  return (
-    <>
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-black/40">
-        <div ref={barRef} className="h-full origin-left transition-[background-color] duration-200" style={{ transform: "scaleX(1)" }} />
-      </div>
-      <div className="absolute top-2.5 right-3.5 flex items-baseline gap-2">
-        <span ref={labelRef} className="text-[11px] font-semibold text-muted" />
-        <span ref={secRef} className="min-w-[1.5ch] text-right text-2xl font-bold tabular-nums" />
-      </div>
-    </>
-  );
-}
-
-function Verdict({ who, correct, ms, answered }: { who: string; correct: boolean; ms: number | null; answered: boolean }) {
-  const cls = correct ? "text-correct" : "text-wrong";
-  return (
-    <span className="flex items-center gap-1">
-      <span className="text-muted">{who}</span>
-      {correct ? <CheckIcon size={15} className={cls} /> : <CrossIcon size={14} className={cls} />}
-      <span className={`font-semibold ${cls}`}>{correct ? "Right" : answered ? "Wrong" : LINES.timeUp}</span>
-      {ms !== null && answered && <span className="text-muted tabular-nums">{fmtSeconds(ms)}</span>}
-    </span>
-  );
-}
-
-function RevealHeader({ reveal }: { reveal: RevealPayload }) {
-  const maths = damageLine(reveal, SCORING);
-  const hurt = reveal.damageToYou > 0;
-  return (
-    <div className="rq-rise border-b border-border/70 bg-black/20 px-4 py-2 text-[13px]">
-      <div className="flex items-center justify-between gap-2">
-        <Verdict who="You" correct={reveal.yourCorrect} ms={reveal.yourMs} answered={reveal.yourAnswer !== null} />
-        <Verdict who="Them" correct={reveal.opponentCorrect} ms={reveal.opponentMs} answered={reveal.opponentAnswer !== null} />
-      </div>
-      {maths && (
-        <p className={`mt-1 text-center text-[12px] font-semibold tabular-nums ${hurt ? "text-opponent" : reveal.damageToOpponent > 0 ? "text-you" : "text-muted"}`}>
-          {maths}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /**
- * The reveal's teaching lines: the Bibi fizzle, the one-line explanation, the
- * report flag and "Saved to missed questions". It sits under the answers and
- * keeps its full height; the answer list above it scrolls instead.
+ * The reveal's teaching lines: the Bibi fizzle, the one-line explanation,
+ * "Saved to missed questions" and the report flag. It sits under the answers
+ * and keeps its full height; the answer list above it scrolls instead.
  */
 export function RevealBand({
   reveal,
@@ -188,23 +78,19 @@ export function RevealBand({
   const fizzled =
     (reveal.bibi === "you" && reveal.damageToOpponent === 0) || (reveal.bibi === "opponent" && reveal.damageToYou === 0);
   return (
-    <div className="rq-rise relative z-10 shrink-0 rounded-2xl border border-border bg-surface px-3.5 pt-2 pb-2.5 shadow-[0_-10px_24px_-6px_rgba(4,7,18,0.95)]">
-      {fizzled && <p className="rq-display mb-1 text-sm font-bold text-bibi">{LINES.bibiFizzle}</p>}
-      <p className="text-[13.5px] leading-snug text-text/90">{reveal.whyShort}</p>
+    <div className="rq-fade flex shrink-0 flex-col gap-0.5">
+      {fizzled && <p className="rq-display text-[17px] leading-6 font-bold text-gold">{LINES.bibiFizzle}</p>}
+      <p className="text-[15px] leading-[22px] text-pretty">{reveal.whyShort}</p>
       {(reveal.savedToMissed || onReport) && (
-        <div className="mt-1 flex items-center justify-between gap-2">
-          {reveal.savedToMissed ? (
-            <span className="rounded-full bg-wrong/15 px-2.5 py-0.5 text-[11px] font-semibold text-wrong ring-1 ring-wrong/30">{LINES.savedToMissed}</span>
-          ) : (
-            <span />
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm leading-5 text-muted">{reveal.savedToMissed ? LINES.savedToMissed : ""}</span>
           {onReport && (
             <button
               type="button"
               disabled={reported}
               onClick={() => onReport(reveal.questionId)}
               aria-label={reported ? LINES.reportedQuestion : "Report this question"}
-              className="-my-1 -mr-1.5 flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-semibold text-muted hover:text-text disabled:opacity-60"
+              className="-my-1 flex h-11 shrink-0 items-center gap-1.5 pl-3 text-sm text-muted hover:text-text disabled:opacity-60"
             >
               <FlagIcon size={14} />
               {reported ? LINES.reportedQuestion : LINES.reportQuestion}
