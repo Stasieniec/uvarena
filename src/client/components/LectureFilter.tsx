@@ -2,7 +2,7 @@
 // settings, single-select ("Lecture: L05") for the missed list.
 import { useState } from "react";
 import type { Course } from "../lib/course";
-import { CheckIcon, ChevronDownIcon } from "./icons";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "./icons";
 import { Button, Chip, Sheet, cx } from "./ui";
 
 type Lecture = Course["lectures"][number];
@@ -11,15 +11,20 @@ function sorted(lectures: Lecture[]): Lecture[] {
   return [...lectures].sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title));
 }
 
-/** Multi-select. `value` null means all lectures. */
+/**
+ * Multi-select. `value` null means all lectures. `variant="row"` draws a
+ * settings row ("Lectures ... All lectures >") instead of the chip.
+ */
 export function LectureMultiChip({
   course,
   value,
   onChange,
+  variant = "chip",
 }: {
   course: Course | null;
   value: string[] | null;
   onChange: (v: string[] | null) => void;
+  variant?: "chip" | "row";
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string[]>([]);
@@ -40,10 +45,18 @@ export function LectureMultiChip({
 
   return (
     <>
-      <Chip onClick={openSheet} active={value !== null} className="self-start">
-        <span className="truncate">{label}</span>
-        <ChevronDownIcon size={16} />
-      </Chip>
+      {variant === "row" ? (
+        <button type="button" onClick={openSheet} className="flex min-h-14 w-full items-center gap-3 border-b border-line text-left">
+          <span className="flex-1 text-base font-semibold">Lectures</span>
+          <span className="truncate text-[15px] text-muted">{label}</span>
+          <ChevronRightIcon size={16} className="shrink-0 text-muted" />
+        </button>
+      ) : (
+        <Chip onClick={openSheet} active={value !== null}>
+          <span className="truncate">{label}</span>
+          <ChevronDownIcon size={16} />
+        </Chip>
+      )}
       <Sheet open={open} onClose={() => setOpen(false)} title="Lectures">
         <div className="mb-3 flex gap-2">
           <Button variant="secondary" className="flex-1" onClick={() => setDraft(lectures.map((l) => l.id))}>
@@ -64,13 +77,13 @@ export function LectureMultiChip({
                   role="checkbox"
                   aria-checked={on}
                   onClick={() => toggle(l.id)}
-                  className="flex min-h-tap w-full items-center gap-3 rounded-xl px-2 text-left hover:bg-surface-2"
+                  className="flex min-h-tap w-full items-center gap-3 rounded-sm px-2 text-left hover:bg-line"
                 >
-                  <span className={cx("flex size-6 shrink-0 items-center justify-center rounded-md border", on ? "border-you bg-you text-bg" : "border-border")}>
-                    {on ? <CheckIcon size={16} /> : null}
+                  <span className={cx("flex size-[22px] shrink-0 items-center justify-center rounded-sm", on ? "bg-text text-bg" : "shadow-[inset_0_0_0_2px_var(--color-muted)]")}>
+                    {on ? <CheckIcon size={16} strokeWidth={3} /> : null}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                  <span className="text-xs text-muted tabular-nums">{l.questionCount}</span>
+                  <span className="text-sm text-muted">{l.questionCount}</span>
                 </button>
               </li>
             );
@@ -116,10 +129,10 @@ export function LectureSingleChip({
                 role="radio"
                 aria-checked={l.id === value}
                 onClick={() => pick(l.id)}
-                className="flex min-h-tap w-full items-center gap-3 rounded-xl px-2 text-left hover:bg-surface-2"
+                className="flex min-h-tap w-full items-center gap-3 rounded-sm px-2 text-left hover:bg-line"
               >
                 <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                {l.id === value ? <CheckIcon size={18} className="text-you" /> : null}
+                {l.id === value ? <CheckIcon size={18} strokeWidth={2.4} /> : null}
               </button>
             </li>
           ))}

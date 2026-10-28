@@ -10,25 +10,50 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 
 export type ButtonVariant = "primary" | "ranked" | "bot" | "secondary" | "ghost" | "danger" | "gold" | "google";
 
-// Broadcast buttons: the primary action is a yellow plate with the offset frame
-// (one per screen); everything else is a plate with a darker bottom edge that
-// drops when pressed. Ranked, gold and primary are all the primary action now.
+// Broadcast buttons. The primary action is a yellow plate, Barlow Condensed 24,
+// 56 px, with a 1 px frame 3 px outside it (one per screen); it keeps a 3 px
+// margin so the frame never touches its neighbours. Secondary is a plate with
+// a 3 px darker bottom edge that drops when pressed; text buttons are bare.
+// Ranked, gold and primary are all the primary action now; bot and google are
+// secondary.
+const PRIMARY = "btn-primary m-[3px] min-h-14 text-2xl leading-7";
+const SECONDARY = "plate press min-h-12 text-base leading-tight text-text font-semibold disabled:opacity-50";
+const TEXT = "min-h-tap text-base leading-tight font-semibold disabled:opacity-50";
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "btn-primary text-xl",
-  ranked: "btn-primary text-xl",
-  gold: "btn-primary text-xl",
-  bot: "plate press text-text font-semibold",
-  secondary: "plate press text-text font-semibold",
-  ghost: "bg-transparent text-text font-semibold hover:bg-surface",
-  google: "bg-white text-[#1f1f1f] font-medium shadow-[0_3px_0_#8c939e] press",
-  danger: "bg-transparent text-wrong font-semibold shadow-[inset_0_0_0_1px_var(--color-wrong)]",
+  primary: PRIMARY,
+  ranked: PRIMARY,
+  gold: PRIMARY,
+  bot: SECONDARY,
+  secondary: SECONDARY,
+  google: SECONDARY,
+  ghost: `${TEXT} bg-transparent text-text`,
+  danger: `${TEXT} bg-transparent text-wrong shadow-[inset_0_0_0_1px_var(--color-wrong)]`,
 };
+const FRAMED = new Set<ButtonVariant>(["primary", "ranked", "gold"]);
 
 export const buttonBase =
-  "inline-flex min-h-tap items-center justify-center gap-2 rounded-sm px-5 text-center text-base leading-tight select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-sm px-5 text-center select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-you disabled:cursor-not-allowed";
+
+/** Which utility family a class sets, for the ones callers override (size, height, padding, line height). */
+function family(cls: string): string | null {
+  if (/^min-h-/.test(cls)) return "min-h";
+  if (/^px-/.test(cls)) return "px";
+  if (/^leading-/.test(cls)) return "leading";
+  if (/^text-(xs|sm|base|lg|[0-9]?xl|\[[0-9.]+(px|rem)\])$/.test(cls)) return "text-size";
+  return null;
+}
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string): string {
-  return cx(buttonBase, VARIANTS[variant], extra);
+  // The primary's 3 px margin would push a full-width button over the edge.
+  const fixed = FRAMED.has(variant) && extra ? extra.replace(/(^|\s)w-full(?=\s|$)/, "$1w-[calc(100%-6px)]") : extra;
+  // A caller's size, padding or line height replaces the default instead of fighting it in the cascade.
+  const overridden = new Set((fixed ?? "").split(/\s+/).map(family).filter(Boolean));
+  const keep = (classes: string) =>
+    classes
+      .split(/\s+/)
+      .filter((c) => !overridden.has(family(c) ?? ""))
+      .join(" ");
+  return cx(keep(buttonBase), keep(VARIANTS[variant]), fixed);
 }
 
 export function Button({
@@ -64,7 +89,7 @@ export function Card({ className, children }: { className?: string; children: Re
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cx("animate-pulse rounded-xl bg-surface-2/70", className)} aria-hidden />;
+  return <div className={cx("animate-pulse rounded-sm bg-plate", className)} aria-hidden />;
 }
 
 /** Placeholder blocks while a screen loads. */
@@ -91,8 +116,8 @@ export function ErrorState({ error, onRetry, className }: { error: unknown; onRe
   // Retrying a "not found" finds nothing again: offer the way back instead.
   const missing = error instanceof ApiRequestError && error.status === 404;
   return (
-    <div className={cx("flex flex-col items-center gap-3 rounded-2xl border border-wrong/30 bg-wrong/5 p-5 text-center", className)} role="alert">
-      <p className="text-sm text-text">{errorMessage(error)}</p>
+    <div className={cx("flex flex-col items-center gap-3 p-5 text-center shadow-[inset_0_0_0_1px_var(--color-line)]", className)} role="alert">
+      <p className="text-[15px] leading-[22px] text-text">{errorMessage(error)}</p>
       {missing ? (
         <Button variant="secondary" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))} className="min-w-32">
           Back
@@ -108,40 +133,44 @@ export function ErrorState({ error, onRetry, className }: { error: unknown; onRe
 
 export function EmptyState({ title, children, className }: { title: string; children?: ReactNode; className?: string }) {
   return (
-    <div className={cx("flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-5 py-8 text-center", className)}>
-      <p className="font-semibold text-text">{title}</p>
-      {children ? <div className="text-sm text-muted">{children}</div> : null}
+    <div className={cx("flex flex-col items-center gap-2 px-5 py-8 text-center shadow-[inset_0_0_0_1px_var(--color-line)]", className)}>
+      <p className="text-base font-semibold text-text">{title}</p>
+      {children ? <div className="text-sm leading-5 text-muted">{children}</div> : null}
     </div>
   );
 }
 
-/** Top of a sub-screen: back button, title, optional right-hand slot. */
+/**
+ * Top of a sub-screen, 56 px: a 44 px back button, the screen title in
+ * Barlow Condensed 28, and an optional right-hand slot.
+ */
 export function PageHeader({ title, back, right, className }: { title: ReactNode; back?: string | true; right?: ReactNode; className?: string }) {
   const navigate = useNavigate();
+  const backClass = "flex size-11 shrink-0 items-center justify-center text-text";
   return (
-    <header className={cx("sticky top-0 z-20 -mx-4 mb-3 flex min-h-14 items-center gap-1 bg-bg/90 px-2 backdrop-blur", className)}>
+    <header className={cx("sticky top-0 z-20 -mx-4 flex h-14 items-center gap-1 bg-bg px-1", className)}>
       {back ? (
         typeof back === "string" ? (
-          <Link to={back} className="flex size-12 items-center justify-center rounded-xl text-muted hover:text-text" aria-label="Back">
-            <BackIcon />
+          <Link to={back} className={backClass} aria-label="Back">
+            <BackIcon size={22} />
           </Link>
         ) : (
-          <button
-            type="button"
-            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
-            className="flex size-12 items-center justify-center rounded-xl text-muted hover:text-text"
-            aria-label="Back"
-          >
-            <BackIcon />
+          <button type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))} className={backClass} aria-label="Back">
+            <BackIcon size={22} />
           </button>
         )
       ) : (
-        <span className="w-2" />
+        <span className="w-3" />
       )}
-      <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</h1>
+      <h1 className="font-display min-w-0 flex-1 truncate text-[28px] leading-8 font-bold">{title}</h1>
       {right}
     </header>
   );
+}
+
+/** A small outlined tag in a header, such as "Rated". */
+export function HeaderTag({ children }: { children: ReactNode }) {
+  return <span className="mr-3 shrink-0 px-2 py-px text-sm leading-5 font-semibold shadow-[inset_0_0_0_1px_var(--color-muted)]">{children}</span>;
 }
 
 /** A row of mutually exclusive pills (course switch, filters). */
@@ -158,9 +187,10 @@ export function Pills<T extends string>({
   label: string;
   tone?: "you" | "ranked" | "bot";
 }) {
-  const active = tone === "ranked" ? "bg-ranked-gold text-bg" : tone === "bot" ? "bg-bot text-bg" : "bg-you text-bg";
+  // Broadcast segmented control: one look for every tone (colour marks a player only).
+  void tone;
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-2xl border border-border bg-surface p-1">
+    <div role="radiogroup" aria-label={label} className="grid h-10 auto-cols-fr grid-flow-col gap-[3px] rounded-sm bg-plate-dim p-[3px]">
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -170,10 +200,7 @@ export function Pills<T extends string>({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o.value)}
-            className={cx(
-              "min-h-tap min-w-0 flex-1 truncate rounded-xl px-3 text-sm font-semibold transition",
-              on ? active : "text-muted hover:text-text",
-            )}
+            className={cx("min-w-0 truncate rounded-sm px-3 text-[15px] font-semibold", on ? "bg-line text-text" : "text-muted hover:text-text")}
           >
             {o.label}
           </button>
@@ -189,8 +216,8 @@ export function Chip({ children, onClick, active, className }: { children: React
       type="button"
       onClick={onClick}
       className={cx(
-        "inline-flex min-h-tap max-w-full items-center gap-1.5 rounded-sm border px-4 text-sm font-medium transition",
-        active ? "border-you/60 bg-you/10 text-you" : "border-border bg-surface text-text hover:border-muted/60",
+        "inline-flex h-10 max-w-full items-center gap-1.5 rounded-sm bg-plate pr-2.5 pl-3 text-[15px] font-semibold text-text [&>svg]:text-muted",
+        active ? "shadow-[inset_0_0_0_1px_var(--color-muted)]" : "shadow-[inset_0_0_0_1px_var(--color-line)]",
         className,
       )}
     >
@@ -214,10 +241,10 @@ export function Switch({
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className={cx("flex min-h-tap cursor-pointer items-center justify-between gap-4 py-2", disabled && "cursor-not-allowed opacity-60")}>
+    <label htmlFor={id} className={cx("flex min-h-14 cursor-pointer items-center justify-between gap-3 py-2", disabled && "cursor-not-allowed opacity-60")}>
       <span className="min-w-0">
-        <span className="block font-medium">{label}</span>
-        {description ? <span className="block text-sm text-muted">{description}</span> : null}
+        <span className="block text-base leading-[22px] font-semibold">{label}</span>
+        {description ? <span className="block text-sm leading-5 text-muted">{description}</span> : null}
       </span>
       <span className="relative inline-flex shrink-0 items-center">
         <input
@@ -229,8 +256,8 @@ export function Switch({
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span className="h-7 w-12 rounded-xs bg-line transition peer-checked:bg-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
-        <span className="absolute left-1 size-5 rounded-xs bg-muted transition peer-checked:translate-x-5 peer-checked:bg-bg" />
+        <span className="h-7 w-12 rounded-sm bg-line peer-checked:bg-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-you" />
+        <span className="absolute left-[3px] size-[22px] rounded-[1px] bg-muted peer-checked:translate-x-5 peer-checked:bg-bg" />
       </span>
     </label>
   );
@@ -260,11 +287,11 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
       <div
         ref={panel}
         tabIndex={-1}
-        className="sheet-panel relative flex max-h-[88dvh] w-full max-w-column flex-col rounded-t-sm border border-b-0 border-border bg-surface pb-[env(safe-area-inset-bottom)] outline-none"
+        className="sheet-panel relative flex max-h-[88dvh] w-full max-w-column flex-col rounded-t-sm bg-plate pb-[env(safe-area-inset-bottom)] outline-none"
       >
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-          <h2 className="flex-1 text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="flex size-12 items-center justify-center rounded-xl text-muted hover:text-text" aria-label="Close">
+        <div className="flex items-center gap-2 pt-2 pr-1 pb-1 pl-4">
+          <h2 className="font-display flex-1 text-2xl leading-7 font-bold">{title}</h2>
+          <button type="button" onClick={onClose} className="flex size-11 items-center justify-center text-muted hover:text-text" aria-label="Close">
             <XIcon />
           </button>
         </div>
@@ -278,10 +305,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 export function Toast({ message, action, onAction }: { message: string; action?: string; onAction?: () => void }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4" role="status" aria-live="polite">
-      <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-2xl border border-border bg-surface-2 py-1 pr-1 pl-4 ">
-        <span className="flex-1 text-sm">{message}</span>
+      <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-sm bg-line py-1 pr-1 pl-4 shadow-[0_3px_0_var(--color-edge)]">
+        <span className="flex-1 text-[15px] leading-[22px]">{message}</span>
         {action ? (
-          <button type="button" onClick={onAction} className="min-h-tap rounded-xl px-4 text-sm font-semibold text-you hover:bg-you/10">
+          <button type="button" onClick={onAction} className="min-h-tap px-4 text-[15px] font-semibold text-text underline-offset-2 hover:underline">
             {action}
           </button>
         ) : null}
@@ -299,8 +326,8 @@ export function TextField({
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string | null; hint?: string }) {
   const id = useId();
   return (
-    <div className={cx("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-muted">
+    <div className={cx("flex min-w-0 flex-col gap-1.5", className)}>
+      <label htmlFor={id} className="text-sm leading-5 text-muted">
         {label}
       </label>
       <input
@@ -308,17 +335,19 @@ export function TextField({
         aria-invalid={error ? true : undefined}
         aria-describedby={error || hint ? `${id}-msg` : undefined}
         className={cx(
-          "min-h-tap w-full rounded-xl border bg-bg px-4 text-base text-text placeholder:text-muted/60 focus:outline-none focus-visible:ring-2",
-          error ? "border-wrong/70 focus-visible:ring-wrong/50" : "border-border focus-visible:ring-you/60",
+          "h-12 w-full rounded-sm bg-plate px-3 text-base text-text placeholder:text-muted/60 focus:outline-none",
+          error
+            ? "shadow-[inset_0_0_0_2px_var(--color-wrong)]"
+            : "shadow-[inset_0_0_0_1px_var(--color-line)] focus:shadow-[inset_0_0_0_2px_var(--color-text)]",
         )}
         {...rest}
       />
       {error ? (
-        <p id={`${id}-msg`} className="text-sm text-wrong">
+        <p id={`${id}-msg`} className="text-sm leading-5 text-wrong">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-msg`} className="text-sm text-muted">
+        <p id={`${id}-msg`} className="text-sm leading-5 text-muted">
           {hint}
         </p>
       ) : null}
@@ -329,7 +358,7 @@ export function TextField({
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-xl border border-wrong/40 bg-wrong/10 px-4 py-3 text-sm text-text">
+    <p role="alert" className="rounded-sm px-4 py-3 text-[15px] leading-[22px] text-text shadow-[inset_0_0_0_1px_var(--color-wrong)]">
       {message}
     </p>
   );
@@ -338,8 +367,20 @@ export function FormError({ message }: { message: string | null }) {
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div className="mt-6 mb-2 flex items-center justify-between gap-2">
-      <h2 className="text-base font-semibold text-text">{children}</h2>
+      <h2 className="text-base leading-5 font-semibold text-text">{children}</h2>
       {right}
     </div>
+  );
+}
+
+/** A rating with its provisional "?" in the faint colour ("1540?"). */
+export function RatingText({ text }: { text: string }) {
+  return text.endsWith("?") ? (
+    <>
+      {text.slice(0, -1)}
+      <span className="text-faint">?</span>
+    </>
+  ) : (
+    <>{text}</>
   );
 }

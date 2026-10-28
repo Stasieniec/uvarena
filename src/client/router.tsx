@@ -47,10 +47,16 @@ export function createAppRouter(): ReturnType<typeof createBrowserRouter> {
                 { path: "queue", element: <Queue /> },
                 { path: "missed/run", element: <AppShell><MissedRun /></AppShell> },
                 {
-                  element: <AppShell />,
+                  // Sub-screens with their own Back: no bottom bar.
+                  element: <AppShell nav={false} />,
                   children: [
                     { path: "bots", element: <Bots /> },
                     { path: "friend", element: <Friend /> },
+                  ],
+                },
+                {
+                  element: <AppShell />,
+                  children: [
                     { path: "leaderboard", element: <Leaderboard /> },
                     { path: "missed", element: <MissedList /> },
                     { path: "missed/:questionId", element: <MissedQuestion /> },
