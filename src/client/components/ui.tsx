@@ -352,18 +352,42 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   );
 }
 
-/** A transient bar at the bottom of the screen, above the tab bar, with an optional action. */
-export function Toast({ message, action, onAction }: { message: string; action?: string; onAction?: () => void }) {
+/**
+ * A transient bar with an optional action. Fixed at the bottom of the screen
+ * (above the tab bar when the screen has one), or `inline` in the flow, where
+ * a fixed bar would cover the screen's own bottom buttons.
+ */
+export function Toast({
+  message,
+  action,
+  onAction,
+  placement = "bar",
+}: {
+  message: string;
+  action?: string;
+  onAction?: () => void;
+  placement?: "bar" | "inline";
+}) {
+  const bar = (
+    <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-sm bg-line py-1 pr-1 pl-4 shadow-[0_3px_0_var(--color-edge)]">
+      <span className="flex-1 text-[15px] leading-[22px]">{message}</span>
+      {action ? (
+        <button type="button" onClick={onAction} className="min-h-tap px-4 text-[15px] font-semibold text-text underline-offset-2 hover:underline">
+          {action}
+        </button>
+      ) : null}
+    </div>
+  );
+  if (placement === "inline") {
+    return (
+      <div role="status" aria-live="polite">
+        {bar}
+      </div>
+    );
+  }
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4" role="status" aria-live="polite">
-      <div className="toast-in pointer-events-auto flex w-full max-w-[28rem] items-center gap-3 rounded-sm bg-line py-1 pr-1 pl-4 shadow-[0_3px_0_var(--color-edge)]">
-        <span className="flex-1 text-[15px] leading-[22px]">{message}</span>
-        {action ? (
-          <button type="button" onClick={onAction} className="min-h-tap px-4 text-[15px] font-semibold text-text underline-offset-2 hover:underline">
-            {action}
-          </button>
-        ) : null}
-      </div>
+      {bar}
     </div>
   );
 }

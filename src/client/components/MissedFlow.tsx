@@ -278,7 +278,21 @@ export function MissedFlow({
         <FormError message={error ? errorMessage(error) : null} />
         <span className="min-h-2 flex-1" />
         <div className="flex flex-col gap-2">
-          {learnedAction}
+          {/* Undo sits where the button was, so it never covers Next. */}
+          {undo ? (
+            <Toast
+              placement="inline"
+              message="Marked as learned"
+              action="Undo"
+              onAction={() => {
+                clearTimeout(undoTimer.current);
+                setUndo(null);
+                setStatusMut.mutate(undo.previous);
+              }}
+            />
+          ) : (
+            learnedAction
+          )}
           {footer}
           <button type="button" onClick={() => setReportOpen(true)} className="flex h-11 items-center justify-center gap-2 text-sm text-muted hover:text-text">
             <Icon name="flag" size={16} />
@@ -286,17 +300,6 @@ export function MissedFlow({
           </button>
         </div>
 
-        {undo ? (
-          <Toast
-            message="Marked as learned"
-            action="Undo"
-            onAction={() => {
-              clearTimeout(undoTimer.current);
-              setUndo(null);
-              setStatusMut.mutate(undo.previous);
-            }}
-          />
-        ) : null}
         <ReportSheet open={reportOpen} onClose={() => setReportOpen(false)} questionId={q.id} />
       </div>
     );

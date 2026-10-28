@@ -285,7 +285,7 @@ function PublicProfileView({ username }: { username: string }) {
   const data = profile.data;
   const them = data?.user.displayUsername ?? username;
   return (
-    <Screen>
+    <Screen bottomBar={false}>
       <PageHeader title={them} back small />
       <Body className="pb-6">
         {profile.isPending ? (

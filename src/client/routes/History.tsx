@@ -257,7 +257,7 @@ export function MatchDetail() {
   }
 
   return (
-    <Screen>
+    <Screen bottomBar={false}>
       <PageHeader title={title} back small />
       <Body className="pb-4">
         {match.isPending ? (

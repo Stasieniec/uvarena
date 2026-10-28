@@ -113,7 +113,7 @@ export function MissedQuestion() {
   const { questionId = "" } = useParams();
   const q = useMissedQuestion(questionId);
   return (
-    <Screen>
+    <Screen bottomBar={false}>
       <PageHeader title="Missed question" back small />
       <Body className="pb-6">
         {q.isPending ? (
@@ -159,7 +159,7 @@ export function MissedRun() {
   const running = ids.length > 0 && !done;
 
   return (
-    <Screen>
+    <Screen bottomBar={false}>
       <PageHeader
         title="Retry"
         small

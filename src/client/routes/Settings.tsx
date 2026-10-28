@@ -189,7 +189,7 @@ export function Settings() {
   };
 
   return (
-    <Screen>
+    <Screen bottomBar={false}>
       <PageHeader title="Settings" back="/profile" />
       <Body className="gap-3.5 pb-4">
         <PictureSection />
