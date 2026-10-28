@@ -14,7 +14,11 @@ export interface AvatarUser {
   image?: string | null;
 }
 
-export function Avatar({ user, size = 40, className, ring }: { user: AvatarUser; size?: number; className?: string; ring?: string }) {
+/**
+ * `tone="you"` draws the initials disc in your colour with dark text, as on
+ * Home and in the HUD; otherwise the disc takes a colour from the user id.
+ */
+export function Avatar({ user, size = 40, className, ring, tone }: { user: AvatarUser; size?: number; className?: string; ring?: string; tone?: "you" }) {
   const [broken, setBroken] = useState(false);
   const label = user.displayUsername ?? user.username ?? "Player";
   const style = { width: size, height: size, boxShadow: ring ? `0 0 0 2px var(--color-bg), 0 0 0 4px ${ring}` : undefined };
@@ -37,14 +41,18 @@ export function Avatar({ user, size = 40, className, ring }: { user: AvatarUser;
     <span
       role="img"
       aria-label={label}
-      className={cx("inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white select-none", className)}
+      className={cx(
+        "inline-flex shrink-0 items-center justify-center rounded-full select-none",
+        tone === "you" ? "font-display font-bold text-bg" : "font-semibold text-white",
+        className,
+      )}
       style={{
         ...style,
-        background: `hsl(${hue} 55% 40%)`,
-        fontSize: Math.max(10, Math.round(size * 0.38)),
+        background: tone === "you" ? "var(--color-you)" : `hsl(${hue} 55% 40%)`,
+        fontSize: Math.max(10, Math.round(size * (tone === "you" ? 0.53 : 0.38))),
       }}
     >
-      {initials(null, null, user.displayUsername ?? user.username)}
+      {tone === "you" ? label.slice(0, 1).toUpperCase() : initials(null, null, user.displayUsername ?? user.username)}
     </span>
   );
 }
@@ -59,7 +67,7 @@ export function BotAvatar({ name, size = 40, className }: { name: string; size?:
       style={{
         width: size,
         height: size,
-        background: "#2a2f37",
+        background: "var(--color-line)",
         fontSize: Math.round(size * 0.42),
       }}
     >

@@ -84,7 +84,7 @@ async function signUp(p: Player): Promise<string> {
   await p.page.getByLabel("Username").fill(username);
   await p.page.getByLabel("First name").fill(p.name === "ana" ? "Ana" : "Ben");
   await p.page.getByLabel("Surname").fill("Tester");
-  await p.page.getByRole("button", { name: "Sign up", exact: true }).click();
+  await p.page.getByRole("button", { name: "Create account", exact: true }).click();
   await p.page.waitForURL((u) => !u.pathname.startsWith("/signup"), { timeout: 15_000 });
   return username;
 }
