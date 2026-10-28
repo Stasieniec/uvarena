@@ -51,6 +51,9 @@ import {
 } from "../src/shared/api-schemas";
 import type { AnswerKey } from "../src/shared/game/types";
 import {
+  FINAL_CLOSE_CODES,
+  PING,
+  PONG,
   QueueServerMessageSchema,
   ServerMessageSchema,
   type MatchEndMessage,
@@ -71,8 +74,14 @@ function argValue(name: string): string | undefined {
 const BASE = (argValue("--url") ?? process.env.SMOKE_URL ?? "http://localhost:5210").replace(/\/$/, "");
 const WS_BASE = BASE.replace(/^http/, "ws");
 const PRODUCTION = process.argv.includes("--production");
+/** Logs every match frame and socket event with a timestamp. */
+const DEBUG = process.argv.includes("--debug");
 const BANK_PATH = resolve(import.meta.dirname, "..", "bank", "bank.json");
 const MATCH_TIMEOUT_MS = 240_000;
+/** The smoke client pings this often (the app pings every NET.pingIntervalMs; shorter here to notice a dead socket sooner). */
+const SMOKE_PING_MS = 5_000;
+/** A match socket with no frame, not even a pong, for this long is treated as dead. */
+const SMOKE_SILENT_MS = 12_000;
 
 let failures = 0;
 function check(cond: unknown, what: string): void {
@@ -187,13 +196,28 @@ async function signUp(prefix: string): Promise<User> {
 
 type AnswerMode = "right" | "wrong" | "none";
 
-/** A match socket that records every frame and can answer questions on its own. */
+/**
+ * A match socket that records every frame and can answer questions on its own.
+ *
+ * Like the app's own client (src/client/match/socket.ts) it pings, treats a
+ * socket that stops answering as dead, and reconnects after any close that is
+ * not final. On a reconnect the server's snapshot rebuilds what was missed: a
+ * running question is answered again if the answer never arrived, and a
+ * finished match's result counts as its match_end. Networks drop WebSockets
+ * without a close frame (code 1006); the run reports each drop and goes on.
+ */
 class MatchClient {
   readonly frames: ServerMessage[] = [];
   readonly errors: string[] = [];
   closed: { code: number; reason: string } | null = null;
+  /** Drops this client recovered from, as "code at time". */
+  readonly drops: string[] = [];
   ws!: WebSocket;
   private answered = new Set<number>();
+  private stopped = false;
+  private recovering = false;
+  private lastFrameAt = 0;
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     readonly user: User,
@@ -203,24 +227,80 @@ class MatchClient {
   ) {}
 
   async open(): Promise<this> {
+    this.stopped = false;
+    await this.connect();
+    this.pingTimer ??= setInterval(() => this.ping(), SMOKE_PING_MS);
+    return this;
+  }
+
+  private debug(what: string): void {
+    if (DEBUG) console.log(`  debug ${new Date().toISOString()} ${this.user.username} ${what}`);
+  }
+
+  private connect(): Promise<void> {
     this.closed = null;
     const ws = new WebSocket(`${WS_BASE}/api/matches/${this.matchId}/ws`, {
       headers: { Origin: BASE, Cookie: this.user.cookie },
     } as unknown as string[]);
     this.ws = ws;
-    ws.addEventListener("message", (e) => this.onFrame(String(e.data)));
-    ws.addEventListener("close", (e) => {
-      if (this.ws === ws) this.closed = { code: e.code, reason: e.reason };
+    this.lastFrameAt = Date.now();
+    ws.addEventListener("message", (e) => {
+      if (this.ws !== ws) return;
+      this.lastFrameAt = Date.now();
+      this.debug(`<- ${String(e.data).length} B ${String(e.data).slice(0, 60)}`);
+      this.onFrame(String(e.data));
     });
-    await new Promise<void>((res, rej) => {
+    ws.addEventListener("close", (e) => {
+      this.debug(`closed ${e.code} ${e.reason}`);
+      if (this.ws !== ws) return;
+      this.closed = { code: e.code, reason: e.reason };
+      if (!this.stopped && !this.recovering && !FINAL_CLOSE_CODES.includes(e.code)) this.recover(`closed ${e.code}`);
+    });
+    return new Promise<void>((res, rej) => {
       ws.addEventListener("open", () => res(), { once: true });
       ws.addEventListener("error", () => rej(new Error(`match socket for ${this.user.username} failed`)), { once: true });
     });
-    return this;
+  }
+
+  /** Sends "ping"; a socket with no frame (not even a pong) for SMOKE_SILENT_MS is dropped and reopened. */
+  private ping(): void {
+    if (this.stopped || this.ws.readyState !== WebSocket.OPEN) return;
+    if (Date.now() - this.lastFrameAt > SMOKE_SILENT_MS) {
+      const ws = this.ws;
+      this.recover("silent");
+      try {
+        ws.close(1000, "silent");
+      } catch {
+        // already closed
+      }
+      return;
+    }
+    this.ws.send(PING);
+  }
+
+  /** Reopens the socket after a drop, retrying with a growing pause. */
+  private recover(why: string): void {
+    if (this.stopped || this.recovering || this.of("match_end").length > 0) return;
+    this.recovering = true;
+    this.drops.push(`${why} at ${new Date().toISOString()}`);
+    console.log(`  note  ${this.user.username}: match socket dropped (${why}), reconnecting`);
+    const attempt = async (n: number): Promise<void> => {
+      await sleep(Math.min(5000, 500 * 2 ** n));
+      if (this.stopped) return;
+      try {
+        await this.connect();
+        this.recovering = false;
+      } catch {
+        if (n < 8) return attempt(n + 1);
+        this.recovering = false;
+        this.errors.push(`could not reconnect after ${why}`);
+      }
+    };
+    void attempt(0);
   }
 
   private onFrame(text: string): void {
-    if (text === "pong") return;
+    if (text === PONG) return;
     const parsed = ServerMessageSchema.safeParse(JSON.parse(text));
     if (!parsed.success) {
       this.errors.push(`bad frame ${text.slice(0, 200)}: ${parsed.error.message}`);
@@ -230,7 +310,15 @@ class MatchClient {
     this.frames.push(msg);
     if (msg.type === "error") this.errors.push(`error frame ${msg.code}: ${msg.message}`);
     if (msg.type === "question") this.maybeAnswer({ ...msg, type: msg.questionType });
-    if (msg.type === "snapshot" && msg.phase === "question" && msg.question && !msg.yourAnswer) this.maybeAnswer(msg.question);
+    if (msg.type === "snapshot" && msg.phase === "question" && msg.question && !msg.yourAnswer) {
+      // The server has no answer from us: one sent before a drop never arrived.
+      this.answered.delete(msg.question.round);
+      this.maybeAnswer(msg.question);
+    }
+    // A snapshot of a finished match carries its result: that is the end screen.
+    if (msg.type === "snapshot" && msg.result && this.of("match_end").length === 0) {
+      this.frames.push({ type: "match_end", serverNow: msg.serverNow, ...msg.result });
+    }
   }
 
   private maybeAnswer(q: QuestionView): void {
@@ -247,10 +335,14 @@ class MatchClient {
   }
 
   send(msg: unknown): void {
+    this.debug(`-> ${JSON.stringify(msg).slice(0, 80)} (readyState ${this.ws.readyState})`);
     if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
   }
 
   close(): void {
+    this.stopped = true;
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    this.pingTimer = null;
     try {
       this.ws.close(1000, "bye");
     } catch {
@@ -271,42 +363,75 @@ class MatchClient {
     for (;;) {
       const hit = this.of(type).find(pred);
       if (hit) return hit;
-      if (Date.now() - start > timeoutMs) throw new Error(`${this.user.username}: timed out waiting for ${type}`);
+      if (Date.now() - start > timeoutMs) {
+        const last = this.frames.slice(-3).map((f) => f.type).join(", ") || "none";
+        const closed = this.closed ? `closed ${this.closed.code} ${this.closed.reason}` : "socket open";
+        const errors = this.errors.length ? `; errors: ${this.errors.slice(0, 3).join(" | ")}` : "";
+        throw new Error(`${this.user.username}: timed out waiting for ${type} (${closed}; last frames: ${last}${errors})`);
+      }
       await sleep(25);
     }
   }
 }
 
-/** Joins the ranked queue and resolves with the matched match id. */
+/**
+ * Joins the ranked queue and resolves with the matched match id. Pings like
+ * the app, and reopens the socket after a close that is not final (the queue
+ * keeps a reconnecting player's place, or hands them the match already made).
+ */
 function queue(user: User, course: string): { matched: Promise<string>; statuses: number[]; close: () => void } {
-  const ws = new WebSocket(`${WS_BASE}/api/queue/ws?course=${course}`, {
-    headers: { Origin: BASE, Cookie: user.cookie },
-  } as unknown as string[]);
   const statuses: number[] = [];
+  let ws: WebSocket;
+  let done = false;
+  const ping = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) ws.send(PING);
+  }, SMOKE_PING_MS);
   const matched = new Promise<string>((res, rej) => {
-    const timer = setTimeout(() => rej(new Error(`${user.username}: no match within 30 s`)), 30_000);
-    ws.addEventListener("message", (e) => {
-      const text = String(e.data);
-      if (text === "pong") return;
-      const msg = QueueServerMessageSchema.parse(JSON.parse(text));
-      if (msg.type === "queue_status") statuses.push(msg.searching);
-      if (msg.type === "matched") {
-        clearTimeout(timer);
-        res(msg.matchId);
-      }
-      if (msg.type === "error") {
-        clearTimeout(timer);
-        rej(new Error(`${user.username}: queue error ${msg.code} ${msg.matchId ?? ""}`));
-      }
-    });
-    ws.addEventListener("close", (e) => {
-      if (e.code !== 1000) {
-        clearTimeout(timer);
-        rej(new Error(`${user.username}: queue closed ${e.code} ${e.reason}`));
-      }
-    });
+    const finish = (err: Error | null, matchId?: string) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      clearInterval(ping);
+      if (err) rej(err);
+      else res(matchId!);
+    };
+    const timer = setTimeout(() => finish(new Error(`${user.username}: no match within 30 s`)), 30_000);
+    const connect = () => {
+      const socket = new WebSocket(`${WS_BASE}/api/queue/ws?course=${course}`, {
+        headers: { Origin: BASE, Cookie: user.cookie },
+      } as unknown as string[]);
+      ws = socket;
+      socket.addEventListener("message", (e) => {
+        const text = String(e.data);
+        if (text === PONG) return;
+        const msg = QueueServerMessageSchema.parse(JSON.parse(text));
+        if (msg.type === "queue_status") statuses.push(msg.searching);
+        if (msg.type === "matched") finish(null, msg.matchId);
+        if (msg.type === "error") finish(new Error(`${user.username}: queue error ${msg.code} ${msg.matchId ?? ""}`));
+      });
+      socket.addEventListener("close", (e) => {
+        if (done || socket !== ws) return;
+        if (FINAL_CLOSE_CODES.includes(e.code)) {
+          if (e.code !== 1000) finish(new Error(`${user.username}: queue closed ${e.code} ${e.reason}`));
+          return;
+        }
+        console.log(`  note  ${user.username}: queue socket dropped (closed ${e.code}), reconnecting`);
+        setTimeout(() => {
+          if (!done) connect();
+        }, 500);
+      });
+    };
+    connect();
   });
-  return { matched, statuses, close: () => ws.close() };
+  return {
+    matched,
+    statuses,
+    close: () => {
+      done = true;
+      clearInterval(ping);
+      ws.close();
+    },
+  };
 }
 
 async function rankedPair(a: User, b: User, course: string): Promise<string> {
@@ -359,7 +484,11 @@ async function rankedMatch(a: User, b: User): Promise<void> {
   check(endB.summary.correct === 0, "b's summary: nothing right");
   check(endB.missedCount === endB.rounds, `b's missed count equals the rounds (${endB.missedCount} of ${endB.rounds})`);
   const reveals = cb.of("reveal");
-  check(reveals.length === endB.rounds && reveals.every((r) => r.savedToMissed && !r.yourCorrect && r.opponentCorrect), "every reveal to b: wrong, saved to missed");
+  // A reveal sent while b's socket was down is lost; the snapshot after the reconnect stands in for it.
+  check(
+    (reveals.length === endB.rounds || cb.drops.length > 0) && reveals.length > 0 && reveals.every((r) => r.savedToMissed && !r.yourCorrect && r.opponentCorrect),
+    `every reveal to b: wrong, saved to missed (${reveals.length} reveals, ${endB.rounds} rounds)`,
+  );
   leakScan(ca);
   leakScan(cb);
   frameErrors(ca, cb);
@@ -400,7 +529,7 @@ async function rankedMatch(a: User, b: User): Promise<void> {
   );
   check(detail.rounds.every((r) => r.question.key && r.question.why.length > 0), "detail: questions carry key and explanation");
   check(
-    detail.rounds.every((r, i) => reveals[i]?.questionId === r.question.id),
+    reveals.every((rv) => detail.rounds.find((d) => d.round === rv.round)?.question.id === rv.questionId),
     "each reveal's questionId is the round's bank question",
   );
   const flagged = await http("POST", `/api/questions/${reveals[0]!.questionId}/report`, b, { reason: "other", matchId });
